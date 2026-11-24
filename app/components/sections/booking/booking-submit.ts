@@ -219,6 +219,17 @@ export type ConfirmResult =
    * database refused it): nothing was charged, and she picks another hour.
    */
   | { kind: "slotTaken" }
+  /**
+   * The booking could not be confirmed (the database did not answer, or the
+   * server did not take what was sent): nothing is charged and she may try
+   * again from the same step.
+   */
+  | { kind: "failed" }
+  /**
+   * Too many attempts from her address, or too many bookings of hers already
+   * waiting for their payment: nothing is charged; she is asked to wait.
+   */
+  | { kind: "busy" }
   /** Payment could not be started; the booking stands and is chased later. */
   | { kind: "unpaid" };
 
@@ -298,12 +309,14 @@ export async function confirmBooking({
       // No payment is opened for an hour she cannot have.
       case "slot_taken":
         return { kind: "slotTaken" };
-      // `failed`: the database did not answer, so nothing is known; `invalid`:
-      // the server did not take what was sent. On to the payment with the
-      // draft, as before; the checkout answers for itself.
+      // Nothing was confirmed: the checkout opens only on a booking that is
+      // waiting for its payment, so no payment is opened either.
       case "failed":
       case "invalid":
-        break;
+        return { kind: "failed" };
+      case "rate_limited":
+      case "too_many_pending":
+        return { kind: "busy" };
     }
   }
 
@@ -327,9 +340,11 @@ export async function confirmBooking({
   const res = await fetch("/api/checkout/booking-session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    // The session type and the price are the booking's own, read on the
+    // server; the claim cookie of this browser goes with the request.
+    credentials: "same-origin",
     body: JSON.stringify({
       bookingId: resolvedBookingId ?? "",
-      tierId,
       email: details.email,
       name: `${details.firstName} ${details.lastName}`.trim(),
       description: paymentDescription,

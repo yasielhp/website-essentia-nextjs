@@ -78,6 +78,8 @@ type BookingLocalState = {
    * cleared, until she picks another.
    */
   slotTaken: boolean;
+  /** The last step could not be confirmed, and why, said on the page. */
+  confirmProblem: "failed" | "busy" | null;
 };
 
 const INITIAL_LOCAL_STATE: BookingLocalState = {
@@ -90,6 +92,7 @@ const INITIAL_LOCAL_STATE: BookingLocalState = {
   checking: false,
   settled: null,
   slotTaken: false,
+  confirmProblem: null,
 };
 
 /**
@@ -150,6 +153,7 @@ function BookingContentInner() {
     checking,
     settled,
     slotTaken,
+    confirmProblem,
   } = local;
 
   // Whether a signed-in client already has news and offers on for both
@@ -359,7 +363,7 @@ function BookingContentInner() {
     if (confirming.current) return;
     confirming.current = true;
     dispatch({ type: "CONFIRM_START" });
-    updateLocal({ slotTaken: false });
+    updateLocal({ slotTaken: false, confirmProblem: null });
 
     let result: Awaited<ReturnType<typeof confirmBooking>>;
     try {
@@ -389,6 +393,13 @@ function BookingContentInner() {
     // The hour went to another booking while she was confirming: nothing was
     // charged and her draft is still hers. Back to the calendar, with that hour
     // cleared and the reason on the page, to pick another.
+    // Nothing was confirmed and nothing charged: she stays on this step, told
+    // why, and may press Confirm again.
+    if (result.kind === "failed" || result.kind === "busy") {
+      updateLocal({ confirmProblem: result.kind });
+      return;
+    }
+
     if (result.kind === "slotTaken") {
       updateLocal({ slotTaken: true });
       dispatch({ type: "SELECT_TIME", time: "" });
@@ -466,6 +477,17 @@ function BookingContentInner() {
           className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600"
         >
           {tConfirmStep("slotTaken")}
+        </p>
+      )}
+
+      {confirmProblem && currentStepId === "confirm" && (
+        <p
+          role="alert"
+          className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600"
+        >
+          {confirmProblem === "busy"
+            ? tConfirmStep("tooManyAttempts")
+            : tConfirmStep("confirmFailed")}
         </p>
       )}
 

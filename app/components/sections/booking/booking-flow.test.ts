@@ -13,6 +13,7 @@ import {
   fakeId,
   type FakeTables,
 } from "@/lib/bookings/fake-bookings-db";
+import { withClaim } from "@/lib/bookings/draft-claim";
 import type { DetailsState } from "@/types";
 
 /**
@@ -36,7 +37,12 @@ const STAFF = "33333333-3333-4333-8333-333333333333";
 const CONTACT_A = "55555555-5555-4555-8555-555555555555";
 const CONTACT_B = "66666666-6666-4666-8666-666666666666";
 
+// The claim cookie is signed with a server secret; the tests have no keys.
+process.env.BOOKING_CLAIM_SECRET ??= "test-booking-claim-secret";
+
 type Call = { name: string; args: unknown[] };
+/** The browser's cookie of claims (`draft-claim.ts`), as the actions keep it. */
+let jar: string | null = null;
 let calls: Call[] = [];
 let tables: FakeTables;
 let contactFor: Record<string, string> = {};
@@ -50,6 +56,8 @@ const real = {
   guard: { ...(await import("@/lib/auth-guard")) },
   record: { ...(await import("@/lib/booking-events/record")) },
   publicBooking: { ...(await import("@/actions/public-booking")) },
+  visitor: { ...(await import("@/lib/bookings/visitor")) },
+  availability: { ...(await import("@/actions/availability")) },
 };
 
 let submit: typeof import("./booking-submit");
@@ -107,6 +115,21 @@ beforeAll(async () => {
       calls.push({ name: "history", args: [event] });
     },
   }));
+  mock.module("@/lib/bookings/visitor", () => ({
+    ...real.visitor,
+    readVisitor: async () => ({ claims: jar, ip: null }),
+    rememberClaim: async (_visitor: unknown, bookingId: string) => {
+      jar = withClaim(jar, bookingId);
+    },
+  }));
+  // The professional's schedule offers the morning; what is booked is the
+  // database's to refuse.
+  mock.module("@/actions/availability", () => ({
+    ...real.availability,
+    fetchAvailability: async (input: { from: string }) => ({
+      [input.from]: ["10:30", "11:20"],
+    }),
+  }));
   // The real actions, whatever another test file left registered.
   mock.module("@/actions/public-booking", () => real.publicBooking);
   submit = await import("./booking-submit");
@@ -120,10 +143,13 @@ afterAll(() => {
   mock.module("@/lib/insforge-admin", () => real.admin);
   mock.module("@/lib/auth-guard", () => real.guard);
   mock.module("@/lib/booking-events/record", () => real.record);
+  mock.module("@/lib/bookings/visitor", () => real.visitor);
+  mock.module("@/actions/availability", () => real.availability);
 });
 
 beforeEach(() => {
   calls = [];
+  jar = null;
   contactFor = { "ana@example.com": CONTACT_A, "bea@example.com": CONTACT_B };
   tables = {
     bookings: [],
@@ -134,6 +160,7 @@ beforeEach(() => {
         duration_minutes: 50,
         price_eur: 81,
         price_center_eur: 90,
+        active: true,
       },
     ],
     staff_tiers: [{ tier_id: TIER, staff_id: STAFF }],
@@ -141,7 +168,7 @@ beforeEach(() => {
       { id: CONTACT_A, email: "ana@example.com" },
       { id: CONTACT_B, email: "bea@example.com" },
     ],
-    service_settings: [],
+    service_settings: [{ id: "manual-therapies", active: true }],
   };
   globalThis.fetch = ((url: unknown, init?: { body?: string }) => {
     calls.push({
@@ -244,10 +271,12 @@ describe("the public form, end to end, with the browser writing no booking", () 
     expect(tables.bookings[0]!.payment_status).toBeUndefined();
     const checkout = calls.find((c) => c.name === "checkout")!;
     expect(checkout.args[0]).toBe("/api/checkout/booking-session");
-    expect(checkout.args[1]).toMatchObject({
-      bookingId: fakeId(1),
-      tierId: TIER,
-    });
+    // The booking id and nothing that prices it: the session type is the
+    // booking's own, read by the checkout.
+    expect(checkout.args[1]).toMatchObject({ bookingId: fakeId(1) });
+    expect(checkout.args[1]).not.toHaveProperty("tierId");
+    // And this browser holds the claim the checkout will ask for.
+    expect(String(jar)).toContain(fakeId(1));
     expect(calls.filter((c) => c.name === "history")).toHaveLength(1);
     // "Received" goes out once the payment is open.
     await new Promise((resolve) => setTimeout(resolve, 0));

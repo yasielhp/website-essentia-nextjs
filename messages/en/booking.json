@@ -158,6 +158,8 @@
     "cancellationNote": "Your booking is confirmed by the payment. You can change or cancel it up to 24 hours before the session; if you cancel, we refund what you paid. Within the last 24 hours, or if you do not turn up, there is no refund.",
     "alreadyConfirmed": "This booking was already confirmed. If you need to change it, please contact us.",
     "slotTaken": "That slot has just been taken. Please choose another time.",
+    "confirmFailed": "We could not confirm the booking and nothing was charged. Please try again.",
+    "tooManyAttempts": "There are too many attempts or bookings awaiting payment with these details. Please wait a few minutes and try again, or contact us.",
     "payFull": "Full payment when you book",
     "payFullDiscount": "Full payment when you book (−{percent}%)",
     "payFullNote": "You pay {now} today and nothing later.",

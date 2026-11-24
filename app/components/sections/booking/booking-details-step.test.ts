@@ -481,18 +481,21 @@ describe("confirmBooking: the last gate before the payment", () => {
     expect(result).toEqual({ kind: "unpaid" });
   });
 
-  test("a database that could not answer changes nothing: it goes on to the payment as it always did", async () => {
-    promotion = { kind: "failed" };
-    const result = await confirm(DETAILS);
-    expect(result).toEqual({ kind: "unpaid" });
-    expect(names()).toEqual([
-      "confirmPublicBooking",
-      "rpc:promote_contact_to_client",
-      "fetch",
-    ]);
-    const body = JSON.parse(
-      (calls.at(-1)?.args[1] as { body: string }).body,
-    ) as { bookingId: string };
-    expect(body.bookingId).toBe("booking-1");
+  test("a confirmation the server could not make opens no payment: she is told, and may try again", async () => {
+    for (const kind of ["failed", "invalid"]) {
+      calls = [];
+      promotion = { kind };
+      expect(await confirm(DETAILS)).toEqual({ kind: "failed" });
+      expect(names()).toEqual(["confirmPublicBooking"]);
+    }
+  });
+
+  test("too many attempts, or too many bookings waiting to be paid, open no payment either", async () => {
+    for (const kind of ["rate_limited", "too_many_pending"]) {
+      calls = [];
+      promotion = { kind };
+      expect(await confirm(DETAILS)).toEqual({ kind: "busy" });
+      expect(names()).toEqual(["confirmPublicBooking"]);
+    }
   });
 });

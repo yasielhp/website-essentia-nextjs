@@ -7,6 +7,7 @@ import {
   mock,
   test,
 } from "bun:test";
+import { withClaim } from "./draft-claim";
 import {
   fakeBookingsDb,
   fakeId,
@@ -39,6 +40,16 @@ const CONTACT = "55555555-5555-4555-8555-555555555555";
 const OTHERS_CONTACT = "66666666-6666-4666-8666-666666666666";
 const CLIENT = "77777777-7777-4777-8777-777777777777";
 const DRAFT = "88888888-8888-4888-8888-888888888888";
+const STAFF_2 = "99999999-9999-4999-8999-999999999990";
+
+// The claim cookie is signed with a server secret; the tests have no keys.
+process.env.BOOKING_CLAIM_SECRET ??= "test-booking-claim-secret";
+
+/** This browser's cookie of claims, as the actions read and set it. */
+let jar: string | null = null;
+/** The hours each professional has free that day (`fetchAvailability`). */
+let freeHours: Record<string, string[]> = {};
+let availabilityAsked: { staffId: unknown; excludeDraftId: unknown }[] = [];
 
 let tables: FakeTables;
 let failure: Failure | null = null;
@@ -49,9 +60,12 @@ const real = {
   admin: { ...(await import("@/lib/insforge-admin")) },
   guard: { ...(await import("@/lib/auth-guard")) },
   record: { ...(await import("@/lib/booking-events/record")) },
+  visitor: { ...(await import("./visitor")) },
+  availability: { ...(await import("@/actions/availability")) },
 };
 
 let actions: typeof import("@/actions/public-booking");
+let core: typeof import("./public-booking");
 
 beforeAll(async () => {
   mock.module("@/lib/insforge-admin", () => ({
@@ -94,13 +108,37 @@ beforeAll(async () => {
       events.push(event);
     },
   }));
+  mock.module("./visitor", () => ({
+    ...real.visitor,
+    readVisitor: async () => ({ claims: jar, ip: null }),
+    rememberClaim: async (_visitor: unknown, bookingId: string) => {
+      jar = withClaim(jar, bookingId);
+    },
+  }));
+  mock.module("@/actions/availability", () => ({
+    ...real.availability,
+    fetchAvailability: async (input: {
+      staffId: string;
+      from: string;
+      excludeDraftId?: string | null;
+    }) => {
+      availabilityAsked.push({
+        staffId: input.staffId,
+        excludeDraftId: input.excludeDraftId,
+      });
+      return { [input.from]: freeHours[input.staffId] ?? [] };
+    },
+  }));
   actions = await import("@/actions/public-booking");
+  core = await import("./public-booking");
 });
 
 afterAll(() => {
   mock.module("@/lib/insforge-admin", () => real.admin);
   mock.module("@/lib/auth-guard", () => real.guard);
   mock.module("@/lib/booking-events/record", () => real.record);
+  mock.module("./visitor", () => real.visitor);
+  mock.module("@/actions/availability", () => real.availability);
 });
 
 beforeEach(() => {
@@ -113,6 +151,7 @@ beforeEach(() => {
         duration_minutes: 50,
         price_eur: "81.00",
         price_center_eur: 90,
+        active: true,
       },
       {
         id: OTHER_TIER,
@@ -120,15 +159,29 @@ beforeEach(() => {
         duration_minutes: 60,
         price_eur: 20,
         price_center_eur: 20,
+        active: true,
       },
     ],
-    staff_tiers: [{ tier_id: TIER, staff_id: STAFF }],
+    staff_tiers: [
+      { tier_id: TIER, staff_id: STAFF },
+      { tier_id: TIER, staff_id: STAFF_2 },
+    ],
     contacts: [
       { id: CONTACT, email: "ana@example.com" },
       { id: OTHERS_CONTACT, email: "someone@else.com" },
     ],
-    service_settings: [],
+    service_settings: [
+      { id: "manual-therapies", active: true },
+      { id: "facial-therapies", active: true },
+    ],
   };
+  // This browser holds the claim on DRAFT, as if it had started it.
+  jar = withClaim(null, DRAFT);
+  freeHours = {
+    [STAFF]: ["09:40", "10:00", "10:30", "11:20"],
+    [STAFF_2]: ["10:30"],
+  };
+  availabilityAsked = [];
   failure = null;
   beforeUpdate = null;
   events = [];
@@ -504,6 +557,9 @@ describe("the professional's hour, defended by the database", () => {
   test("two visitors on one hour: the first to confirm has it, the second is told", async () => {
     const SECOND = "99999999-9999-4999-8999-999999999999";
     tables.bookings.push(draftRow(), draftRow({ id: SECOND }));
+    // Two visitors: each holds the claim on her own draft (one jar stands in
+    // for both browsers here).
+    jar = withClaim(jar, SECOND);
     expect(await actions.confirmPublicBooking(null, confirmation())).toEqual({
       kind: "promoted",
       bookingId: DRAFT,
@@ -529,5 +585,184 @@ describe("the professional's hour, defended by the database", () => {
       kind: "promoted",
       bookingId: DRAFT,
     });
+  });
+});
+
+describe("a draft is the browser's that started it", () => {
+  test("the details step gives this browser the claim on the draft it writes", async () => {
+    jar = null;
+    const answer = await actions.savePublicDraft(null, details());
+    expect(answer).toEqual({ ok: true, bookingId: fakeId(1) });
+    expect(String(jar)).toContain(fakeId(1));
+  });
+
+  test("a draft id this browser holds no claim on is not rewritten: a new draft is started", async () => {
+    jar = null;
+    tables.bookings.push(draftRow({ first_name: "Stranger" }));
+    const answer = await actions.savePublicDraft(
+      null,
+      details({ draftId: DRAFT }),
+    );
+    expect(answer).toEqual({ ok: true, bookingId: fakeId(1) });
+    expect(tables.bookings.find((r) => r.id === DRAFT)?.first_name).toBe(
+      "Stranger",
+    );
+  });
+
+  test("its hour is not set from another browser", async () => {
+    jar = null;
+    tables.bookings.push(draftRow());
+    expect(
+      await actions.setPublicDraftTime({
+        draftId: DRAFT,
+        date: "2099-08-20",
+        time: "10:30",
+      }),
+    ).toEqual({ ok: false, error: "not_yours" });
+    expect(only().time).toBeNull();
+  });
+
+  test("nor is it confirmed from another browser: that browser gets a booking of its own, and the draft is left as it was", async () => {
+    jar = null;
+    tables.bookings.push(draftRow());
+    const answer = await actions.confirmPublicBooking(null, confirmation());
+    expect(answer).toEqual({ kind: "created", bookingId: fakeId(1) });
+    expect(tables.bookings.find((r) => r.id === DRAFT)?.status).toBe("draft");
+    expect(String(jar)).toContain(fakeId(1));
+  });
+});
+
+describe("what the last step checks on the server", () => {
+  test("a day already past (Canary time) is refused", async () => {
+    tables.bookings.push(draftRow());
+    expect(
+      await actions.confirmPublicBooking(
+        null,
+        confirmation({ date: "2020-01-01" }),
+      ),
+    ).toEqual({ kind: "invalid" });
+    expect(only().status).toBe("draft");
+  });
+
+  test("a session type switched off, or a service switched off, is not on sale", async () => {
+    tables.bookings.push(draftRow());
+    tables.service_tiers[0]!.active = false;
+    expect(await actions.confirmPublicBooking(null, confirmation())).toEqual({
+      kind: "invalid",
+    });
+    tables.service_tiers[0]!.active = true;
+    tables.service_settings[0]!.active = false;
+    expect(await actions.confirmPublicBooking(null, confirmation())).toEqual({
+      kind: "invalid",
+    });
+    expect(only().status).toBe("draft");
+  });
+
+  test("an hour the professional's schedule does not offer, or has taken, is 'slot_taken' before anything is written", async () => {
+    tables.bookings.push(draftRow());
+    freeHours[STAFF] = ["09:00"];
+    expect(await actions.confirmPublicBooking(null, confirmation())).toEqual({
+      kind: "slot_taken",
+    });
+    expect(only().status).toBe("draft");
+    // Her own draft does not take the hour from her.
+    expect(availabilityAsked[0]).toEqual({
+      staffId: STAFF,
+      excludeDraftId: DRAFT,
+    });
+  });
+
+  test("left to the centre, the first professional free at that hour is assigned, so the guard covers it", async () => {
+    tables.bookings.push(draftRow({ staff_id: null }));
+    freeHours[STAFF] = ["09:00"];
+    const answer = await actions.confirmPublicBooking(
+      null,
+      confirmation({ staffId: null }),
+    );
+    expect(answer).toEqual({ kind: "promoted", bookingId: DRAFT });
+    expect(only().staff_id).toBe(STAFF_2);
+  });
+
+  test("and when nobody has it free, the hour is taken", async () => {
+    tables.bookings.push(draftRow({ staff_id: null }));
+    freeHours = {};
+    expect(
+      await actions.confirmPublicBooking(null, confirmation({ staffId: null })),
+    ).toEqual({ kind: "slot_taken" });
+  });
+
+  test("the service written is the session type's, with its name", async () => {
+    tables.bookings.push(
+      draftRow({ service_id: "made-up", service_title: "Made up" }),
+    );
+    await actions.confirmPublicBooking(null, confirmation());
+    expect(only()).toMatchObject({
+      service_id: "manual-therapies",
+      service_title: "Manual Therapies",
+    });
+  });
+
+  test("one address keeps a few bookings waiting for their payment, not more", async () => {
+    for (const n of [1, 2, 3]) {
+      tables.bookings.push({
+        id: fakeId(100 + n),
+        status: "pending",
+        payment_status: "pending",
+        email: n === 2 ? "ANA@example.com" : "ana@example.com",
+      });
+    }
+    tables.bookings.push(draftRow());
+    expect(await actions.confirmPublicBooking(null, confirmation())).toEqual({
+      kind: "too_many_pending",
+    });
+    // A paid one, or another address's, does not count.
+    tables.bookings[0]!.payment_status = "paid";
+    expect(
+      (await actions.confirmPublicBooking(null, confirmation())).kind,
+    ).toBe("promoted");
+  });
+});
+
+describe("the rate limits, per address", () => {
+  const deps = () => ({
+    visitor: { claims: jar, ip: "203.0.113.7" },
+    limiters: core.createPublicLimiters(),
+  });
+
+  test("a few drafts in ten minutes, then 'rate_limited' with nothing written", async () => {
+    const d = deps();
+    for (let i = 0; i < core.PUBLIC_LIMITS.draft; i++) {
+      expect((await core.savePublicDraftCore(null, details(), d)).ok).toBe(
+        true,
+      );
+    }
+    expect(await core.savePublicDraftCore(null, details(), d)).toEqual({
+      ok: false,
+      error: "rate_limited",
+    });
+    expect(tables.bookings).toHaveLength(core.PUBLIC_LIMITS.draft);
+    // Another address is not held back by this one.
+    expect(
+      (
+        await core.savePublicDraftCore(null, details(), {
+          ...d,
+          visitor: { claims: null, ip: "203.0.113.8" },
+        })
+      ).ok,
+    ).toBe(true);
+  });
+
+  test("the confirmations too", async () => {
+    const d = deps();
+    for (let i = 0; i < core.PUBLIC_LIMITS.confirm; i++) {
+      await core.confirmPublicBookingCore(
+        null,
+        confirmation({ draftId: null, date: `2099-08-${10 + i}` }),
+        d,
+      );
+    }
+    expect(
+      await core.confirmPublicBookingCore(null, confirmation(), d),
+    ).toEqual({ kind: "rate_limited" });
   });
 });

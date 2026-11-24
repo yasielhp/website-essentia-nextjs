@@ -7,10 +7,15 @@ import { readPaymentSettings } from "@/lib/settings/app-settings";
 import { ALREADY_PAID, holdsMoney } from "@/lib/payments/checkout-order";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import { formatPrice } from "@/utils/format";
+import { CLAIM_COOKIE, holdsClaim } from "@/lib/bookings/draft-claim";
 
 type CheckoutBody = {
   bookingId: string;
-  tierId: string;
+  /**
+   * Sent by forms built before 2026-11-24. NEVER read: the session type, and
+   * so the price, are the booking's own (`bookings.tier_id`).
+   */
+  tierId?: unknown;
   email?: string;
   name?: string;
   description?: string;
@@ -30,6 +35,15 @@ type CheckoutBody = {
  * The amount is resolved from `service_tiers` and `app_settings.payments` on
  * the server and never from the request body. Trusting a client-supplied
  * `amountEur` allowed paying an arbitrary amount — one cent — for any service.
+ * And the session type is the BOOKING's (`bookings.tier_id`), never the
+ * request's: a `tierId` in the body let a booking for Lume (165 €) be paid as
+ * Espira (70 €), and a booking taken at the desk at the suite price be
+ * rewritten to the web price by its id.
+ *
+ * A checkout opens only on a booking of the public form that is waiting for
+ * its payment (`pending`: not a draft, which holds no hour, not one taken at
+ * the desk, which is `confirmed`), and only for the browser that wrote it: it
+ * must hold the booking's claim (`draft-claim.ts`, a signed httpOnly cookie).
  *
  * Only the whole price is charged (since 2026-11-24 there is no deposit). A
  * page still open on the old form may ask for `paymentMode: "deposit"`: it is
@@ -37,6 +51,12 @@ type CheckoutBody = {
  * page shows that amount before the client pays anything. No request can open
  * a partial charge.
  */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** The answer to a browser that did not write this booking. */
+const NOT_YOURS = "not_yours";
+/** The answer to a booking that is not waiting for its payment. */
+const NOT_OPEN = "not_open";
+
 export async function POST(req: NextRequest) {
   const provider = getRedsysProvider();
   if (!provider) {
@@ -53,24 +73,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { bookingId, tierId, email, name, description, date, time, phone } =
-    body;
+  const { bookingId, email, name, description, date, time, phone } = body;
 
-  if (!bookingId || !tierId) {
+  if (typeof bookingId !== "string" || !UUID.test(bookingId)) {
     return NextResponse.json(
-      { error: "bookingId and tierId are required" },
+      { error: "bookingId is required" },
       { status: 400 },
+    );
+  }
+
+  // Only the browser that wrote this booking may open its payment.
+  if (!holdsClaim(req.cookies.get(CLAIM_COOKIE)?.value, bookingId)) {
+    return NextResponse.json(
+      { error: "This booking was not started here", code: NOT_YOURS },
+      { status: 403 },
     );
   }
 
   const db = getAdminClient().database;
 
-  // The tier must actually belong to the booking's service, otherwise a caller
-  // could pair an expensive booking with the cheapest tier in the catalogue.
   const { data: bookingRow } = await db
     .from("bookings")
     .select(
-      "id, service_id, status, payment_status, amount_paid_eur, stripe_session_id",
+      "id, service_id, tier_id, status, payment_status, amount_paid_eur, stripe_session_id",
     )
     .eq("id", bookingId)
     .maybeSingle();
@@ -78,6 +103,7 @@ export async function POST(req: NextRequest) {
   const booking = bookingRow as {
     id: string;
     service_id: string | null;
+    tier_id: string | null;
     status: string | null;
     payment_status: string | null;
     amount_paid_eur: number | string | null;
@@ -102,11 +128,23 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
+  // Waiting for its payment, and nothing else: a draft holds no hour (its
+  // confirmation failed or never happened) and a booking taken at the desk is
+  // `confirmed` and priced at the counter.
+  if (booking.status !== "pending") {
+    return NextResponse.json(
+      { error: "Booking is not waiting for a payment", code: NOT_OPEN },
+      { status: 409 },
+    );
+  }
+  if (!booking.tier_id) {
+    return NextResponse.json({ error: "Tier not found" }, { status: 404 });
+  }
 
   const { data: tierRow } = await db
     .from("service_tiers")
     .select("service_id, price_eur, price_center_eur")
-    .eq("id", tierId)
+    .eq("id", booking.tier_id)
     .maybeSingle();
 
   const tier = tierRow as {
@@ -179,6 +217,7 @@ export async function POST(req: NextRequest) {
       price_eur: finalPriceEur,
     })
     .eq("id", bookingId)
+    .eq("status", "pending")
     .in("payment_status", ["pending", "failed"])
     .select("id");
   if (((opened ?? []) as unknown[]).length === 0) {

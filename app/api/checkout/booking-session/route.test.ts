@@ -9,6 +9,7 @@ import {
   test,
 } from "bun:test";
 import { NextRequest } from "next/server";
+import { CLAIM_COOKIE, claimFor } from "@/lib/bookings/draft-claim";
 
 /**
  * The real checkout route, with the database replaced and the real Redsys
@@ -17,9 +18,17 @@ import { NextRequest } from "next/server";
  * the bank is sent the whole price and the booking is written as `full`.
  */
 
+// The claim cookie is signed with a server secret; the tests have no keys.
+process.env.BOOKING_CLAIM_SECRET ??= "test-booking-claim-secret";
+
+const ID = "bbbbbbbb-0000-4000-8000-000000000001";
+/** Two session types of one service: Lume, 165 €, and Espira, 70 €. */
+const LUME = "11111111-1111-4111-8111-111111111111";
+const ESPIRA = "22222222-2222-4222-8222-222222222222";
 const BOOKING = {
-  id: "b-1",
+  id: ID,
   service_id: "manual-therapies",
+  tier_id: "t-1" as string | null,
   status: "pending",
   payment_status: "pending",
   amount_paid_eur: 0,
@@ -28,11 +37,25 @@ const BOOKING = {
 let booking: typeof BOOKING = { ...BOOKING };
 /** When true, the conditional write matches nothing: paid in between. */
 let writeRefused = false;
-const TIER = {
-  service_id: "manual-therapies",
-  price_eur: 130,
-  price_center_eur: 140,
+const TIERS: Record<string, Record<string, unknown>> = {
+  "t-1": {
+    service_id: "manual-therapies",
+    price_eur: 130,
+    price_center_eur: 140,
+  },
+  [LUME]: {
+    service_id: "manual-therapies",
+    price_eur: 165,
+    price_center_eur: 165,
+  },
+  [ESPIRA]: {
+    service_id: "manual-therapies",
+    price_eur: 70,
+    price_center_eur: 70,
+  },
 };
+/** The session types the route asked for, by id. */
+let tiersAsked: unknown[] = [];
 
 /** The live `payments` row: the deposit percent of before is still in it. */
 let storedSettings: unknown = {
@@ -48,13 +71,17 @@ let settingsRefused = false;
 /** A query chain that answers `result` however it is built, and records an UPDATE. */
 function chain(table: string): unknown {
   let patch: Record<string, unknown> | null = null;
+  let id: unknown = null;
   const result = () => {
     if (patch) {
       if (table === "bookings") bookingUpdates.push(patch);
-      return { data: writeRefused ? [] : [{ id: "b-1" }], error: null };
+      return { data: writeRefused ? [] : [{ id: ID }], error: null };
     }
     if (table === "bookings") return { data: booking, error: null };
-    if (table === "service_tiers") return { data: TIER, error: null };
+    if (table === "service_tiers") {
+      tiersAsked.push(id);
+      return { data: TIERS[String(id)] ?? null, error: null };
+    }
     if (table === "app_settings") {
       return settingsRefused
         ? { data: null, error: { message: "permission denied" } }
@@ -71,6 +98,12 @@ function chain(table: string): unknown {
       if (prop === "update") {
         return (p: Record<string, unknown>) => {
           patch = p;
+          return proxy;
+        };
+      }
+      if (prop === "eq") {
+        return (column: string, value: unknown) => {
+          if (column === "id") id = value;
           return proxy;
         };
       }
@@ -126,25 +159,41 @@ beforeEach(() => {
   booking = { ...BOOKING };
   writeRefused = false;
   inserts = [];
+  tiersAsked = [];
 });
 
-async function checkout(body: Record<string, unknown>) {
+/** This browser's claim on the booking, as the public form's server action set it. */
+const claimed = (bookingId = ID) => ({
+  cookie: `${CLAIM_COOKIE}=${claimFor(bookingId)}`,
+});
+
+async function checkout(
+  body: Record<string, unknown>,
+  headers: Record<string, string> = claimed(),
+) {
   const res = await POST(
     new NextRequest("https://app.example.test/api/checkout/booking-session", {
       method: "POST",
-      body: JSON.stringify({ bookingId: "b-1", tierId: "t-1", ...body }),
+      headers,
+      body: JSON.stringify({ bookingId: ID, tierId: "t-1", ...body }),
     }),
   );
   const json = (await res.json()) as {
     Ds_MerchantParameters?: string;
     orderId?: string;
+    code?: string;
   };
   const sent = json.Ds_MerchantParameters
     ? (JSON.parse(
         Buffer.from(json.Ds_MerchantParameters, "base64").toString("utf8"),
       ) as Record<string, string>)
     : null;
-  return { status: res.status, sent, orderId: json.orderId ?? null };
+  return {
+    status: res.status,
+    sent,
+    orderId: json.orderId ?? null,
+    code: json.code ?? null,
+  };
 }
 
 describe("POST /api/checkout/booking-session", () => {
@@ -221,7 +270,8 @@ describe("never charged twice", () => {
           "https://app.example.test/api/checkout/booking-session",
           {
             method: "POST",
-            body: JSON.stringify({ bookingId: "b-1", tierId: "t-1" }),
+            headers: claimed(),
+            body: JSON.stringify({ bookingId: ID, tierId: "t-1" }),
           },
         ),
       );
@@ -240,7 +290,7 @@ describe("never charged twice", () => {
     expect(bookingUpdates[0]?.stripe_session_id).toBe(orderId);
     expect(inserts).toHaveLength(1);
     expect(inserts[0]).toMatchObject({
-      booking_id: "b-1",
+      booking_id: ID,
       channel: "payment",
       event: "checkout",
       provider_id: orderId,
@@ -252,5 +302,58 @@ describe("never charged twice", () => {
     const { status } = await checkout({});
     expect(status).toBe(409);
     expect(inserts).toEqual([]);
+  });
+});
+
+describe("the price is the booking's, and the checkout is the form's own", () => {
+  test("a booking for Lume (165 €) cannot be paid as Espira (70 €): the body's session type is not read", async () => {
+    booking = { ...booking, tier_id: LUME };
+    const { status, sent } = await checkout({ tierId: ESPIRA });
+    expect(status).toBe(200);
+    expect(sent?.DS_MERCHANT_AMOUNT).toBe("16500");
+    expect(tiersAsked).toEqual([LUME]);
+    expect(bookingUpdates[0]).toMatchObject({ price_eur: 165 });
+  });
+
+  test("a booking taken at the desk (confirmed, at the suite price) cannot be lowered to the web price by its id", async () => {
+    booking = { ...booking, status: "confirmed", tier_id: LUME };
+    const { status, code } = await checkout({ tierId: ESPIRA });
+    expect(status).toBe(409);
+    expect(code).toBe("not_open");
+    expect(bookingUpdates).toEqual([]);
+    expect(inserts).toEqual([]);
+  });
+
+  test("a draft (its confirmation failed or never happened) opens no checkout", async () => {
+    booking = { ...booking, status: "draft" };
+    const { status, code } = await checkout({});
+    expect(status).toBe(409);
+    expect(code).toBe("not_open");
+    expect(bookingUpdates).toEqual([]);
+  });
+
+  test("a booking with no session type opens none either", async () => {
+    booking = { ...booking, tier_id: null };
+    const { status } = await checkout({ tierId: ESPIRA });
+    expect(status).toBe(404);
+    expect(bookingUpdates).toEqual([]);
+  });
+
+  test("a browser that did not write the booking cannot open its payment", async () => {
+    for (const headers of [
+      {},
+      { cookie: `${CLAIM_COOKIE}=${ID}.forged` },
+      claimed("bbbbbbbb-0000-4000-8000-000000000002"),
+    ]) {
+      const { status, code } = await checkout({}, headers);
+      expect(status).toBe(403);
+      expect(code).toBe("not_yours");
+    }
+    expect(bookingUpdates).toEqual([]);
+  });
+
+  test("an id that is not one is refused before anything is read", async () => {
+    const { status } = await checkout({ bookingId: "b-1" });
+    expect(status).toBe(400);
   });
 });

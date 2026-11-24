@@ -3,13 +3,13 @@
  * tests only: nothing in the app imports this file.
  *
  * It reads the query chains the code builds (through `chainDb`) and answers
- * them from a few arrays, the way PostgREST would: `eq` filters, `insert`,
- * `update` with or without `select`, `maybeSingle` and `single`. And it keeps
- * the rule of `bookings_no_overlap` (migration
+ * them from a few arrays, the way PostgREST would: `eq`, `neq`, `in`, `is` and
+ * `ilike` filters, `insert`, `update` with or without `select`, `maybeSingle`
+ * and `single`. And it keeps the rule of `bookings_no_overlap` (migration
  * `20261124_bookings_no_overlap.sql`): a row that holds a slot (any status but
- * `draft` and `cancelled`, with a professional, a day and an hour) cannot
- * overlap another of the same professional; the write is refused with the
- * database's `23P01`, as the real one is.
+ * `draft` and `cancelled`, with a professional, a day from 2026-11-24 on and
+ * an hour) cannot overlap another of the same professional; the write is
+ * refused with the database's `23P01`, as the real one is.
  */
 
 import { chainDb, type Query, type Step } from "@/lib/campaigns/fake-db";
@@ -48,19 +48,45 @@ const kindOf = (chain: Step[]): "select" | "insert" | "update" | "delete" =>
         ? "delete"
         : "select";
 
-const eqs = (chain: Step[]): [string, unknown][] =>
-  chain
-    .filter((s) => s.name === "eq")
-    .map((s) => [String(s.args[0]), s.args[1]]);
+/** An ILIKE pattern with no wildcard, as `likeLiteral` writes an address. */
+const unescapeLike = (pattern: string) => pattern.replace(/\\(.)/g, "$1");
 
-const matches = (row: Row, filters: [string, unknown][]) =>
-  filters.every(([col, value]) => row[col] === value);
+/** The filters of the chain, as PostgREST reads them: eq, neq, in, is, ilike. */
+const filtersOf = (chain: Step[]): ((row: Row) => boolean)[] =>
+  chain.flatMap((step): ((row: Row) => boolean)[] => {
+    const [column, value] = step.args as [string, unknown];
+    switch (step.name) {
+      case "eq":
+        return [(row) => row[column] === value];
+      case "neq":
+        return [(row) => row[column] !== value];
+      case "in":
+        return [(row) => (value as unknown[]).includes(row[column])];
+      case "is":
+        return [(row) => (row[column] ?? null) === value];
+      case "ilike":
+        return [
+          (row) =>
+            String(row[column] ?? "").toLowerCase() ===
+            unescapeLike(String(value)).toLowerCase(),
+        ];
+      default:
+        return [];
+    }
+  });
+
+const matches = (row: Row, filters: ((row: Row) => boolean)[]) =>
+  filters.every((keep) => keep(row));
+
+/** The day the constraint starts judging: history before it is not. */
+export const NO_OVERLAP_FROM = "2026-11-24";
 
 const holdsSlot = (row: Row) =>
   row.status !== "draft" &&
   row.status !== "cancelled" &&
   typeof row.staff_id === "string" &&
   typeof row.date === "string" &&
+  row.date >= NO_OVERLAP_FROM &&
   typeof row.time === "string" &&
   /^\d{1,2}:\d{2}$/.test(row.time);
 
@@ -105,7 +131,7 @@ export function fakeBookingsDb(
       return { data: null, error: { message: "boom" } };
     }
     const rows = (tables as Record<string, Row[]>)[table] ?? [];
-    const filters = eqs(chain);
+    const filters = filtersOf(chain);
     const wantsOne = chain.some(
       (s) => s.name === "maybeSingle" || s.name === "single",
     );

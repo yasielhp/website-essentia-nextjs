@@ -9,6 +9,7 @@ import {
   type SaveDraftResult,
   type SetDraftTimeResult,
 } from "@/lib/bookings/public-booking";
+import { readVisitor, rememberClaim } from "@/lib/bookings/visitor";
 
 /**
  * The three writes of the public booking form, as the browser reaches them.
@@ -18,24 +19,33 @@ import {
  * `app/lib/bookings/public-booking.ts`, which checks it against a strict schema
  * and decides everything the visitor does not choose (status, price, payment,
  * place, account). The account is the one the token PROVES, never an id the
- * browser sends.
+ * browser sends. A booking written here is claimed by this browser (a signed
+ * httpOnly cookie), and only that claim lets the draft be changed, confirmed
+ * or paid.
  */
 
-/** The details step: starts the draft, or rewrites this visit's own. */
+/** The details step: starts the draft, or rewrites this browser's own. */
 // react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function savePublicDraft(
   accessToken: string | null,
   input: unknown,
 ): Promise<SaveDraftResult> {
-  return savePublicDraftCore(await publicSession(accessToken), input);
+  const visitor = await readVisitor();
+  const result = await savePublicDraftCore(
+    await publicSession(accessToken),
+    input,
+    { visitor },
+  );
+  if (result.ok) await rememberClaim(visitor, result.bookingId);
+  return result;
 }
 
-/** The calendar: the day and the hour of a booking that is still a draft. */
+/** The calendar: the day and the hour of this browser's draft. */
 // react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function setPublicDraftTime(
   input: unknown,
 ): Promise<SetDraftTimeResult> {
-  return setPublicDraftTimeCore(input);
+  return setPublicDraftTimeCore(input, { visitor: await readVisitor() });
 }
 
 /** The last step: the booking, waiting for its payment, or why not. */
@@ -44,5 +54,12 @@ export async function confirmPublicBooking(
   accessToken: string | null,
   input: unknown,
 ): Promise<ConfirmPublicResult> {
-  return confirmPublicBookingCore(await publicSession(accessToken), input);
+  const visitor = await readVisitor();
+  const result = await confirmPublicBookingCore(
+    await publicSession(accessToken),
+    input,
+    { visitor },
+  );
+  if (result.kind === "created") await rememberClaim(visitor, result.bookingId);
+  return result;
 }
