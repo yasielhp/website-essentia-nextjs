@@ -5,6 +5,7 @@ import {
   describe,
   expect,
   mock,
+  spyOn,
   test,
 } from "bun:test";
 import { NextRequest } from "next/server";
@@ -33,6 +34,8 @@ let storedSettings: unknown = {
   fullPaymentDiscountPercent: 0,
 };
 let bookingUpdates: Record<string, unknown>[] = [];
+/** When set, the `app_settings` read is refused by the database. */
+let settingsRefused = false;
 
 /** A query chain that answers `result` however it is built, and records an UPDATE. */
 function chain(table: string): unknown {
@@ -45,7 +48,9 @@ function chain(table: string): unknown {
     if (table === "bookings") return { data: BOOKING, error: null };
     if (table === "service_tiers") return { data: TIER, error: null };
     if (table === "app_settings") {
-      return { data: { value: storedSettings }, error: null };
+      return settingsRefused
+        ? { data: null, error: { message: "permission denied" } }
+        : { data: { value: storedSettings }, error: null };
     }
     return { data: null, error: null };
   };
@@ -103,6 +108,7 @@ afterAll(() => {
 beforeEach(() => {
   storedSettings = { depositPercent: 50, fullPaymentDiscountPercent: 0 };
   bookingUpdates = [];
+  settingsRefused = false;
 });
 
 async function checkout(body: Record<string, unknown>) {
@@ -147,6 +153,21 @@ describe("POST /api/checkout/booking-session", () => {
     const { sent } = await checkout({});
     expect(sent?.DS_MERCHANT_AMOUNT).toBe("13000");
     expect(bookingUpdates[0]?.payment_mode).toBe("full");
+  });
+
+  test("settings that cannot be read give no discount: the whole price, never 5 % off", async () => {
+    settingsRefused = true;
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const { sent } = await checkout({});
+    quiet.mockRestore();
+    expect(sent?.DS_MERCHANT_AMOUNT).toBe("13000");
+    expect(bookingUpdates[0]).toMatchObject({ price_eur: 130 });
+  });
+
+  test("a malformed settings row gives no discount either", async () => {
+    storedSettings = { fullPaymentDiscountPercent: "cinco" };
+    const { sent } = await checkout({});
+    expect(sent?.DS_MERCHANT_AMOUNT).toBe("13000");
   });
 
   test("the online discount of the settings applies to the whole price", async () => {

@@ -52,6 +52,13 @@ describe("fullPaymentCharge", () => {
       "fullPaymentDiscountPercent",
     ]);
   });
+
+  it("gives no discount by default: a settings read that failed charges the list price", () => {
+    expect(amounts.DEFAULT_PAYMENT_SETTINGS.fullPaymentDiscountPercent).toBe(0);
+    expect(
+      fullPaymentCharge(130, amounts.DEFAULT_PAYMENT_SETTINGS).chargeEur,
+    ).toBe(130);
+  });
 });
 
 describe("the stored payment settings", () => {

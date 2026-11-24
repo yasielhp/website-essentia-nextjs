@@ -21,8 +21,14 @@ export type PaymentSettings = {
   fullPaymentDiscountPercent: number;
 };
 
+/**
+ * What applies when the stored settings cannot be read: no discount. Never a
+ * figure of its own: a read that failed must not charge less than the centre
+ * set (the live row says 0 %), and charging the list price is the one value
+ * that is never a discount nobody chose.
+ */
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
-  fullPaymentDiscountPercent: 5,
+  fullPaymentDiscountPercent: 0,
 };
 
 const toCents = (eur: number) => Math.round(eur * 100);
