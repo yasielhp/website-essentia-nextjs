@@ -138,6 +138,16 @@ function ServiceDetails({ service }: DetailProps) {
                       {paragraph}
                     </p>
                   ))}
+                {/* Optional: a closing line the treatment's text ends on, set
+                    apart in bold. `font-medium` is the heaviest weight the
+                    site loads, so a heavier one would be drawn by the browser. */}
+                {t.has(`${service.id}.closing`) && (
+                  <p className="text-petroleum-700 leading-relaxed">
+                    <strong className="font-medium">
+                      {t(`${service.id}.closing`)}
+                    </strong>
+                  </p>
+                )}
               </div>
             </div>
 
