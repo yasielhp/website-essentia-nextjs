@@ -292,10 +292,8 @@ export const facialTreatments: FacialTreatment[] = [
     durations: ["50 min"],
     description:
       "Hydration, radiance and comfort with selected cosmetics, a mask and a delicate facial, cervical and cranial massage.",
-    // TODO: swap for anesis-1920x1080.webp / anesis-1200x675.webp once the
-    // centre sends its own photos; these are Eleva's.
-    image: "/images/wellness/facials/heroes/eleva-1920x1080.webp",
-    thumbnail: "/images/wellness/facials/cards/eleva-1200x675.webp",
+    image: "/images/wellness/facials/heroes/anesis-1920x1080.webp",
+    thumbnail: "/images/wellness/facials/cards/anesis-1200x675.webp",
     highlights: [
       {
         title: "Hydration and radiance",
