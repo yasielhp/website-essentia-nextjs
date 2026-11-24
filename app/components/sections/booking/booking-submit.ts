@@ -3,10 +3,10 @@
 import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import {
-  updateDraftBookingMeta,
-  updateDraftBookingDetails,
-  confirmDraftBooking,
-} from "@/actions/booking-draft";
+  confirmPublicBooking,
+  savePublicDraft,
+  setPublicDraftTime,
+} from "@/actions/public-booking";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { saveBookingConsents } from "@/actions/whatsapp-consent";
 import {
@@ -28,6 +28,12 @@ import type { RedsysFormData } from "./steps/payment-overlay";
  * somebody their appointment, a price the server reads from the tier and
  * never from the form. They are here so those rules are readable without
  * scrolling past a form.
+ *
+ * Nothing here writes `bookings`. The draft, its day and hour, and the booking
+ * itself are written by the server (`app/actions/public-booking.ts`), which
+ * takes only what the visitor chose and decides the status, the price, the
+ * payment and the account from her verified session. The browser's key can
+ * no longer write the table (migration `20261124_bookings_close_browser_writes`).
  */
 
 /** What the form knows by the time it can write anything. */
@@ -128,49 +134,25 @@ export async function saveDetailsStep({
     }
   }
 
-  let draftId = bookingId;
-
-  if (draftId) {
-    await updateDraftBookingDetails(draftId, {
-      contactId: resolvedContactId ?? null,
-      userId: user?.id ?? null,
-      serviceId: service?.id ?? "",
-      serviceTitle: service?.title ?? "",
-      duration: draft.duration ?? "",
-      firstName: details.firstName,
-      lastName: details.lastName,
-      email: details.email,
-      phone: details.phone,
-    });
-  } else {
-    const { data: newBookingId } = await insforge.database.rpc(
-      "create_draft_booking",
-      {
-        p_contact_id: resolvedContactId ?? null,
-        p_user_id: user?.id ?? null,
-        p_service_id: service?.id ?? "",
-        p_service_title: service?.title ?? "",
-        p_duration: draft.duration ?? "",
-        p_first_name: details.firstName,
-        p_last_name: details.lastName,
-        p_email: details.email,
-        p_phone: details.phone,
-      },
-    );
-    if (newBookingId) draftId = newBookingId as string;
+  // One call, on the server: it starts the draft or rewrites this visit's own,
+  // and decides everything she did not choose. A failure costs her nothing
+  // here: the last step writes the booking afresh when there is no draft.
+  const saved = await savePublicDraft(getAccessToken(), {
+    draftId: bookingId,
+    contactId: resolvedContactId ?? null,
+    serviceId: service?.id ?? "",
+    tierId: draft.tierId,
+    staffId: draft.staffId,
+    firstName: details.firstName,
+    lastName: details.lastName,
+    email: details.email,
+    phone: details.phone,
+    notes: details.notes?.trim() || null,
+  });
+  if (!saved.ok) {
+    console.error("[booking] the draft could not be saved:", saved.error);
   }
-
-  if (draftId) {
-    await updateDraftBookingMeta(
-      draftId,
-      draft.tierId,
-      draft.tierPrice,
-      user?.id ?? null,
-      user?.id ? "client" : "anonymous",
-      details.notes?.trim() || null,
-      draft.staffId,
-    );
-  }
+  const draftId = saved.ok ? saved.bookingId : bookingId;
 
   // What follows the contact: for a guest the notice consent, for a signed-in
   // client her contact, her choice on news and offers, and the notice consent.
@@ -204,10 +186,10 @@ export async function saveDatetimeStep(
   time: string | null,
 ): Promise<void> {
   if (!bookingId || !date || !time) return;
-  await insforge.database.rpc("update_booking_datetime", {
-    p_booking_id: bookingId,
-    p_date: localDateStr(date),
-    p_time: time,
+  await setPublicDraftTime({
+    draftId: bookingId,
+    date: localDateStr(date),
+    time,
   });
 }
 
@@ -232,6 +214,11 @@ export type ConfirmResult =
    * no new charge was opened, and she is shown it as paid.
    */
   | { kind: "alreadyPaid" }
+  /**
+   * The professional's hour was taken by another booking a moment ago (the
+   * database refused it): nothing was charged, and she picks another hour.
+   */
+  | { kind: "slotTaken" }
   /** Payment could not be started; the booking stands and is chased later. */
   | { kind: "unpaid" };
 
@@ -243,7 +230,6 @@ export type ConfirmResult =
  * route, so the order of writes stays readable in one place.
  */
 export async function confirmBooking({
-  user,
   locale,
   draft,
   contactId,
@@ -251,7 +237,6 @@ export async function confirmBooking({
   promotedHere = false,
   paymentDescription,
 }: {
-  user: Viewer;
   locale: string;
   draft: Draft;
   contactId: string | null;
@@ -281,62 +266,45 @@ export async function confirmBooking({
   const timeStr = draft.time ?? null;
 
   let resolvedBookingId = bookingId;
-  if (resolvedBookingId && !promotedHere) {
-    const answer = await confirmDraftBooking(
-      resolvedBookingId,
+  if (!promotedHere || !resolvedBookingId) {
+    // The server writes the booking: her draft promoted, or a booking afresh
+    // when she has none. It takes what she chose and nothing else.
+    const answer = await confirmPublicBooking(getAccessToken(), {
+      draftId: resolvedBookingId,
+      contactId,
+      serviceId: service.id,
       tierId,
-      draft.tierPrice,
-      draft.duration ?? "",
-      dateStr ?? "",
-      timeStr ?? "",
-    );
-    if (!answer.promoted) {
+      staffId: draft.staffId,
+      firstName: details.firstName,
+      lastName: details.lastName,
+      email: details.email,
+      phone: details.phone,
+      notes: details.notes?.trim() || null,
+      date: dateStr ?? "",
+      time: timeStr ?? "",
+    });
+    switch (answer.kind) {
+      case "promoted":
+      case "created":
+        resolvedBookingId = answer.bookingId;
+        break;
       // It is a booking already, and this call is not the one that made it
       // so: confirmed in another tab, or on an earlier visit. Opening a
-      // payment on it from here could charge for a day, an hour or a treatment
-      // that is not the one it was confirmed with.
-      if (answer.reason === "not_draft") return { kind: "alreadyConfirmed" };
-      // No such draft any more: this visit goes on as one that never had one.
-      if (answer.reason === "missing") resolvedBookingId = null;
-      // `failed`: the database did not answer, so nothing is known. On to the
-      // payment with the draft, as before; the checkout answers for itself.
+      // payment on it from here could charge for a day, an hour or a
+      // treatment that is not the one it was confirmed with.
+      case "not_draft":
+        return { kind: "alreadyConfirmed" };
+      // Somebody else's booking took the professional's hour a moment ago.
+      // No payment is opened for an hour she cannot have.
+      case "slot_taken":
+        return { kind: "slotTaken" };
+      // `failed`: the database did not answer, so nothing is known; `invalid`:
+      // the server did not take what was sent. On to the payment with the
+      // draft, as before; the checkout answers for itself.
+      case "failed":
+      case "invalid":
+        break;
     }
-  }
-
-  if (!resolvedBookingId) {
-    const composedNotes = details.notes?.trim() || null;
-    const { data } = await insforge.database
-      .from("bookings")
-      .insert([
-        {
-          ...(user?.id ? { user_id: user.id } : {}),
-          ...(contactId ? { contact_id: contactId } : {}),
-          service_id: service.id,
-          service_title: service.title,
-          tier_id: tierId,
-          ...(draft.staffId ? { staff_id: draft.staffId } : {}),
-          // The web price; the checkout lowers it when the settings give a
-          // discount for paying online. Online, the whole price is paid.
-          price_eur: draft.tierPriceOnline ?? draft.tierPrice,
-          payment_mode: "full",
-          duration: draft.duration ?? "",
-          location: "centro",
-          ...(composedNotes ? { notes: composedNotes } : {}),
-          ...(dateStr ? { date: dateStr } : {}),
-          ...(timeStr ? { time: timeStr } : {}),
-          first_name: details.firstName,
-          last_name: details.lastName,
-          email: details.email,
-          phone: details.phone,
-          status: "pending",
-          ...(user?.id
-            ? { created_by_user_id: user.id, created_by_role: "client" }
-            : { created_by_role: "anonymous" }),
-        },
-      ])
-      .select("id")
-      .single();
-    resolvedBookingId = (data as { id: string } | null)?.id ?? null;
   }
 
   if (contactId) {

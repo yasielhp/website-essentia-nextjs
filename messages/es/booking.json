@@ -157,6 +157,7 @@
     "discountLabel": "Descuento",
     "cancellationNote": "La reserva se confirma con el pago. Puedes cambiarla o cancelarla hasta 24 horas antes de la sesión; si la cancelas, te devolvemos el importe pagado. Dentro de las 24 horas previas, o si no acudes, no hay reembolso.",
     "alreadyConfirmed": "Esta reserva ya estaba confirmada. Si necesitas cambiarla, escríbenos.",
+    "slotTaken": "Ese hueco se acaba de ocupar, elige otra hora.",
     "payFull": "Pago completo al reservar",
     "payFullDiscount": "Pago completo al reservar (−{percent}%)",
     "payFullNote": "Pagas {now} hoy y no tienes nada pendiente.",

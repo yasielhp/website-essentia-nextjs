@@ -107,6 +107,11 @@ export const DETAILS_STEP_INDEX = buildSteps().findIndex(
   (s) => s.id === "details",
 );
 
+/** Where the calendar sits: an hour taken at the last step sends her back here. */
+export const DATETIME_STEP_INDEX = buildSteps().findIndex(
+  (s) => s.id === "datetime",
+);
+
 /**
  * The step an abandoned booking comes back on.
  *

@@ -22,8 +22,8 @@ import type { DetailsState } from "@/types";
 type Call = { name: string; args: unknown[] };
 let calls: Call[] = [];
 let role: string | null = "lead";
-/** What the server says when the form asks it to confirm the draft. */
-let promotion: unknown = { promoted: true };
+/** What the server says when the form asks it to confirm the booking. */
+let promotion: unknown = { kind: "promoted", bookingId: "booking-1" };
 
 const record =
   (name: string, result: unknown = undefined) =>
@@ -40,9 +40,6 @@ const rpc = (name: string, args: unknown) => {
   if (name === "upsert_contact") {
     return Promise.resolve({ data: "contact-1", error: null });
   }
-  if (name === "create_draft_booking") {
-    return Promise.resolve({ data: "booking-1", error: null });
-  }
   return Promise.resolve({ data: null, error: null });
 };
 
@@ -53,7 +50,7 @@ const realFetch = globalThis.fetch;
 
 const real = {
   session: { ...(await import("@/lib/client-session")) },
-  draft: { ...(await import("@/actions/booking-draft")) },
+  publicBooking: { ...(await import("@/actions/public-booking")) },
   notifications: { ...(await import("@/actions/booking-notifications")) },
   consent: { ...(await import("@/actions/whatsapp-consent")) },
 };
@@ -62,31 +59,27 @@ let saveDetailsStep: typeof import("./booking-submit").saveDetailsStep;
 let confirmBooking: typeof import("./booking-submit").confirmBooking;
 
 beforeAll(async () => {
-  // `from` is the direct insert the form falls back on when it has no draft.
-  const from = (table: string) => ({
-    insert: (rows: unknown[]) => {
-      calls.push({ name: `insert:${table}`, args: rows });
-      return {
-        select: () => ({
-          single: () =>
-            Promise.resolve({ data: { id: "booking-new" }, error: null }),
-        }),
-      };
-    },
-  });
+  // No `from`: the form writes no table from the browser any more. A call to
+  // it would throw here, and the test with it.
   mock.module("@/lib/insforge", () => ({
-    insforge: { database: { rpc, from } },
+    insforge: { database: { rpc } },
   }));
   mock.module("@/lib/client-session", () => ({
     ...real.session,
     getAccessToken: () => "token",
   }));
-  mock.module("@/actions/booking-draft", () => ({
-    ...real.draft,
-    updateDraftBookingMeta: record("updateDraftBookingMeta"),
-    updateDraftBookingDetails: record("updateDraftBookingDetails"),
-    confirmDraftBooking: (...args: unknown[]) => {
-      calls.push({ name: "confirmDraftBooking", args });
+  mock.module("@/actions/public-booking", () => ({
+    ...real.publicBooking,
+    savePublicDraft: (token: unknown, input: { draftId: string | null }) => {
+      calls.push({ name: "savePublicDraft", args: [token, input] });
+      return Promise.resolve({
+        ok: true,
+        bookingId: input.draftId ?? "booking-1",
+      });
+    },
+    setPublicDraftTime: record("setPublicDraftTime", { ok: true }),
+    confirmPublicBooking: (...args: unknown[]) => {
+      calls.push({ name: "confirmPublicBooking", args });
       return Promise.resolve(promotion);
     },
   }));
@@ -104,7 +97,7 @@ beforeAll(async () => {
 afterAll(() => {
   globalThis.fetch = realFetch;
   mock.module("@/lib/client-session", () => real.session);
-  mock.module("@/actions/booking-draft", () => real.draft);
+  mock.module("@/actions/public-booking", () => real.publicBooking);
   mock.module("@/actions/booking-notifications", () => real.notifications);
   mock.module("@/actions/whatsapp-consent", () => real.consent);
 });
@@ -112,7 +105,7 @@ afterAll(() => {
 beforeEach(() => {
   calls = [];
   role = "lead";
-  promotion = { promoted: true };
+  promotion = { kind: "promoted", bookingId: "booking-1" };
   // The checkout: refused, so a confirmation that gets that far ends "unpaid".
   globalThis.fetch = ((...args: unknown[]) => {
     calls.push({ name: "fetch", args });
@@ -149,6 +142,12 @@ const draft = (details: DetailsState = DETAILS) => ({
 });
 
 const names = () => calls.map((c) => c.name);
+/** What the details step sent the server for the draft. */
+const draftSent = () =>
+  calls.find((c) => c.name === "savePublicDraft")?.args[1] as Record<
+    string,
+    unknown
+  >;
 const argsOf = (name: string) =>
   calls.find((c) => c.name === name)?.args[0] as Record<string, unknown>;
 /** The consent writes are not awaited by the step: let them start. */
@@ -172,8 +171,7 @@ describe("saveDetailsStep, a guest", () => {
     expect(names()).toEqual([
       "rpc:check_email_role",
       "rpc:upsert_contact",
-      "rpc:create_draft_booking",
-      "updateDraftBookingMeta",
+      "savePublicDraft",
       "saveBookingConsents",
     ]);
     expect(argsOf("rpc:upsert_contact")).toMatchObject({
@@ -181,9 +179,18 @@ describe("saveDetailsStep, a guest", () => {
       p_newsletter: true,
       p_whatsapp_marketing: true,
     });
-    expect(argsOf("rpc:create_draft_booking")).toMatchObject({
-      p_contact_id: "contact-1",
-      p_email: "ana@example.com",
+    // What she chose and nothing else: no status, price or account.
+    expect(draftSent()).toEqual({
+      draftId: null,
+      contactId: "contact-1",
+      serviceId: "",
+      tierId: "tier-1",
+      staffId: null,
+      firstName: "Ana",
+      lastName: "García",
+      email: "ana@example.com",
+      phone: "600000000",
+      notes: null,
     });
     // One consent action, with no token: a guest has no session.
     expect(calls.at(-1)?.args).toEqual([
@@ -233,14 +240,10 @@ describe("saveDetailsStep, a booking picked up again", () => {
     expect(names()).toEqual([
       "rpc:check_email_role",
       "rpc:upsert_contact",
-      "updateDraftBookingDetails",
-      "updateDraftBookingMeta",
+      "savePublicDraft",
       "saveBookingConsents",
     ]);
-    expect(names()).not.toContain("rpc:create_draft_booking");
-    expect(
-      calls.find((c) => c.name === "updateDraftBookingDetails")?.args[0],
-    ).toBe("booking-0");
+    expect(draftSent().draftId).toBe("booking-0");
   });
 });
 
@@ -263,8 +266,7 @@ describe("saveDetailsStep, a member who goes on as a guest", () => {
     });
     expect(names()).toEqual([
       "rpc:upsert_contact",
-      "rpc:create_draft_booking",
-      "updateDraftBookingMeta",
+      "savePublicDraft",
       "saveBookingConsents",
     ]);
     // Her "news and offers" tick is not lost on the way.
@@ -290,11 +292,12 @@ describe("saveDetailsStep, a signed-in client", () => {
       contactId: null,
       bookingId: "booking-1",
     });
-    expect(names()).toEqual([
-      "rpc:create_draft_booking",
-      "updateDraftBookingMeta",
-      "saveBookingConsents",
-    ]);
+    expect(names()).toEqual(["savePublicDraft", "saveBookingConsents"]);
+    // Her account is the one her token proves, on the server: the browser
+    // sends no account id with the draft.
+    expect(calls[0]?.args[0]).toBe("token");
+    expect(draftSent()).not.toHaveProperty("userId");
+    expect(draftSent().contactId).toBeNull();
     expect(calls.at(-1)?.args[0]).toBe("token");
     expect(calls.at(-1)?.args[1]).toMatchObject({
       language: "en",
@@ -320,8 +323,7 @@ describe("saveDetailsStep, a signed-in client", () => {
     // No member notice for somebody who is already signed in.
     expect(names()).toEqual([
       "rpc:upsert_contact",
-      "rpc:create_draft_booking",
-      "updateDraftBookingMeta",
+      "savePublicDraft",
       "saveBookingConsents",
     ]);
     expect(argsOf("rpc:upsert_contact")).toMatchObject({
@@ -331,10 +333,10 @@ describe("saveDetailsStep, a signed-in client", () => {
       p_newsletter: true,
       p_whatsapp_marketing: true,
     });
-    expect(argsOf("rpc:create_draft_booking")).toMatchObject({
-      p_contact_id: "contact-1",
-      p_user_id: "u1",
-    });
+    expect(draftSent()).toMatchObject({ contactId: "contact-1" });
+    expect(calls.find((c) => c.name === "savePublicDraft")?.args[0]).toBe(
+      "token",
+    );
     // The token still travels: it is the server that decides, from the
     // verified session, that this is not her own contact.
     expect(calls.at(-1)?.args[0]).toBe("token");
@@ -345,7 +347,6 @@ describe("saveDetailsStep, a signed-in client", () => {
 describe("confirmBooking: the last gate before the payment", () => {
   const confirm = (details: DetailsState, promotedHere = false) =>
     confirmBooking({
-      user: null,
       locale: "es",
       draft: { ...draft(details), service: SERVICE },
       contactId: "contact-1",
@@ -378,40 +379,67 @@ describe("confirmBooking: the last gate before the payment", () => {
     await settle();
     expect(result).toEqual({ kind: "unpaid" });
     expect(names()).toEqual([
-      "confirmDraftBooking",
+      "confirmPublicBooking",
       "rpc:promote_contact_to_client",
       "fetch",
     ]);
+    // The token, and what she chose: the server decides status and price.
+    const [token, sent] = calls[0]!.args as [unknown, Record<string, unknown>];
+    expect(token).toBe("token");
+    expect(Object.keys(sent).sort()).toEqual(
+      [
+        "contactId",
+        "date",
+        "draftId",
+        "email",
+        "firstName",
+        "lastName",
+        "notes",
+        "phone",
+        "serviceId",
+        "staffId",
+        "tierId",
+        "time",
+      ].sort(),
+    );
+  });
+
+  test("an hour another booking took a moment ago opens no payment: she is sent back to choose", async () => {
+    promotion = { kind: "slot_taken" };
+    const result = await confirm(DETAILS);
+    await settle();
+    expect(result).toEqual({ kind: "slotTaken" });
+    // Asked, and stopped there: no contact promoted, no checkout, no email.
+    expect(names()).toEqual(["confirmPublicBooking"]);
   });
 
   test("a booking that was already confirmed elsewhere gets no payment opened on it", async () => {
-    promotion = { promoted: false, reason: "not_draft" };
+    promotion = { kind: "not_draft" };
     const result = await confirm(DETAILS);
     await settle();
     expect(result).toEqual({ kind: "alreadyConfirmed" });
     // Asked, and stopped there: nobody is promoted, nothing is charged.
-    expect(names()).toEqual(["confirmDraftBooking"]);
+    expect(names()).toEqual(["confirmPublicBooking"]);
   });
 
   test("the booking this visit itself confirmed can have its payment opened again", async () => {
     // She closed the payment page and presses Confirm once more: the booking
     // is hers and already pending, so the server is not asked to confirm it
     // again and its "not a draft" does not turn her away.
-    promotion = { promoted: false, reason: "not_draft" };
+    promotion = { kind: "not_draft" };
     const result = await confirm(DETAILS, true);
     await settle();
     expect(result).toEqual({ kind: "unpaid" });
     expect(names()).toEqual(["rpc:promote_contact_to_client", "fetch"]);
   });
 
-  test("a draft that is not there any more is booked afresh, as a visit that never had one", async () => {
-    promotion = { promoted: false, reason: "missing" };
+  test("a draft that is not there any more is booked afresh by the server, and paid on its new id", async () => {
+    promotion = { kind: "created", bookingId: "booking-new" };
     const result = await confirm(DETAILS);
     await settle();
     expect(result).toEqual({ kind: "unpaid" });
     expect(names()).toEqual([
-      "confirmDraftBooking",
-      "insert:bookings",
+      "confirmPublicBooking",
       "rpc:promote_contact_to_client",
       "fetch",
     ]);
@@ -454,13 +482,17 @@ describe("confirmBooking: the last gate before the payment", () => {
   });
 
   test("a database that could not answer changes nothing: it goes on to the payment as it always did", async () => {
-    promotion = { promoted: false, reason: "failed" };
+    promotion = { kind: "failed" };
     const result = await confirm(DETAILS);
     expect(result).toEqual({ kind: "unpaid" });
     expect(names()).toEqual([
-      "confirmDraftBooking",
+      "confirmPublicBooking",
       "rpc:promote_contact_to_client",
       "fetch",
     ]);
+    const body = JSON.parse(
+      (calls.at(-1)?.args[1] as { body: string }).body,
+    ) as { bookingId: string };
+    expect(body.bookingId).toBe("booking-1");
   });
 });

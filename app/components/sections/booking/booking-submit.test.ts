@@ -25,11 +25,7 @@ describe("saveDetailsStep and the consent writes", () => {
 
   test("they come after every write of the draft, so no consent action queues ahead of one", () => {
     const consent = BODY.indexOf("sendBookingConsents(");
-    for (const draftWrite of [
-      "updateDraftBookingDetails(",
-      '"create_draft_booking"',
-      "updateDraftBookingMeta(",
-    ]) {
+    for (const draftWrite of ["savePublicDraft("]) {
       expect(BODY.indexOf(draftWrite)).toBeGreaterThan(-1);
       expect(BODY.indexOf(draftWrite)).toBeLessThan(consent);
     }
@@ -40,5 +36,22 @@ describe("saveDetailsStep and the consent writes", () => {
     const result = BODY.indexOf('return { kind: "saved"');
     expect(result).toBeGreaterThan(consent);
     expect(BODY.slice(consent, result)).not.toMatch(/\bawait\b/);
+  });
+});
+
+describe("nothing in the form writes a booking from the browser", () => {
+  test("no table and no booking function is reached with the browser's key", () => {
+    // The draft, its hour and the booking are the server's
+    // (`app/actions/public-booking.ts`); the browser's key keeps only the
+    // contact functions, which are not `bookings`.
+    expect(SOURCE).not.toMatch(/\.from\(/);
+    for (const fn of [
+      "create_draft_booking",
+      "update_booking_datetime",
+      "confirm_booking",
+    ]) {
+      expect(SOURCE).not.toContain(fn);
+    }
+    expect(SOURCE).toContain('from "@/actions/public-booking"');
   });
 });

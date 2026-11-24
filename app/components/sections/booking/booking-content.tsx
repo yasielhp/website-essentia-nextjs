@@ -38,7 +38,12 @@ import {
   BookingNavigation,
   BookingStepRenderer,
 } from "./booking-parts";
-import { DETAILS_STEP_INDEX, bookingReducer, initState } from "./booking-state";
+import {
+  DATETIME_STEP_INDEX,
+  DETAILS_STEP_INDEX,
+  bookingReducer,
+  initState,
+} from "./booking-state";
 import {
   confirmBooking,
   saveDatetimeStep,
@@ -67,6 +72,12 @@ type BookingLocalState = {
    * browser: there is no half-finished booking left to pick up.
    */
   settled: "promoted" | "alreadyConfirmed" | null;
+  /**
+   * The last step was refused because the professional's hour was taken by
+   * another booking a moment ago. She is back on the calendar, with the hour
+   * cleared, until she picks another.
+   */
+  slotTaken: boolean;
 };
 
 const INITIAL_LOCAL_STATE: BookingLocalState = {
@@ -78,6 +89,7 @@ const INITIAL_LOCAL_STATE: BookingLocalState = {
   memberBlocker: false,
   checking: false,
   settled: null,
+  slotTaken: false,
 };
 
 /**
@@ -137,6 +149,7 @@ function BookingContentInner() {
     memberBlocker,
     checking,
     settled,
+    slotTaken,
   } = local;
 
   // Whether a signed-in client already has news and offers on for both
@@ -346,11 +359,11 @@ function BookingContentInner() {
     if (confirming.current) return;
     confirming.current = true;
     dispatch({ type: "CONFIRM_START" });
+    updateLocal({ slotTaken: false });
 
     let result: Awaited<ReturnType<typeof confirmBooking>>;
     try {
       result = await confirmBooking({
-        user: user ? { id: user.id } : null,
         locale,
         draft,
         contactId,
@@ -370,6 +383,16 @@ function BookingContentInner() {
     if (result.kind === "incomplete") {
       showDetailErrors(result.errors);
       dispatch({ type: "SET_STEP", step: DETAILS_STEP_INDEX });
+      return;
+    }
+
+    // The hour went to another booking while she was confirming: nothing was
+    // charged and her draft is still hers. Back to the calendar, with that hour
+    // cleared and the reason on the page, to pick another.
+    if (result.kind === "slotTaken") {
+      updateLocal({ slotTaken: true });
+      dispatch({ type: "SELECT_TIME", time: "" });
+      dispatch({ type: "SET_STEP", step: DATETIME_STEP_INDEX });
       return;
     }
 
@@ -436,6 +459,15 @@ function BookingContentInner() {
         selectedTierLabel={selectedTierLabel}
         marketingOn={Boolean(user) && marketingOn}
       />
+
+      {slotTaken && currentStepId === "datetime" && !selectedTime && (
+        <p
+          role="alert"
+          className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-600"
+        >
+          {tConfirmStep("slotTaken")}
+        </p>
+      )}
 
       {settled === "alreadyConfirmed" && (
         <p
