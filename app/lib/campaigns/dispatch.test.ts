@@ -17,6 +17,7 @@ import {
   fakeSend,
   memoryDb,
   ok,
+  row,
   rowsOf,
   template,
   type MemoryDbOptions,
@@ -821,5 +822,152 @@ describe("retryFailed", () => {
     );
     expect(has(requeue?.chain ?? [], "or")).toBe(false);
     expect(argsOf(requeue?.chain ?? [], "in")).toEqual(["id", ["row-1"]]);
+  });
+});
+
+describe("dispatchCampaign: Meta refuses the template of one language of two", () => {
+  const NO_TRANSLATION =
+    "132001: Template name does not exist in the translation";
+  const firstName = { kind: "field" as const, field: "first_name" as const };
+  const TEMPLATES = {
+    "tpl-es": template({ id: "tpl-es", language: "es", param_count: 1 }),
+    "tpl-en": template({ id: "tpl-en", language: "en", param_count: 1 }),
+  };
+  const bilingual = (over: Partial<CampaignRow> = {}) =>
+    campaign({
+      status: "draft",
+      audience: { language: "any" } as never,
+      content: {
+        whatsapp: {
+          es: { templateId: "tpl-es", params: [firstName] },
+          en: { templateId: "tpl-en", params: [firstName] },
+        },
+      } as never,
+      ...over,
+    });
+  /** Spanish and English alternately: thirty of each. */
+  const mixed = () =>
+    Array.from({ length: 60 }, (_, i) =>
+      row(i + 1, { language: i % 2 === 0 ? "es" : "en" }),
+    );
+  const englishRefused = (s: { language: string }) =>
+    s.language === "en"
+      ? {
+          status: "failed" as const,
+          error: "Template name does not exist in the translation",
+          code: 132001,
+        }
+      : ok("w");
+  const setupMixed = (
+    running: CampaignRow,
+    answer: Parameters<typeof fakeSend>[0],
+    extra: MemoryDbOptions = {},
+    budgetMs?: number,
+  ) => {
+    const rows = mixed();
+    const mem = memoryDb(rows, {
+      campaign: running,
+      templates: TEMPLATES,
+      ...extra,
+    });
+    const clock = fakeClock();
+    const sender = fakeSend(answer, clock);
+    const deps = {
+      db: mem.db,
+      resolveAudience: async () => [],
+      isWhatsAppConfigured: () => true,
+      whatsapp: {
+        send: sender.send,
+        now: clock.now,
+        sleep: clock.sleep,
+        budgetMs,
+      },
+    };
+    return { rows, mem, sender, deps };
+  };
+  const englishQueued = (mem: ReturnType<typeof memoryDb>) =>
+    [...mem.rows.values()].filter(
+      (r) => r.language === "en" && r.status === "queued",
+    );
+
+  test("Spanish is sent to the end; English stops, waits in the queue, and the campaign is failed naming it", async () => {
+    const { mem, sender, deps } = setupMixed(bilingual(), englishRefused);
+    const result = await dispatchCampaign(
+      "camp-1",
+      {},
+      {
+        ...deps,
+        resolveAudience: async () => [recipient(1)],
+      },
+    );
+    expect(sender.calls.filter((c) => c.language === "es")).toHaveLength(30);
+    expect(result).toMatchObject({
+      ok: true,
+      sent: 30,
+      failed: 15,
+      remaining: 15,
+      halted: NO_TRANSLATION,
+    });
+    expect(mem.campaign.status).toBe("failed");
+    expect(mem.campaign.last_error).toBe(`[halted] (en) ${NO_TRANSLATION}`);
+    expect(englishQueued(mem)).toHaveLength(15);
+  });
+
+  test("out of time before Spanish is done, it stays sending with English held; the resume sends Spanish only, then fails naming English", async () => {
+    const { mem, sender, deps } = setupMixed(
+      bilingual(),
+      englishRefused,
+      {},
+      2500,
+    );
+    const first = await dispatchCampaign(
+      "camp-1",
+      {},
+      { ...deps, resolveAudience: async () => [recipient(1)] },
+    );
+    // Three batches: English stopped after them, half of Spanish still to go.
+    expect(first).toMatchObject({ ok: true, sent: 15, remaining: 30 });
+    expect(mem.campaign.status).toBe("sending");
+    expect(mem.campaign.last_error).toBe(`[halted] (en) ${NO_TRANSLATION}`);
+
+    // The cron's resume, once the send has gone quiet.
+    mem.campaign.sending_started_at = "2026-01-01T00:00:00Z";
+    const before = sender.calls.length;
+    const resumed = await dispatchCampaign("camp-1", { resume: true }, deps);
+    expect(sender.calls.slice(before).every((c) => c.language === "es")).toBe(
+      true,
+    );
+    expect(resumed).toMatchObject({
+      ok: true,
+      sent: 15,
+      halted: NO_TRANSLATION,
+    });
+    expect(mem.campaign.status).toBe("failed");
+    expect(mem.campaign.last_error).toBe(`[halted] (en) ${NO_TRANSLATION}`);
+    expect(englishQueued(mem)).toHaveLength(15);
+  });
+
+  test("a retry lifts the hold: once the English template works, English goes out", async () => {
+    const rowsDone = mixed().map((r, i) =>
+      r.language === "es"
+        ? { id: r.id, status: "sent" }
+        : i < 30
+          ? { id: r.id, status: "failed", error: NO_TRANSLATION }
+          : { id: r.id, status: "queued" },
+    );
+    const { mem, sender, deps } = setupMixed(
+      bilingual({
+        status: "failed",
+        last_error: `[halted] (en) ${NO_TRANSLATION}`,
+      }),
+      () => ok("w"),
+      { rows: rowsDone },
+    );
+    const result = await retryFailed("camp-1", {}, deps);
+    expect(sender.calls).toHaveLength(30);
+    expect(sender.calls.every((c) => c.language === "en")).toBe(true);
+    expect(result).toMatchObject({ ok: true, sent: 30 });
+    expect(mem.campaign.status).toBe("sent");
+    expect(mem.campaign.last_error ?? null).toBeNull();
   });
 });

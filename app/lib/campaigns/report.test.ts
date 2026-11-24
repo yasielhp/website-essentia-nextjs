@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { haltMessage } from "./error-markers";
+import { IntlMessageFormat } from "intl-messageformat";
+import es from "../../../messages/es/dashboard.json";
+import en from "../../../messages/en/dashboard.json";
+import { haltMessage, haltMessageIn } from "./error-markers";
 import { unrecordedMessage } from "./dispatch";
 import { LATE_ERROR, RUN_FAILED_ERROR } from "./run-markers";
 import { consentVerdict } from "./dispatch-whatsapp";
@@ -46,6 +49,60 @@ describe("describeLastError", () => {
       kind: "raw",
       text: "template_unavailable: template_not_approved",
     });
+  });
+
+  test("one language of two stopped is said with its language, Meta's text inside", () => {
+    const marker = haltMessageIn(
+      "en",
+      "132001: Template name does not exist in the translation",
+    );
+    expect(describeLastError(marker, "whatsapp", "failed")).toEqual({
+      kind: "note",
+      key: "haltedIn",
+      values: {
+        language: "en",
+        reason: "132001: Template name does not exist in the translation",
+      },
+    });
+  });
+
+  test("while the campaign is on, that language is held and the note says so", () => {
+    expect(
+      describeLastError(haltMessageIn("es", "190: x"), "whatsapp", "active"),
+    ).toEqual({
+      kind: "note",
+      key: "heldIn",
+      values: { language: "es", reason: "190: x" },
+    });
+  });
+
+  test("and the screen says the language in words, in both languages", () => {
+    const say = (
+      note: ReturnType<typeof describeLastError>,
+      locale: "es" | "en",
+    ) => {
+      if (note?.kind !== "note") throw new Error("not a note");
+      const notes = (locale === "es" ? es : en).campaigns.detail
+        .notes as Record<string, string>;
+      return String(
+        new IntlMessageFormat(notes[note.key] as string, locale).format(
+          note.values,
+        ),
+      );
+    };
+    const stopped = describeLastError(haltMessageIn("en", "132001: x"));
+    expect(say(stopped, "es")).toContain("versión en inglés");
+    expect(say(stopped, "es")).toContain("(132001: x)");
+    expect(say(stopped, "en")).toContain("English version");
+    const held = describeLastError(
+      haltMessageIn("es", "132001: x"),
+      "whatsapp",
+      "active",
+    );
+    expect(say(held, "es")).toContain(
+      "Los mensajes en español están retenidos",
+    );
+    expect(say(held, "en")).toContain("The Spanish messages are held");
   });
 
   test("a marker in the middle of a text is not a halt", () => {
@@ -190,6 +247,8 @@ describe("REPORT_NOTE_KEYS", () => {
     const answers = [
       describeLastError(haltMessage("x")),
       describeLastError(haltMessage("")),
+      describeLastError(haltMessageIn("en", "x")),
+      describeLastError(haltMessageIn("en", "x"), "whatsapp", "active"),
       describeLastError(RUN_FAILED_ERROR),
       describeLastError(unrecordedMessage(1)),
       describeLastError(unrecordedMessage(1), "whatsapp"),
@@ -208,7 +267,7 @@ describe("REPORT_NOTE_KEYS", () => {
       describeRecipientError("[skipped] no_consent", "appointment"),
     ];
     const keys = answers.flatMap((a) => (a?.kind === "note" ? [a.key] : []));
-    expect(keys.length).toBe(16);
+    expect(keys.length).toBe(18);
     for (const key of keys) {
       expect(REPORT_NOTE_KEYS as readonly string[]).toContain(key);
     }

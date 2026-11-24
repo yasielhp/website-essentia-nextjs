@@ -120,6 +120,8 @@ export function fakeSend(
 export type StoredRow = {
   id: string;
   campaign_id: string;
+  /** The language the row was queued with, as `campaign_recipients` keeps it. */
+  language: string;
   status: string;
   error: string | null;
   provider_id: string | null;
@@ -198,6 +200,7 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
     rows.set(r.id, {
       id: r.id,
       campaign_id: "camp-1",
+      language: r.language,
       status: "queued",
       error: null,
       provider_id: null,

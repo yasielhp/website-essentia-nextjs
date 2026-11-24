@@ -1818,3 +1818,230 @@ describe("sendQueuedWhatsApp sends each row the template of its language", () =>
     });
   });
 });
+
+describe("sendQueuedWhatsApp judges Meta's refusals language by language", () => {
+  const NO_TRANSLATION =
+    "132001: Template name does not exist in the translation";
+  const TEMPLATES = {
+    "tpl-es": template({ id: "tpl-es", language: "es", param_count: 1 }),
+    "tpl-en": template({ id: "tpl-en", language: "en", param_count: 1 }),
+  };
+  const firstName: WhatsAppParamSource = {
+    kind: "field",
+    field: "first_name",
+  };
+  const bilingual = (over: Partial<CampaignRow> = {}) =>
+    campaign({
+      audience: { ...EMPTY_AUDIENCE, language: "any" },
+      content: {
+        whatsapp: {
+          es: { templateId: "tpl-es", params: [firstName] },
+          en: { templateId: "tpl-en", params: [firstName] },
+        },
+      } as never,
+      ...over,
+    });
+  /** Spanish and English alternately, as a queue frozen by arrival would be. */
+  const mixed = (count: number) =>
+    Array.from({ length: count }, (_, i) =>
+      row(i + 1, { language: i % 2 === 0 ? "es" : "en" }),
+    );
+  /** Meta takes the Spanish template and refuses the English one. */
+  const englishRefused = (code = 132001, error = NO_TRANSLATION) =>
+    fakeSend((s) =>
+      s.language === "en"
+        ? {
+            status: "failed",
+            error: error.slice(error.indexOf(": ") + 2),
+            code,
+          }
+        : ok("w"),
+    );
+  const run = async (
+    rows: ReturnType<typeof row>[],
+    sender: ReturnType<typeof fakeSend>,
+    running = bilingual(),
+  ) => {
+    const mem = memoryDb(rows, { templates: TEMPLATES });
+    const result = await sendQueuedWhatsApp(running, rows, {
+      db: mem.db,
+      send: sender.send,
+      sleep: quietSleep,
+    });
+    return { mem, result };
+  };
+
+  test("the Spanish messages that go out do not hide that Meta refuses every English one: English stops after three of its batches, Spanish goes on to the end", async () => {
+    const rows = mixed(60);
+    const sender = englishRefused();
+    const { mem, result } = await run(rows, sender);
+    // Three batches of ten, five English rows in each, all refused; then only
+    // Spanish is sent.
+    expect(sender.calls.filter((c) => c.language === "en")).toHaveLength(15);
+    expect(sender.calls.filter((c) => c.language === "es")).toHaveLength(30);
+    expect(result).toMatchObject({
+      sent: 30,
+      failed: 15,
+      halted: NO_TRANSLATION,
+      halts: [{ locale: "en", reason: NO_TRANSLATION }],
+      refusals: { en: NO_TRANSLATION },
+      remaining: 15,
+      stalled: 15,
+    });
+    // The English rows past the stop were never claimed: they wait.
+    const englishLeft = rows.filter(
+      (r) => r.language === "en" && mem.status(r.id) === "queued",
+    );
+    expect(englishLeft).toHaveLength(15);
+    expect(
+      englishLeft.every((r) => mem.rows.get(r.id)?.claimed_at === null),
+    ).toBe(true);
+    expect(
+      rows
+        .filter((r) => r.language === "es")
+        .every((r) => mem.status(r.id) === "sent"),
+    ).toBe(true);
+  });
+
+  test("an English message Meta takes in between starts the English count again", async () => {
+    const rows = mixed(60);
+    let english = 0;
+    const sender = fakeSend((s) => {
+      if (s.language !== "en") return ok("w");
+      english += 1;
+      // The eighth English message (in the second batch) goes through.
+      return english === 8
+        ? ok("w")
+        : {
+            status: "failed",
+            error: "Template name does not exist",
+            code: 132001,
+          };
+    });
+    const { result } = await run(rows, sender);
+    // Batches 1 and 3 to 5 are wholly refused in English: the stop comes after
+    // batch 5, not after batch 3, and only the last five Spanish rows follow.
+    expect(sender.calls).toHaveLength(55);
+    expect(result).toMatchObject({ remaining: 5, stalled: 5 });
+    expect(result.halts).toEqual([
+      {
+        locale: "en",
+        reason: "132001: Template name does not exist",
+      },
+    ]);
+  });
+
+  test("English clients whose number has no WhatsApp are theirs, not the template's: nothing stops", async () => {
+    const rows = mixed(60);
+    const sender = englishRefused(131026, "131026: Message undeliverable");
+    const { result } = await run(rows, sender);
+    expect(sender.calls).toHaveLength(60);
+    expect(result).toMatchObject({ sent: 30, failed: 30, halts: [] });
+    expect(result.halted).toBeNull();
+  });
+
+  test("a language the campaign already holds is not claimed nor sent; the other is", async () => {
+    const rows = mixed(4);
+    const sender = fakeSend(() => ok("w"));
+    const { mem, result } = await run(
+      rows,
+      sender,
+      bilingual({ last_error: `[halted] (en) ${NO_TRANSLATION}` }),
+    );
+    expect(sender.calls.map((c) => c.language)).toEqual(["es", "es"]);
+    expect(result).toMatchObject({
+      sent: 2,
+      failed: 0,
+      remaining: 2,
+      stalled: 2,
+      halts: [],
+    });
+    expect(mem.status("row-2")).toBe("queued");
+    expect(mem.rows.get("row-2")?.claimed_at).toBeNull();
+  });
+
+  test("a campaign in one language is stopped as it always was", async () => {
+    const rows = rowsOf(45);
+    const sender = fakeSend(() => ({
+      status: "failed",
+      error: "Template param mismatch",
+      code: 132000,
+    }));
+    const mem = memoryDb(rows);
+    const result = await sendQueuedWhatsApp(campaign(), rows, {
+      db: mem.db,
+      send: sender.send,
+      sleep: quietSleep,
+    });
+    expect(sender.calls).toHaveLength(30);
+    expect(result).toMatchObject({
+      halted: "132000: Template param mismatch",
+      halts: [{ locale: "es", reason: "132000: Template param mismatch" }],
+      remaining: 15,
+      stalled: 15,
+    });
+  });
+});
+
+describe("refusalStreak in a campaign written in two languages", () => {
+  const NOW_MS = Date.parse("2026-11-17T12:00:00Z");
+  const REASON = "132001: Template name does not exist in the translation";
+  type Finished = {
+    status: string;
+    error: string | null;
+    claimed_at: string;
+    language: string;
+  };
+  /** One row per tick, newest first: Spanish sent, English refused, in turn. */
+  const ticks: Finished[] = Array.from({ length: 6 }, (_, i) => ({
+    status: i % 2 === 0 ? "sent" : "failed",
+    error: i % 2 === 0 ? null : REASON,
+    claimed_at: new Date(NOW_MS - (i + 1) * 15 * 60_000).toISOString(),
+    language: i % 2 === 0 ? "es" : "en",
+  }));
+  /** The database: it applies the language filter the read asks for. */
+  const db = (rows: Finished[]) =>
+    chainDb((_table, chain) => {
+      const eqLanguage = chain.find(
+        (s) => s.name === "eq" && s.args[0] === "language",
+      )?.args[1];
+      const neqLanguage = chain.find(
+        (s) => s.name === "neq" && s.args[0] === "language",
+      )?.args[1];
+      return {
+        data: rows.filter(
+          (r) =>
+            (eqLanguage === undefined || r.language === eqLanguage) &&
+            (neqLanguage === undefined || r.language !== neqLanguage),
+        ),
+        error: null,
+      };
+    }).db;
+
+  test("over every row, the Spanish messages in between break it", async () => {
+    expect(await refusalStreak(db(ticks), "camp-1", REASON, NOW_MS)).toBe(
+      false,
+    );
+  });
+
+  test("over the English rows alone it is a streak", async () => {
+    expect(await refusalStreak(db(ticks), "camp-1", REASON, NOW_MS, "en")).toBe(
+      true,
+    );
+  });
+
+  test("and the Spanish rows have none", async () => {
+    expect(await refusalStreak(db(ticks), "camp-1", REASON, NOW_MS, "es")).toBe(
+      false,
+    );
+  });
+
+  test("English is every row that is not Spanish, as the sender reads a language", async () => {
+    const odd = ticks.map((r) =>
+      r.language === "en" ? { ...r, language: "fr" } : r,
+    );
+    expect(await refusalStreak(db(odd), "camp-1", REASON, NOW_MS, "en")).toBe(
+      true,
+    );
+  });
+});

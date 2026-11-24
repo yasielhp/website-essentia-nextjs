@@ -1925,6 +1925,8 @@
       "notes": {
         "haltedReason": "WhatsApp stopped sending because Meta refused several batches in a row: {reason}",
         "haltedNoReason": "WhatsApp stopped sending because Meta refused several batches in a row.",
+        "haltedIn": "WhatsApp stopped sending the {language, select, es {Spanish} other {English}} version: Meta refused its template several times in a row ({reason}). Those messages are still in the queue, unsent.",
+        "heldIn": "The {language, select, es {Spanish} other {English}} messages are held: Meta refused their template several times in a row ({reason}). The other language keeps going out. Fix the template, then pause and resume the campaign to send them again.",
         "runFailed": "The last run failed; it retries by itself every 15 minutes.",
         "unrecorded": "{count} emails went out without being recorded; check before retrying so they are not sent twice.",
         "unrecordedWhatsApp": "{count} messages went out without being recorded; check before retrying so they are not sent twice.",

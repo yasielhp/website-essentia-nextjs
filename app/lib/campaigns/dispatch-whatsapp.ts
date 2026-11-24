@@ -27,6 +27,7 @@ import {
   audienceLocales,
   recipientLocale,
 } from "./languages";
+import { heldLocale, type LocaleHalt } from "./language-halt";
 import { pause } from "./pause";
 import { whatsappBlocks } from "./whatsapp-content";
 import {
@@ -72,6 +73,12 @@ export {
  * It stops by itself after three whole batches Meta refused for one reason.
  * An automation never fills three batches, so its run also asks
  * `refusalStreak` after a send in which Meta refused something.
+ *
+ * Both are counted PER LANGUAGE of the rows: in a campaign written in two,
+ * the messages Meta takes in one language say nothing about the template of
+ * the other, and must not hide that it is refused every time. A language that
+ * stops is held (its rows stay queued) while the other goes on; what the
+ * caller does then is `haltDecision` (`language-halt.ts`).
  */
 
 /** Meta allows 80 messages a second by default; this is well under it. */
@@ -191,17 +198,32 @@ export type WhatsAppSendOutcome = {
   /**
    * Set when Meta refused three batches in a row for the same reason: the
    * cause is the template or the account, not the contacts, and going on only
-   * burns the number's quality. The reason, as stored on the rows.
+   * burns the number's quality. The reason, as stored on the rows (of the
+   * first language that stopped; `halts` has each).
    */
   halted: string | null;
+  /**
+   * The languages this send stopped, each with its reason. The batches are
+   * judged language by language: the rows of a language that stops are not
+   * claimed any more, and the other language goes on.
+   */
+  halts: LocaleHalt[];
   /**
    * The reason of the last message Meta itself refused in this send, as stored
    * on its row, or null when it refused none. An automation's run looks for a
    * streak of it (`refusalStreak`).
    */
   refusal: string | null;
+  /** The same, for each language: a streak is looked for language by language. */
+  refusals: Partial<Record<CampaignLocale, string>>;
   /** Rows still `queued` when this returned. The campaign is not done while any remain. */
   remaining: number;
+  /**
+   * Of `remaining`, the rows left alone because their language cannot go out
+   * now: its template is not sendable, the campaign holds it (`heldLocale`),
+   * or this send stopped it. Waiting for time will not send them.
+   */
+  stalled: number;
 };
 
 export type ConsentRow = {
@@ -410,6 +432,9 @@ type RowOutcome =
 function wholeBatchRefusal(outcomes: RowOutcome[]): string | null {
   const [first] = outcomes;
   if (first?.kind !== "failed" || !first.refused) return null;
+  // Clients whose number has no WhatsApp are theirs, not the template's: a
+  // language with one such row in each batch is not a refused template.
+  if (isRecipientRefusal(first.error)) return null;
   const same = outcomes.every(
     (o) => o.kind === "failed" && o.refused === true && o.error === first.error,
   );
@@ -444,9 +469,12 @@ export async function sendQueuedWhatsApp(
       failed: 0,
       unrecorded: 0,
       halted: null,
+      halts: [],
       refusal: null,
+      refusals: {},
       lastError: `db: ${(err as Error).message}`,
       remaining: queued.length,
+      stalled: 0,
     };
   }
   const templateOf = (row: QueuedRow) => {
@@ -457,9 +485,12 @@ export async function sendQueuedWhatsApp(
   // failing them: it may come back (PAUSED is not DELETED) and an automation's
   // rows are never requeued by anything else. They are not claimed, and the
   // rows of the other language still go out: an English template Meta paused
-  // must not cost the Spanish clients their notice.
-  const rows = queued.filter((row) => templateOf(row) !== null);
-  const held = queued.length - rows.length;
+  // must not cost the Spanish clients their notice. A language an earlier run
+  // stopped because Meta kept refusing its template is held the same way.
+  const held = heldLocale(campaign.audience, campaign.last_error);
+  const rows = queued.filter(
+    (row) => templateOf(row) !== null && languageOf(row) !== held,
+  );
   const heldBy = firstTemplateIssue(templates);
   const heldError = heldBy ? templateUnavailable(heldBy) : null;
   if (rows.length === 0) {
@@ -468,9 +499,12 @@ export async function sendQueuedWhatsApp(
       failed: 0,
       unrecorded: 0,
       halted: null,
+      halts: [],
       refusal: null,
+      refusals: {},
       lastError: heldError,
       remaining: queued.length,
+      stalled: queued.length,
     };
   }
   // The consent the campaign is for, read again with every batch below.
@@ -629,20 +663,27 @@ export async function sendQueuedWhatsApp(
   /** Rows another process had already claimed: theirs, not left over. */
   let lost = 0;
   let lastError: string | null = null;
-  let halted: string | null = null;
-  let refusedBatches = 0;
-  let refusedError: string | null = null;
+  /** Whole batches in a row Meta refused for one reason, per language. */
+  const refusedRun: Partial<
+    Record<CampaignLocale, { batches: number; error: string }>
+  > = {};
+  const halts: LocaleHalt[] = [];
   let refusal: string | null = null;
+  const refusals: Partial<Record<CampaignLocale, string>> = {};
+  /** Rows of a language this send stopped, never claimed. */
+  let dropped = 0;
   const deadlineAt = deps.deadlineAt;
   /** Whether a batch beginning at `t` is still inside the budget and the deadline. */
   const mayStartAt = (t: number) =>
     t - startedAt < budgetMs &&
     (deadlineAt === undefined || t + START_MARGIN_MS <= deadlineAt);
 
-  for (let start = 0; start < rows.length; start += PER_SECOND) {
+  let pending = rows;
+  while (pending.length > 0) {
     if (!mayStartAt(now())) break;
     const batchStartedAt = now();
-    const batch = rows.slice(start, start + PER_SECOND);
+    const batch = pending.slice(0, PER_SECOND);
+    pending = pending.slice(PER_SECOND);
 
     // Consent is read again before every batch, not trusted from the freeze.
     let consent: Map<string, ConsentRow>;
@@ -701,7 +742,11 @@ export async function sendQueuedWhatsApp(
     );
 
     let deferred = false;
-    for (const outcome of outcomes) {
+    /** This batch's outcomes, by the language of their row. */
+    const byLocale = new Map<CampaignLocale, RowOutcome[]>();
+    outcomes.forEach((outcome, index) => {
+      const locale = languageOf(claimed.owned[index] as QueuedRow);
+      byLocale.set(locale, [...(byLocale.get(locale) ?? []), outcome]);
       if (outcome.kind === "sent") sent += 1;
       else {
         // A skipped contact is routine, not something the admin must read in
@@ -715,33 +760,45 @@ export async function sendQueuedWhatsApp(
         }
         if (outcome.kind === "failed") {
           failed += 1;
-          if (outcome.refused) refusal = outcome.error;
+          if (outcome.refused) {
+            refusal = outcome.error;
+            refusals[locale] = outcome.error;
+          }
         } else if (outcome.kind === "unrecorded") unrecorded += 1;
         else deferred = true;
         // A row that could not be handed back says the same: no credentials.
         if (outcome.error === "whatsapp_not_configured") deferred = true;
       }
-    }
+    });
     // Without credentials every remaining row would be skipped too.
     if (deferred) break;
 
-    // Three whole batches Meta refused for the same reason: stop here.
-    if (outcomes.length > 0) {
-      const reason = wholeBatchRefusal(outcomes);
+    // Three whole batches of a language Meta refused for the same reason: that
+    // language stops here. A language's share of a batch is its batch: the
+    // messages of the other one, sent or not, say nothing about its template.
+    let stopped = false;
+    for (const [locale, own] of byLocale) {
+      const reason = wholeBatchRefusal(own);
       if (reason === null) {
-        refusedBatches = 0;
-        refusedError = null;
-      } else {
-        refusedBatches = reason === refusedError ? refusedBatches + 1 : 1;
-        refusedError = reason;
+        delete refusedRun[locale];
+        continue;
       }
-      if (refusedBatches >= HALT_AFTER_BATCHES) {
-        halted = refusedError;
-        break;
+      const before = refusedRun[locale];
+      const batches = before?.error === reason ? before.batches + 1 : 1;
+      refusedRun[locale] = { batches, error: reason };
+      if (batches >= HALT_AFTER_BATCHES) {
+        halts.push({ locale, reason });
+        stopped = true;
       }
     }
+    if (stopped) {
+      const off = new Set(halts.map((h) => h.locale));
+      const left = pending.filter((row) => !off.has(languageOf(row)));
+      dropped += pending.length - left.length;
+      pending = left;
+    }
 
-    if (start + PER_SECOND < rows.length) {
+    if (pending.length > 0) {
       const wait = Math.max(0, 1000 - (now() - batchStartedAt));
       // No point sleeping towards a batch the budget will not let begin.
       if (!mayStartAt(now() + wait)) break;
@@ -756,9 +813,12 @@ export async function sendQueuedWhatsApp(
     // What a template held back is said when nothing else went wrong: the
     // rows of that language are still in the queue.
     lastError: lastError ?? heldError,
-    halted,
+    halted: halts[0]?.reason ?? null,
+    halts,
     refusal,
-    remaining: rows.length - sent - failed - unrecorded - lost + held,
+    refusals,
+    remaining: queued.length - sent - failed - unrecorded - lost,
+    stalled: queued.length - rows.length + dropped,
   };
 }
 
@@ -776,6 +836,12 @@ export async function sendQueuedWhatsApp(
  * batch at once, so the rows claimed in the same instant as the last one
  * counted are looked at too: one that went out among them is no streak.
  *
+ * With `locale`, only the rows of that language are read: in a campaign
+ * written in two, a message the other language's template got through says
+ * nothing about this one's, and must not break its streak. A row's language
+ * is read as `toLocale` reads it (Spanish, or anything else as English), as
+ * the sender picked its template.
+ *
  * The rows are read and judged here: PostgREST takes no `or` on an UPDATE, and
  * the caller pauses the campaign by id. A read that fails is no streak.
  */
@@ -785,6 +851,8 @@ export async function refusalStreak(
   reason: string,
   /** Milliseconds, like `Date.now`: the run's own clock. */
   nowMs: number,
+  /** The language whose rows are judged; every row when absent. */
+  locale?: CampaignLocale,
 ): Promise<boolean> {
   if (isRecipientRefusal(reason)) return false;
   type Finished = {
@@ -794,10 +862,13 @@ export async function refusalStreak(
   };
   let rows: Finished[];
   try {
-    const { data, error } = await db
+    let query = db
       .from("campaign_recipients")
       .select("status, error, claimed_at")
-      .eq("campaign_id", campaignId)
+      .eq("campaign_id", campaignId);
+    if (locale === "es") query = query.eq("language", "es");
+    if (locale === "en") query = query.neq("language", "es");
+    const { data, error } = await query
       .not("claimed_at", "is", null)
       .gte("claimed_at", new Date(nowMs - STREAK_WINDOW_MS).toISOString())
       .order("claimed_at", { ascending: false })

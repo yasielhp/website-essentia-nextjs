@@ -26,10 +26,36 @@ export const HALTED_PREFIX = "[halted] ";
 export const haltMessage = (error: string): string =>
   `${HALTED_PREFIX}${error}`;
 
-/** The reason inside a `haltMessage`, or null when `lastError` is something else. */
+/**
+ * The same marker for ONE language of a campaign written in two: Meta kept
+ * refusing the template of that language (`(es)` or `(en)`, right after the
+ * prefix, where Meta's own words cannot put it), and only that language
+ * stopped. While the campaign runs, its rows are held in the queue.
+ */
+export const haltMessageIn = (locale: "es" | "en", error: string): string =>
+  `${HALTED_PREFIX}(${locale}) ${error}`;
+
+const LOCALE_HALT = /^\[halted\] \((es|en)\) ([\s\S]*)$/;
+
+/** The language and the reason of a `haltMessageIn`, or null for anything else. */
+export function parseLocaleHalt(
+  lastError: string | null | undefined,
+): { locale: "es" | "en"; reason: string } | null {
+  const match = LOCALE_HALT.exec(lastError ?? "");
+  return match
+    ? { locale: match[1] as "es" | "en", reason: match[2] ?? "" }
+    : null;
+}
+
+/**
+ * The reason inside a `haltMessage` (or a `haltMessageIn`, without its
+ * language), or null when `lastError` is something else.
+ */
 export function parseHalted(
   lastError: string | null | undefined,
 ): string | null {
+  const inOne = parseLocaleHalt(lastError);
+  if (inOne) return inOne.reason;
   return lastError?.startsWith(HALTED_PREFIX)
     ? lastError.slice(HALTED_PREFIX.length)
     : null;

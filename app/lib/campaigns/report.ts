@@ -4,6 +4,7 @@ import type {
   CampaignKind,
   CampaignLanguage,
   CampaignRecipientRow,
+  CampaignStatus,
   RecipientStatus,
 } from "@/types/campaign";
 import { audienceLocales } from "./languages";
@@ -12,6 +13,7 @@ import {
   UNCONFIRMED_PREFIX,
   INTERRUPTED_ERROR,
   parseHalted,
+  parseLocaleHalt,
 } from "./error-markers";
 import { RUN_FAILED_ERROR } from "./run-markers";
 
@@ -39,13 +41,26 @@ const UNRECORDED = /^(\d+) sent without being recorded$/;
  * admin's words, never as it is stored; only what the engine did not mark
  * (Meta's or Resend's own text) reaches the screen untouched. The channel says
  * whether what went out was an email or a WhatsApp message.
+ *
+ * One language of two stopped (`[halted] (en) …`) is said with its language;
+ * while the campaign is `active` that language is held and the other goes on,
+ * and the note says how to send it again.
  */
 export function describeLastError(
   lastError: string | null | undefined,
   channel?: CampaignChannel,
+  status?: CampaignStatus,
 ): ReportNote | null {
   if (!lastError) return null;
   if (lastError === RUN_FAILED_ERROR) return { kind: "note", key: "runFailed" };
+  const inOne = parseLocaleHalt(lastError);
+  if (inOne) {
+    return {
+      kind: "note",
+      key: status === "active" ? "heldIn" : "haltedIn",
+      values: { language: inOne.locale, reason: inOne.reason },
+    };
+  }
   const unrecorded = (text: string): ReportNote | null => {
     const count = UNRECORDED.exec(text)?.[1];
     return count
@@ -72,6 +87,8 @@ export function describeLastError(
 export const REPORT_NOTE_KEYS = [
   "haltedReason",
   "haltedNoReason",
+  "haltedIn",
+  "heldIn",
   "runFailed",
   "unrecorded",
   "unrecordedWhatsApp",

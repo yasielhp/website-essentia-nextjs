@@ -1925,6 +1925,8 @@
       "notes": {
         "haltedReason": "WhatsApp dejó de enviar porque Meta rechazó varios lotes seguidos: {reason}",
         "haltedNoReason": "WhatsApp dejó de enviar porque Meta rechazó varios lotes seguidos.",
+        "haltedIn": "WhatsApp dejó de enviar la versión en {language, select, es {español} other {inglés}}: Meta rechazó su plantilla varias veces seguidas ({reason}). Esos mensajes siguen en la cola, sin enviar.",
+        "heldIn": "Los mensajes en {language, select, es {español} other {inglés}} están retenidos: Meta rechazó su plantilla varias veces seguidas ({reason}). Los del otro idioma siguen saliendo. Corrige la plantilla y pausa y reanuda la campaña para que vuelvan a salir.",
         "runFailed": "La última ejecución falló; se reintenta sola cada 15 minutos.",
         "unrecorded": "{count} correos salieron sin poder anotarse; revisa antes de reintentar para no enviarlos dos veces.",
         "unrecordedWhatsApp": "{count} mensajes salieron sin poder anotarse; revisa antes de reintentar para no enviarlos dos veces.",

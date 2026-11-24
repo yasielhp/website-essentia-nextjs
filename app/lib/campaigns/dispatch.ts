@@ -20,11 +20,12 @@ import {
   START_MARGIN_MS,
   WRITE_RETRY_MS,
   campaignTemplateIssue,
-  haltMessage,
   reconcileInterrupted,
   sendQueuedWhatsApp,
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
+import { parseHalted } from "./error-markers";
+import { haltDecision, type LocaleHalt } from "./language-halt";
 import { recipientLocale } from "./languages";
 import { readAllPages } from "./paged-read";
 import { pause } from "./pause";
@@ -329,8 +330,14 @@ export async function sendQueued(
   remaining?: number;
   unrecorded?: number;
   halted?: string | null;
+  /** WhatsApp only: the languages Meta kept refusing, each with its reason. */
+  halts?: LocaleHalt[];
   /** WhatsApp only: the last reason Meta itself refused a message for. */
   refusal?: string | null;
+  /** WhatsApp only: the same, for each language. */
+  refusals?: Partial<Record<CampaignLocale, string>>;
+  /** WhatsApp only: of `remaining`, the rows whose language cannot go out now. */
+  stalled?: number;
 }> {
   if (campaign.channel === "whatsapp") {
     return sendQueuedWhatsApp(campaign, queued, whatsapp);
@@ -571,6 +578,8 @@ type Preflight =
       status: CampaignRow["status"] | null;
       /** When its current send was claimed, before this dispatch claims it. */
       sendingStartedAt: string | null;
+      /** Its `last_error` as it was read. */
+      lastError: string | null;
     }
   | Extract<DispatchResult, { ok: false }>;
 
@@ -589,7 +598,9 @@ async function preflight(
 ): Promise<Preflight> {
   const { data, error } = await db
     .from("campaigns")
-    .select("id, channel, kind, status, audience, content, sending_started_at")
+    .select(
+      "id, channel, kind, status, audience, content, sending_started_at, last_error",
+    )
     .eq("id", campaignId)
     .maybeSingle();
   if (error) return { ok: false, error: "db", detail: error.message };
@@ -598,12 +609,22 @@ async function preflight(
     | (Pick<
         CampaignRow,
         "channel" | "kind" | "status" | "audience" | "content"
-      > & { sending_started_at?: string | null })
+      > & {
+        sending_started_at?: string | null;
+        last_error?: string | null;
+      })
     | null;
   const sendingStartedAt = campaign?.sending_started_at ?? null;
+  const lastError = campaign?.last_error ?? null;
   // No such row: the claim that follows reports it as not claimable.
   if (!campaign) {
-    return { ok: true, channel: null, status: null, sendingStartedAt };
+    return {
+      ok: true,
+      channel: null,
+      status: null,
+      sendingStartedAt,
+      lastError,
+    };
   }
 
   // An automated kind (an appointment notice above all) is switched on and the
@@ -625,6 +646,7 @@ async function preflight(
       channel: campaign.channel,
       status: campaign.status,
       sendingStartedAt,
+      lastError,
     };
   }
 
@@ -673,6 +695,7 @@ async function preflight(
     channel: "whatsapp",
     status: campaign.status,
     sendingStartedAt,
+    lastError,
   };
 }
 
@@ -810,22 +833,38 @@ export async function dispatchCampaign(
     return { ok: false, error: "db", detail };
   }
 
-  const { sent, failed, lastError, remaining, unrecorded, halted } =
-    await sendQueued(campaign, rows, {
-      db,
-      deadlineAt: opts.deadlineAt,
-      ...deps.whatsapp,
-    });
+  const outcome = await sendQueued(campaign, rows, {
+    db,
+    deadlineAt: opts.deadlineAt,
+    ...deps.whatsapp,
+  });
+  const { sent, failed, lastError, remaining, unrecorded } = outcome;
 
-  // Meta refused whole batches for one reason: the campaign is failed with the
-  // reason and the rest of its queue is left alone. A retry reopens it.
-  if (halted) {
+  // Meta refused whole batches for one reason. In a campaign written in two
+  // languages that stops the language whose template it was (`haltDecision`):
+  // its rows are held in the queue while the other language is sent, and the
+  // campaign carries the hold (`[halted] (en) …`) so a resume keeps it. Once
+  // nothing else is left to send, or when every language is stopped, the
+  // campaign is failed with the reason and the rest of its queue is left
+  // alone. A retry reopens it.
+  const stop = whatsapp
+    ? haltDecision(campaign.audience, campaign.last_error, outcome.halts ?? [])
+    : null;
+  const sendable = (remaining ?? 0) - (outcome.stalled ?? 0);
+  if (stop && (stop.all || sendable <= 0)) {
     await refreshCounts(
       campaignId,
-      { status: "failed", last_error: haltMessage(halted) },
+      { status: "failed", last_error: stop.marker },
       db,
     );
-    return { ok: true, sent, failed, remaining, unrecorded, halted };
+    return {
+      ok: true,
+      sent,
+      failed,
+      remaining,
+      unrecorded,
+      halted: stop.reason,
+    };
   }
 
   // A WhatsApp send that ran out of time (or credentials), or an email send
@@ -846,7 +885,9 @@ export async function dispatchCampaign(
     await refreshCounts(
       campaignId,
       {
-        last_error: lastError,
+        // A language on hold says so until the send is over: the resume reads
+        // it back and keeps holding that language's rows.
+        last_error: stop?.marker ?? lastError,
         ...(stalled ? { sending_started_at: startedBefore } : {}),
       },
       db,
@@ -968,7 +1009,14 @@ export async function retryFailed(
   const reopenedAt = new Date(Date.now() - STUCK_AFTER_MS - 1000).toISOString();
   const reopening = db
     .from("campaigns")
-    .update({ status: "sending", sending_started_at: reopenedAt })
+    .update({
+      status: "sending",
+      sending_started_at: reopenedAt,
+      // A retry is the person saying "try again": a language the send held
+      // because Meta kept refusing its template is not held any more. If Meta
+      // still refuses it, its streak on the rows stops it again.
+      ...(parseHalted(checked.lastError) !== null ? { last_error: null } : {}),
+    })
     .eq("id", campaignId);
   // A WhatsApp send can also stop `failed` with rows still queued (Meta kept
   // refusing it); reopening it sends those as well as the retryable failures.

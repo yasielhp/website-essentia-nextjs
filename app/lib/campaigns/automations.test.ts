@@ -214,8 +214,18 @@ function withFinishedRows(mem: ReturnType<typeof memoryDb>) {
     ) {
       const limit = Number(argsOf(chain, "limit")?.[0] ?? Infinity);
       const since = String(argsOf(chain, "gte")?.[1] ?? "");
+      // A streak judged for one language reads that language's rows only.
+      const language = chain.find(
+        (s) => s.name === "eq" && s.args[0] === "language",
+      )?.args[1];
+      const notLanguage = argsOf(chain, "neq")?.[1];
       return {
         data: [...mem.rows.values()]
+          .filter(
+            (r) =>
+              (language === undefined || r.language === language) &&
+              (notLanguage === undefined || r.language !== notLanguage),
+          )
           .filter((r) => r.claimed_at !== null && r.claimed_at >= since)
           .sort((a, b) =>
             String(b.claimed_at).localeCompare(String(a.claimed_at)),
@@ -834,5 +844,167 @@ describe("runAutomation for an appointment notice", () => {
       expect(sender.calls).toHaveLength(1);
       expect(result).toEqual({ queued: 0, sent: 1, failed: 0 });
     });
+  });
+});
+
+describe("runAutomation: Meta refuses the template of one language of two", () => {
+  const NO_TRANSLATION =
+    "132001: Template name does not exist in the translation";
+  const firstName = { kind: "field" as const, field: "first_name" as const };
+  const bilingual = () =>
+    campaign({
+      status: "active",
+      kind: "automated",
+      trigger: { event: "segment_entry" },
+      activated_at: "2026-11-01T00:00:00Z",
+      audience: { ...EMPTY_AUDIENCE, language: "any" },
+      content: {
+        whatsapp: {
+          es: { templateId: "tpl-es", params: [firstName] },
+          en: { templateId: "tpl-en", params: [firstName] },
+        },
+      } as never,
+    });
+  const TEMPLATES = {
+    "tpl-es": template({ id: "tpl-es", language: "es", param_count: 1 }),
+    "tpl-en": template({ id: "tpl-en", language: "en", param_count: 1 }),
+  };
+  /** Meta takes the Spanish template and refuses the English one, every time. */
+  const englishRefused = () =>
+    fakeSend((s) =>
+      s.language === "en"
+        ? {
+            status: "failed",
+            error: "Template name does not exist in the translation",
+            code: 132001,
+          }
+        : ok("w"),
+    );
+  /**
+   * Six ticks a quarter of an hour apart; in each, one Spanish and one English
+   * row arrive in the queue (the rows of later ticks wait out of it).
+   */
+  const sixTicks = () => {
+    const rows = Array.from({ length: 12 }, (_, i) =>
+      row(i + 1, { language: i % 2 === 0 ? "es" : "en" }),
+    );
+    const mem = memoryDb(rows, {
+      campaign: bilingual(),
+      templates: TEMPLATES,
+      rows: rows.slice(2).map((r) => ({ id: r.id, status: "waiting" })),
+    });
+    return { rows, mem };
+  };
+  const tick = async (
+    mem: ReturnType<typeof memoryDb>,
+    n: number,
+    sender: ReturnType<typeof fakeSend>,
+  ) => {
+    const at = new Date(NOW.getTime() + n * 15 * 60_000);
+    for (const id of [`row-${2 * n + 1}`, `row-${2 * n + 2}`]) {
+      const stored = mem.rows.get(id);
+      if (stored?.status === "waiting") stored.status = "queued";
+    }
+    return runAutomation(mem.campaign, at, {
+      db: withFinishedRows(mem),
+      resolveAudience: async () => [],
+      whatsapp: {
+        send: sender.send,
+        sleep: async () => {},
+        now: () => at.getTime(),
+      },
+    });
+  };
+
+  test("the third English refusal holds English: the Spanish clients go on getting theirs and the automation stays on", async () => {
+    const { mem } = sixTicks();
+    const sender = englishRefused();
+    const results = [];
+    for (let n = 0; n < 6; n += 1) results.push(await tick(mem, n, sender));
+
+    // Ticks 1 to 3 send both; from the third English refusal on, English is
+    // not even asked for.
+    expect(sender.calls.map((c) => c.language)).toEqual([
+      "es",
+      "en",
+      "es",
+      "en",
+      "es",
+      "en",
+      "es",
+      "es",
+      "es",
+    ]);
+    expect(results[1]?.held).toBeUndefined();
+    expect(results[2]).toMatchObject({ held: "en" });
+    expect(results[5]).toMatchObject({ sent: 1, failed: 0, held: "en" });
+    expect(results.every((r) => r.halted === undefined)).toBe(true);
+    expect(mem.campaign.status).toBe("active");
+    expect(mem.campaign.last_error).toBe(`[halted] (en) ${NO_TRANSLATION}`);
+    // The English rows of the later ticks wait in the queue, unclaimed.
+    for (const id of ["row-8", "row-10", "row-12"]) {
+      expect(mem.status(id)).toBe("queued");
+      expect(mem.rows.get(id)?.claimed_at).toBeNull();
+    }
+    for (const id of ["row-7", "row-9", "row-11"]) {
+      expect(mem.status(id)).toBe("sent");
+    }
+  });
+
+  test("switched off and on again (which clears the mark), English is tried again, and held at once if Meta still refuses it", async () => {
+    const { mem } = sixTicks();
+    const sender = englishRefused();
+    for (let n = 0; n < 4; n += 1) await tick(mem, n, sender);
+    expect(mem.campaign.last_error).toBe(`[halted] (en) ${NO_TRANSLATION}`);
+
+    // What `activateCampaign` writes on a resume.
+    mem.campaign.last_error = null;
+    const before = sender.calls.length;
+    const result = await tick(mem, 4, sender);
+    // The English row left from the last tick and the new one are tried: a
+    // refusal on top of the streak already on the rows holds English again.
+    expect(sender.calls.slice(before).map((c) => c.language)).toEqual([
+      "en",
+      "es",
+      "en",
+    ]);
+    expect(result).toMatchObject({ held: "en" });
+    expect(mem.campaign.status).toBe("active");
+  });
+
+  test("two English refusals and then one that goes out: nothing is held", async () => {
+    const { mem } = sixTicks();
+    let english = 0;
+    const sender = fakeSend((s) => {
+      if (s.language !== "en") return ok("w");
+      english += 1;
+      return english <= 2
+        ? {
+            status: "failed",
+            error: "Template name does not exist in the translation",
+            code: 132001,
+          }
+        : ok("w");
+    });
+    const results = [];
+    for (let n = 0; n < 4; n += 1) results.push(await tick(mem, n, sender));
+    expect(results.every((r) => r.held === undefined)).toBe(true);
+    expect(mem.campaign.last_error ?? "").not.toContain("[halted]");
+    expect(mem.status("row-6")).toBe("sent");
+    expect(mem.status("row-8")).toBe("sent");
+  });
+
+  test("both languages refused for the same reason is the account: the automation is paused, with no language named", async () => {
+    const { mem } = sixTicks();
+    const sender = fakeSend(() => ({
+      status: "failed",
+      error: "Access token expired",
+      code: 190,
+    }));
+    const results = [];
+    for (let n = 0; n < 3; n += 1) results.push(await tick(mem, n, sender));
+    expect(results[2]).toMatchObject({ halted: "190: Access token expired" });
+    expect(mem.campaign.status).toBe("paused");
+    expect(mem.campaign.last_error).toBe("[halted] 190: Access token expired");
   });
 });

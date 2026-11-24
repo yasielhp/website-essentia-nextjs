@@ -1,14 +1,15 @@
 import { getAdminClient } from "@/lib/insforge-admin";
 type Db = ReturnType<typeof getAdminClient>["database"];
 import { getAppUrl } from "@/lib/env";
-import type { CampaignRow } from "@/types/campaign";
+import type { CampaignLocale, CampaignRow } from "@/types/campaign";
 import { resolveAudience as defaultResolveAudience } from "./audience";
 import {
-  haltMessage,
   reconcileInterrupted,
   refusalStreak,
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
+import { haltDecision, type LocaleHalt } from "./language-halt";
+import { CAMPAIGN_LOCALES, audienceLocales } from "./languages";
 import { conflictTarget, recipientRow } from "./recipient-rows";
 import { LATE_ERROR, RUN_FAILED_ERROR } from "./run-markers";
 import { dueRecipients, type BlogPostSummary } from "./automation-rules";
@@ -32,7 +33,9 @@ import {
  *
  * A run first fails what a dead process left `sending` (both senders claim
  * their rows), and on WhatsApp an automation Meta keeps refusing is paused
- * with the reason.
+ * with the reason. In two languages, a language whose template Meta keeps
+ * refusing is held instead while the other still goes out
+ * (`haltDecision`), and the automation is paused only when both are.
  */
 /** What a run reads and calls out to; a test passes doubles. */
 export type AutomationDeps = {
@@ -58,6 +61,11 @@ export async function runAutomation(
   late?: number;
   /** Why the run paused the automation, when Meta kept refusing it. */
   halted?: string;
+  /**
+   * The language held while the automation stays on: Meta kept refusing its
+   * template, and its rows wait in the queue while the other one goes out.
+   */
+  held?: CampaignLocale;
 }> {
   const db = deps.db ?? getAdminClient().database;
   const resolveAudience = deps.resolveAudience ?? defaultResolveAudience;
@@ -140,7 +148,7 @@ export async function runAutomation(
           deadlineAt: deps.deadlineAt,
           ...deps.whatsapp,
         })
-      : { sent: 0, failed: 0, lastError: null, halted: null };
+      : { sent: 0, failed: 0, lastError: null, halts: [], refusals: {} };
   const { sent, failed, lastError } = outcome;
 
   // The sender stops itself after three whole batches refused for one reason,
@@ -148,15 +156,34 @@ export async function runAutomation(
   // notice one or two. So after a send in which Meta refused something, the
   // campaign's last finished rows are looked at across ticks: three in a row
   // in two days refused for that reason is the account or the template, and it
-  // is paused just the same. (A refusal that is about the recipient, a number
+  // is stopped just the same. (A refusal that is about the recipient, a number
   // with no WhatsApp, is never that.)
-  const halted =
-    outcome.halted ??
-    (campaign.channel === "whatsapp" &&
-    outcome.refusal &&
-    (await refusalStreak(db, campaign.id, outcome.refusal, now.getTime()))
-      ? outcome.refusal
-      : null);
+  //
+  // Language by language: in a campaign written in two, the Spanish notices
+  // that go out every tick must not hide that Meta refuses the English
+  // template every time. A language stopped while the other goes on is held;
+  // both stopped, or a campaign in one language, pause the automation.
+  const halts: LocaleHalt[] = [...(outcome.halts ?? [])];
+  if (campaign.channel === "whatsapp") {
+    const twoLanguages = audienceLocales(campaign.audience).length > 1;
+    for (const locale of CAMPAIGN_LOCALES) {
+      const reason = outcome.refusals?.[locale];
+      if (!reason || halts.some((halt) => halt.locale === locale)) continue;
+      const streak = await refusalStreak(
+        db,
+        campaign.id,
+        reason,
+        now.getTime(),
+        twoLanguages ? locale : undefined,
+      );
+      if (streak) halts.push({ locale, reason });
+    }
+  }
+  const stop =
+    campaign.channel === "whatsapp"
+      ? haltDecision(campaign.audience, campaign.last_error, halts)
+      : null;
+  const halted = stop?.all ? stop.reason : null;
   // A message that left and whose row could not be written is left `sending`
   // on both channels and settled as unconfirmed, so no later tick sends it
   // again: nothing to pause for, but it is said on the campaign.
@@ -166,6 +193,9 @@ export async function runAutomation(
 
   // Meta refuses the template or the account: pause the automation with the
   // reason so it stops hitting the number. The admin resumes it once fixed.
+  // A language on hold is written on every run, whatever else happened: the
+  // next run reads it back and keeps holding that language's rows, until the
+  // admin switches the automation off and on again.
   //
   // A run that got this far with no error of its own also takes back the mark
   // the cron left when an earlier run threw. Any other `last_error` is not
@@ -175,13 +205,15 @@ export async function runAutomation(
     campaign.id,
     {
       last_run_at: now.toISOString(),
-      ...(halted
-        ? { status: "paused", last_error: haltMessage(halted) }
-        : notice
-          ? { last_error: notice }
-          : campaign.last_error === RUN_FAILED_ERROR
-            ? { last_error: null }
-            : {}),
+      ...(stop?.all
+        ? { status: "paused", last_error: stop.marker }
+        : stop
+          ? { last_error: stop.marker }
+          : notice
+            ? { last_error: notice }
+            : campaign.last_error === RUN_FAILED_ERROR
+              ? { last_error: null }
+              : {}),
     },
     db,
   );
@@ -192,6 +224,7 @@ export async function runAutomation(
     failed,
     ...(late > 0 ? { late } : {}),
     ...(halted ? { halted } : {}),
+    ...(stop && !stop.all && stop.locale ? { held: stop.locale } : {}),
   };
 }
 
