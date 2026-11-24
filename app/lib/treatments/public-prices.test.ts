@@ -16,9 +16,11 @@ import { TIER_PRICES_CACHE_TAG } from "@/lib/treatments/prices";
  * that a failure is never kept as "no prices", and that it never throws at a
  * page.
  *
- * `next/cache` is put back afterwards (`mock.module` is process-wide). The
- * anonymous client is not: it cannot be loaded without the project's keys,
- * which the tests deliberately do not have, so there is no real module to keep.
+ * Both modules are put back afterwards (`mock.module` is process-wide). The
+ * anonymous client is built when its module loads and refuses to without the
+ * project's address and key, which the tests deliberately do not have. So the
+ * real module is loaded once here with stand-ins for the two (an address that
+ * resolves nowhere), only to have something real to put back.
  */
 
 type Kept = {
@@ -28,6 +30,8 @@ type Kept = {
 };
 
 let kept: Kept | null = null;
+/** Every call that reached the cache, by its arguments: each is a cache entry. */
+let cached: unknown[][] = [];
 let failing = false;
 let reads = 0;
 
@@ -59,7 +63,20 @@ const database = {
   },
 };
 
-const real = { cache: { ...(await import("next/cache")) } };
+const ENV = ["NEXT_PUBLIC_INSFORGE_URL", "NEXT_PUBLIC_INSFORGE_ANON_KEY"];
+const envBefore = ENV.map((name) => process.env[name]);
+process.env.NEXT_PUBLIC_INSFORGE_URL ??= "https://insforge.invalid";
+process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY ??= "not-a-key";
+
+const real = {
+  cache: { ...(await import("next/cache")) },
+  publicClient: { ...(await import("@/lib/insforge-public")) },
+};
+
+ENV.forEach((name, i) => {
+  if (envBefore[i] === undefined) delete process.env[name];
+  else process.env[name] = envBefore[i];
+});
 
 let prices: typeof import("@/lib/treatments/public-prices");
 
@@ -73,10 +90,14 @@ beforeAll(async () => {
       options: Kept["options"],
     ) => {
       kept = { read, keyParts, options };
-      return read;
+      return (...args: [string]) => {
+        cached.push(args);
+        return read(...args);
+      };
     },
   }));
   mock.module("@/lib/insforge-public", () => ({
+    ...real.publicClient,
     insforgePublic: { database },
   }));
   prices = await import("@/lib/treatments/public-prices");
@@ -84,11 +105,13 @@ beforeAll(async () => {
 
 afterAll(() => {
   mock.module("next/cache", () => real.cache);
+  mock.module("@/lib/insforge-public", () => real.publicClient);
 });
 
 beforeEach(() => {
   failing = false;
   reads = 0;
+  cached = [];
 });
 
 describe("listPublicTierPrices", () => {
@@ -121,5 +144,24 @@ describe("listPublicTierPrices", () => {
   test("a service the site does not have reads nothing", async () => {
     expect(await prices.listPublicTierPrices("nope")).toEqual([]);
     expect(reads).toBe(0);
+  });
+
+  test("and never reaches the cache: an unknown name must not become an entry of its own", async () => {
+    // The argument is part of the cache key, so every distinct string that got
+    // this far would be kept as one more entry.
+    for (const serviceId of [
+      "nope",
+      "",
+      "manual-therapies ",
+      "x".repeat(500),
+    ]) {
+      expect(await prices.listPublicTierPrices(serviceId)).toEqual([]);
+    }
+    expect(await prices.listPublicTierPrices(42 as never)).toEqual([]);
+    expect(cached).toEqual([]);
+
+    await prices.listPublicTierPrices("manual-therapies");
+    await prices.listPublicTierPrices("facial-therapies");
+    expect(cached).toEqual([["manual-therapies"], ["facial-therapies"]]);
   });
 });

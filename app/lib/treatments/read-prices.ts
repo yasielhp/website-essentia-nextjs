@@ -18,16 +18,19 @@ type Db = ReturnType<typeof getAdminClient>["database"];
  * be kept when the truth is "could not ask". The error carries no text of the
  * database's.
  */
+/** Whether this is one of the services the site has. Anything else is asked nothing. */
+export function isBookableService(serviceId: unknown): serviceId is string {
+  return (
+    typeof serviceId === "string" &&
+    bookableServices.some((service) => service.id === serviceId)
+  );
+}
+
 export async function readTierPrices(
   db: Db,
   serviceId: unknown,
 ): Promise<TierPrice[]> {
-  if (
-    typeof serviceId !== "string" ||
-    !bookableServices.some((service) => service.id === serviceId)
-  ) {
-    return [];
-  }
+  if (!isBookableService(serviceId)) return [];
 
   let read: { data: unknown; error: unknown };
   try {

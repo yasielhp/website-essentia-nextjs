@@ -318,8 +318,9 @@ function FacialTreatmentsSection({ lines }: { lines: Record<string, string> }) {
                   {t(`facialCards.${facial.id}.description`)}
                 </p>
 
-                {/* No per-ritual booking yet: the facial tiers do not exist in
-                    the database, so the link goes to the service. */}
+                {/* Each ritual opens the booking form on its own session
+                    type, found by its name. One whose session type is switched
+                    off lands on the list of the others, with none chosen. */}
                 <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row md:w-auto">
                   <Button
                     variant="solid"

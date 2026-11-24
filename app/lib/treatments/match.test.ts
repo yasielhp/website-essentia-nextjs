@@ -27,6 +27,20 @@ describe("sameTreatment", () => {
     expect(sameTreatment("", "")).toBe(false);
   });
 
+  it("an accent typed as a letter and a mark is the same accent", () => {
+    // "á" can be one character or "a" followed by a combining accent; they
+    // look alike and are not equal as strings. A label pasted from elsewhere
+    // may carry either.
+    const decomposed = "Sole\u0301a";
+    expect(decomposed).not.toBe("Soléa");
+    expect(sameTreatment(decomposed, "Soléa")).toBe(true);
+    expect(sameTreatment("Soléa", decomposed)).toBe(true);
+    expect(sameTreatment("Drenaje Linfa\u0301tico Avanzado", NEW)).toBe(true);
+    expect(sameTreatment("Masaje ene\u0301rgico", "Masaje enérgico")).toBe(
+      true,
+    );
+  });
+
   it("two names nobody declared are the same only when they read the same", () => {
     expect(sameTreatment("Masaje nuevo", "masaje nuevo")).toBe(true);
     expect(sameTreatment("Masaje nuevo", "Masaje viejo")).toBe(false);
