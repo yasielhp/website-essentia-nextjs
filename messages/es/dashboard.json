@@ -524,7 +524,8 @@
             "changed": "La reserva ha cambiado mientras tanto: vuelve a cargarla.",
             "generic": "No se ha podido registrar el reembolso."
           }
-        }
+        },
+        "unverified": "Figura pagada {amount} con el pedido {order}, pero no consta el cobro de Redsys en el historial. Compruébalo en el portal de Redsys antes de devolver nada."
       }
     },
     "paymentStatus": {

@@ -73,14 +73,17 @@ export function BookingDetailBody({
       <div className="space-y-6">
         {/* First when money went through Redsys: a refund owed is the thing
         on this booking somebody has to act on. */}
-        {refund && (refund.orderId || refund.onlineEur > 0) && (
-          <RefundCard
-            bookingId={booking.id}
-            view={refund}
-            locale={locale}
-            onRecorded={onPaymentRecorded}
-          />
-        )}
+        {refund &&
+          (refund.orderId ||
+            refund.onlineEur > 0 ||
+            refund.unverifiedEur > 0) && (
+            <RefundCard
+              bookingId={booking.id}
+              view={refund}
+              locale={locale}
+              onRecorded={onPaymentRecorded}
+            />
+          )}
         <ServiceCard booking={booking} staffPerson={staffPerson} />
         {staffPerson && <StaffCard staffPerson={staffPerson} />}
         {booking.location && <LocationCard booking={booking} />}

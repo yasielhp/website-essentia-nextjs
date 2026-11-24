@@ -8,10 +8,11 @@ import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import { readRefundContext } from "@/lib/bookings/refunds";
 import {
   REFUNDED,
+  markableEur,
   onlinePayment,
   refundPatch,
   refundView,
-  refundableEur,
+  suspectedOnline,
   type BookingRefundView,
   type MarkRefundError,
 } from "@/lib/bookings/refund-rules";
@@ -86,11 +87,17 @@ export async function markBookingRefunded(
 
   const ctx = await readRefundContext(bookingId);
   if (!ctx) return { error: "not_found" };
+  // Without the history, what was paid and already returned is unknown.
+  if (!ctx.historyRead) return { error: "failed" };
   const { booking, entries } = ctx;
   if (booking.status !== "cancelled") return { error: "not_cancelled" };
 
   const online = onlinePayment(booking, entries);
-  const max = refundableEur(booking, entries, online);
+  // The Redsys payment on record, or, with none, what the booking held under
+  // its order: the administrator checked the portal before pressing this.
+  const orderId =
+    online.orderId ?? suspectedOnline(booking, entries)?.orderId ?? null;
+  const max = markableEur(booking, entries);
   if (max <= 0) return { error: "nothing_to_refund" };
   if (Math.round(amountEur * 100) > Math.round(max * 100)) {
     return { error: "exceeds" };
@@ -117,11 +124,11 @@ export async function markBookingRefunded(
     actorRole: actor.role as BookingEventActorRole,
     summary:
       `Reembolso hecho · ${formatPrice(amountEur, "es")}` +
-      (online.orderId ? ` · pedido ${online.orderId}` : "") +
+      (orderId ? ` · pedido ${orderId}` : "") +
       (whole ? "" : " · parcial") +
       (note ? ` · ${note}` : ""),
-    providerId: online.orderId,
-    payload: { amountEur, orderId: online.orderId, whole, note },
+    providerId: orderId,
+    payload: { amountEur, orderId, whole, note },
   });
 
   return { error: null };

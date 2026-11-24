@@ -8,6 +8,7 @@ import {
   refundState,
   refundView,
   refundableEur,
+  suspectedOnline,
   teamChoiceOnSave,
   type PaymentEntry,
   type RefundBooking,
@@ -68,10 +69,10 @@ describe("onlinePayment", () => {
     ).toEqual({ orderId: null, onlineEur: 0 });
   });
 
-  it("falls back to the booking's own amount when the webhook's entry is missing", () => {
+  it("an order number and a paid status are not proof: without the webhook's entry nothing is online", () => {
     expect(onlinePayment(paidOnline, [])).toEqual({
-      orderId: ORDER,
-      onlineEur: 100,
+      orderId: null,
+      onlineEur: 0,
     });
   });
 
@@ -376,5 +377,45 @@ describe("cancelErasesOnlinePayment", () => {
         { payment_status: "pending" },
       ),
     ).toBe(false);
+  });
+});
+
+describe("suspectedOnline: looks paid online, no Redsys payment on record", () => {
+  it("is a booking paid under an order with no webhook entry and nothing taken at the desk", () => {
+    expect(suspectedOnline(paidOnline, [])).toEqual({
+      orderId: ORDER,
+      amountEur: 100,
+    });
+  });
+
+  it("is nothing once the Redsys payment is on record", () => {
+    expect(suspectedOnline(paidOnline, [redsysPaid(100)])).toBeNull();
+  });
+
+  it("is nothing for an abandoned checkout paid at the desk, or a bonus, or no order", () => {
+    expect(
+      suspectedOnline({ ...paidOnline, balance_settled_method: "cash" }, []),
+    ).toBeNull();
+    expect(
+      suspectedOnline({ ...paidOnline, payment_mode: "bonus" }, []),
+    ).toBeNull();
+    expect(
+      suspectedOnline({ ...paidOnline, stripe_session_id: null }, []),
+    ).toBeNull();
+    expect(
+      suspectedOnline({ ...paidOnline, payment_status: "pending" }, []),
+    ).toBeNull();
+  });
+
+  it("is never owed: the view asks to check, and an administrator may still mark it", () => {
+    const view = refundView(paidOnline, [], true);
+    expect(view).toMatchObject({
+      orderId: ORDER,
+      onlineEur: 0,
+      unverifiedEur: 100,
+      state: { kind: "none" },
+      refundableEur: 100,
+      canMark: true,
+    });
   });
 });

@@ -524,7 +524,8 @@
             "changed": "The booking changed in the meantime: reload it.",
             "generic": "The refund could not be recorded."
           }
-        }
+        },
+        "unverified": "It shows as paid {amount} with order {order}, but no Redsys charge is recorded in its history. Check it in the Redsys portal before returning anything."
       }
     },
     "paymentStatus": {

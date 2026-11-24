@@ -32,6 +32,7 @@ let recorded: {
   summary?: string;
   actorRole?: string | null;
   status?: string;
+  error?: string | null;
   payload?: Record<string, unknown> | null;
 }[] = [];
 
@@ -202,11 +203,48 @@ describe("a cancellation by the team", () => {
     expect(sent).toEqual([]);
   });
 
-  test("a history that cannot be read says nothing rather than something wrong", async () => {
+  test("a history that cannot be read is not lost: a failed entry and the office asked to check", async () => {
     entriesError = { message: "down" };
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
     const res = await team("2026-07-13T09:00:00Z");
-    expect(res.owed).toBe(false);
+    quiet.mockRestore();
+    expect(res).toMatchObject({
+      owed: false,
+      reason: "unverified",
+      orderId: "790098209516",
+    });
+    const doubt = recorded.find((e) => e.channel === "payment");
+    expect(doubt).toMatchObject({
+      event: "refund_owed",
+      status: "failed",
+      error: "unverified: history_unreadable",
+    });
+    expect(doubt?.summary).toContain("no se pudo leer el historial de pagos");
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.subject).toBe(`Revisar reembolso — ${EUR100} · Ana García`);
+    expect(sent[0]!.html).toContain("Comprueba en el portal de Redsys");
+  });
+
+  test("paid under an order but no Redsys payment on record: the office checks, nobody is told to refund", async () => {
+    entries = [];
+    const res = await team("2026-07-13T09:00:00Z");
+    expect(res.reason).toBe("unverified");
+    expect(recorded.find((e) => e.channel === "payment")).toMatchObject({
+      status: "failed",
+      error: "unverified: no_redsys_payment",
+    });
+    expect(sent[0]!.subject.startsWith("Revisar reembolso")).toBe(true);
+    expect(sent[0]!.html).not.toContain("Hay que devolver");
+  });
+
+  test("the same doubt on a late cancellation owes nothing and emails nobody", async () => {
+    entries = [];
+    const warn = spyOn(console, "warn").mockImplementation(() => {});
+    const res = await team("2026-07-15T04:00:00Z");
+    warn.mockRestore();
+    expect(res.reason).toBe("unverified");
     expect(recorded).toEqual([]);
+    expect(sent).toEqual([]);
   });
 
   test("a mailer that throws still leaves the debt recorded, and never throws", async () => {

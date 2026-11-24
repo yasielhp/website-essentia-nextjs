@@ -44,6 +44,18 @@ export function RefundCard({
           <p className="mt-1 text-xs text-amber-800">{t("owedHelp")}</p>
         </div>
       )}
+      {/* Looks paid online but no Redsys charge is on record: a doubt to
+      check in the portal, never a debt. */}
+      {view.unverifiedEur > 0 && state.kind === "none" && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-xs text-amber-900">
+            {t("unverified", {
+              amount: price(view.unverifiedEur),
+              order: view.orderId ?? "—",
+            })}
+          </p>
+        </div>
+      )}
       {state.kind === "refunded" && (
         <p className="bg-sand-100 text-petroleum-600 mb-4 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium">
           {t("refunded", { amount: price(state.amountEur) })}
@@ -59,7 +71,9 @@ export function RefundCard({
         </div>
         <div className="flex flex-col gap-0.5">
           <p className="text-petroleum-400 text-xs">{t("paidOnline")}</p>
-          <p className="text-petroleum-700 text-sm">{price(view.onlineEur)}</p>
+          <p className="text-petroleum-700 text-sm">
+            {view.onlineEur > 0 ? price(view.onlineEur) : "—"}
+          </p>
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import {
   describe,
   expect,
   mock,
+  spyOn,
   test,
 } from "bun:test";
 import { formatPrice } from "@/utils/format";
@@ -18,6 +19,7 @@ import { formatPrice } from "@/utils/format";
 let actor = { userId: "u-1", role: "admin" };
 let bookingRow: Record<string, unknown> = {};
 let entries: Record<string, unknown>[] = [];
+let entriesError: unknown = null;
 let writes: { patch: unknown; filters: [string, unknown][] }[] = [];
 /** When false, the conditional UPDATE matches no row (somebody got there first). */
 let writeMatches = true;
@@ -32,7 +34,11 @@ function chain(table: string): unknown {
       return { data: writeMatches ? [{ id: "b-1" }] : [], error: null };
     }
     if (table === "bookings") return { data: bookingRow, error: null };
-    if (table === "booking_events") return { data: entries, error: null };
+    if (table === "booking_events") {
+      return entriesError
+        ? { data: null, error: entriesError }
+        : { data: entries, error: null };
+    }
     return { data: null, error: null };
   };
   const proxy: unknown = new Proxy(() => {}, {
@@ -127,6 +133,7 @@ beforeEach(() => {
     },
   ];
   writes = [];
+  entriesError = null;
   writeMatches = true;
   recorded = [];
 });
@@ -145,6 +152,7 @@ describe("fetchBookingRefund", () => {
       orderId: "790098209516",
       onlineEur: 100,
       state: { kind: "owed", amountEur: 100 },
+      unverifiedEur: 0,
       refundableEur: 100,
       canMark: true,
     });
@@ -217,6 +225,28 @@ describe("markBookingRefunded", () => {
     };
     entries = [];
     expect(await mark({})).toEqual({ error: "nothing_to_refund" });
+  });
+
+  test("a booking paid under an order with no Redsys payment on record can be marked once checked", async () => {
+    entries = [];
+    const view = await actions.fetchBookingRefund("token", "b-1");
+    expect(view).toMatchObject({
+      orderId: "790098209516",
+      onlineEur: 0,
+      unverifiedEur: 100,
+      state: { kind: "none" },
+      canMark: true,
+    });
+    expect(await mark({})).toEqual({ error: null });
+    expect(recorded[0]).toMatchObject({ providerId: "790098209516" });
+  });
+
+  test("a history that cannot be read refuses to mark anything", async () => {
+    entriesError = { message: "down" };
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    expect(await mark({})).toEqual({ error: "failed" });
+    quiet.mockRestore();
+    expect(writes).toEqual([]);
   });
 
   test("administrators only", async () => {

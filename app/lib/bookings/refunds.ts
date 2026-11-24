@@ -20,6 +20,7 @@ import {
   refundOnCancel,
   refundState,
   refundableEur,
+  suspectedOnline,
   type PaymentEntry,
   type RefundBooking,
   type RefundReason,
@@ -51,12 +52,22 @@ export type RefundContext = {
   };
   /** The booking's `payment` entries, oldest first. */
   entries: PaymentEntry[];
+  /**
+   * False when the history could not be read: `entries` is then empty, and
+   * nothing can be shown to have been paid online.
+   */
+  historyRead: boolean;
 };
 
 const SELECT =
   "id, status, payment_status, payment_mode, amount_paid_eur, stripe_session_id, balance_settled_method, first_name, last_name, email, service_title, date, time, service_tiers(label)";
 
-/** The booking and its payment history, or null when it cannot be read. */
+/**
+ * The booking and its payment history; null only when the booking itself
+ * cannot be read. A history that cannot be read comes back empty with
+ * `historyRead: false`: nothing is then PROVED paid online, and a booking that
+ * looks paid is flagged for a check instead (`suspectedOnline`).
+ */
 export async function readRefundContext(
   bookingId: string,
 ): Promise<RefundContext | null> {
@@ -73,12 +84,13 @@ export async function readRefundContext(
     .eq("booking_id", bookingId)
     .eq("channel", "payment")
     .order("created_at", { ascending: true });
-  // Without the history the online money cannot be told from the desk's: say
-  // nothing rather than something wrong.
-  if (error) return null;
+  if (error) {
+    console.error("[refunds] payment history unreadable:", bookingId, error);
+  }
   return {
     booking: data as unknown as RefundContext["booking"],
-    entries: (rows ?? []) as PaymentEntry[],
+    entries: error ? [] : ((rows ?? []) as PaymentEntry[]),
+    historyRead: !error,
   };
 }
 
@@ -145,7 +157,13 @@ export async function settleRefundOnCancel(input: {
 
   try {
     const ctx = await readRefundContext(input.bookingId);
-    if (!ctx) return nothing;
+    if (!ctx) {
+      console.error(
+        "[refunds] booking unreadable at cancellation, refund not judged:",
+        input.bookingId,
+      );
+      return nothing;
+    }
     const online = onlinePayment(ctx.booking, ctx.entries);
     const amountEur = refundableEur(ctx.booking, ctx.entries, online);
     const by = input.source === "client_link" ? "client" : "team";
@@ -155,7 +173,37 @@ export async function settleRefundOnCancel(input: {
       by,
       teamRefundsLate: input.teamRefundsLate,
     });
-    if (decision.reason === "nothing_online") return nothing;
+    if (decision.reason === "nothing_online") {
+      // No Redsys payment on record. A booking that still LOOKS paid online
+      // (history unreadable, or the webhook's entry missing) is not dropped in
+      // silence: when it would be owed, the office is asked to check.
+      const suspect = suspectedOnline(ctx.booking, ctx.entries);
+      if (!suspect) return nothing;
+      const wouldOwe = refundOnCancel({
+        onlineEur: suspect.amountEur,
+        hoursBefore,
+        by,
+        teamRefundsLate: input.teamRefundsLate,
+      }).owed;
+      if (wouldOwe) {
+        await flagUnverified(ctx, suspect, {
+          source: input.source,
+          hoursBefore,
+          actorId: input.actorId ?? null,
+          actorRole: input.actorRole,
+        });
+      } else {
+        console.warn("[refunds] late cancellation of an unverified payment", {
+          bookingId: input.bookingId,
+          orderId: suspect.orderId,
+        });
+      }
+      return {
+        ...nothing,
+        orderId: suspect.orderId,
+        reason: "unverified",
+      };
+    }
 
     const actor = {
       bookingId: input.bookingId,
@@ -227,6 +275,58 @@ export async function settleRefundOnCancel(input: {
   }
 }
 
+/**
+ * A refund that would be owed on a payment nobody can show was taken: a
+ * `refund_owed` entry marked `failed` (a doubt, never counted as a debt) with
+ * the reason, and the office asked to check the order before returning
+ * anything.
+ */
+async function flagUnverified(
+  ctx: RefundContext,
+  suspect: { orderId: string; amountEur: number },
+  how: {
+    source: RefundOwedSource;
+    hoursBefore: number;
+    actorId: string | null;
+    actorRole: BookingEventActorRole;
+  },
+): Promise<void> {
+  const amount = formatPrice(suspect.amountEur, "es");
+  const why = ctx.historyRead
+    ? "sin cobro de Redsys registrado en el historial"
+    : "no se pudo leer el historial de pagos";
+  await recordBookingEvent({
+    bookingId: ctx.booking.id,
+    channel: "payment",
+    event: REFUND_OWED,
+    status: "failed",
+    error: ctx.historyRead
+      ? "unverified: no_redsys_payment"
+      : "unverified: history_unreadable",
+    actorId: how.actorId,
+    actorRole: how.actorRole,
+    summary: `Revisar reembolso · figura pagada ${amount} (pedido ${suspect.orderId}), ${why} · cancelada ${notice(how.hoursBefore)}: comprueba en Redsys si se cobró antes de devolver nada`,
+    providerId: suspect.orderId,
+    payload: {
+      amountEur: suspect.amountEur,
+      orderId: suspect.orderId,
+      hoursBefore: Math.round(how.hoursBefore * 10) / 10,
+      source: how.source,
+      reason: "unverified",
+      historyRead: ctx.historyRead,
+    },
+  });
+  await tellTheOffice(ctx, {
+    amount,
+    orderId: suspect.orderId,
+    source: how.source,
+    late: false,
+    unverified: true,
+    actorRole: how.actorRole,
+    actorId: how.actorId,
+  });
+}
+
 /** The email to the office, recorded in the history like every other. */
 async function tellTheOffice(
   ctx: RefundContext,
@@ -235,6 +335,8 @@ async function tellTheOffice(
     orderId: string | null;
     source: RefundOwedSource;
     late: boolean;
+    /** Paid online by the booking's word only: the office is asked to check. */
+    unverified?: boolean;
     actorRole: BookingEventActorRole;
     actorId: string | null;
   },
@@ -246,7 +348,7 @@ async function tellTheOffice(
   const service = [b.service_title, b.service_tiers?.label]
     .filter(Boolean)
     .join(" — ");
-  const subject = `Reembolso pendiente — ${notice.amount} · ${clientName}`;
+  const subject = `${notice.unverified ? "Revisar reembolso" : "Reembolso pendiente"} — ${notice.amount} · ${clientName}`;
   const entry: BookingEventInput = {
     bookingId: b.id,
     channel: "email",
@@ -274,6 +376,7 @@ async function tellTheOffice(
         orderId: notice.orderId,
         source: notice.source,
         late: notice.late,
+        unverified: notice.unverified === true,
         bookingUrl: `${getAppUrl()}/dashboard/bookings/${b.id}`,
       }),
     });

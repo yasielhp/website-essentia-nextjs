@@ -57,6 +57,12 @@ export type RefundState =
 /** What the dashboard shows of a booking's online payment and its refund. */
 export type BookingRefundView = OnlinePayment & {
   state: RefundState;
+  /**
+   * What the booking says was paid under its order when no Redsys payment is
+   * recorded: to be checked in the portal before returning anything (0 when
+   * the payment is on record, or there is none).
+   */
+  unverifiedEur: number;
   /** What can still be marked as refunded (0 when nothing can). */
   refundableEur: number;
   /** True for an administrator, on a cancelled booking with money to return. */
@@ -77,6 +83,8 @@ export type MarkRefundError =
 export type RefundReason =
   /** Nothing was paid online: there is nothing to return. */
   | "nothing_online"
+  /** It looks paid online but no Redsys payment is on record: to check. */
+  | "unverified"
   /** Cancelled at least 24 hours before: the Terms promise the refund. */
   | "in_advance"
   /** Inside the last 24 hours (or after the session): no refund. */
@@ -95,11 +103,13 @@ export function entryAmount(entry: Pick<PaymentEntry, "payload">): number {
 }
 
 /**
- * Money that came through Redsys: the payments the webhook recorded (actor
- * `system`, with the order number). A payment taken at the desk has neither.
- * If a booking holds money under a Redsys order and the entry was never
- * written, the booking's own amount stands in, unless part of it was taken
- * at the desk.
+ * Money that came through Redsys: ONLY the payments the webhook recorded
+ * after a signed, authorised notification (actor `system`, with the order
+ * number). A payment taken at the desk has neither, and an order number on the
+ * booking proves nothing: it is written when the checkout STARTS, so a client
+ * who gave up at the bank and paid at the desk has one too. Without that
+ * evidence nothing is owed and nobody is told to refund (`suspectedOnline`
+ * only asks somebody to check).
  */
 export function onlinePayment(
   booking: RefundBooking,
@@ -118,20 +128,33 @@ export function onlinePayment(
     };
   }
 
-  const holdsMoney = ["paid", "deposit_paid", "refunded"].includes(
-    booking.payment_status ?? "",
-  );
-  if (
-    booking.stripe_session_id &&
-    holdsMoney &&
-    !booking.balance_settled_method
-  ) {
-    return {
-      orderId: booking.stripe_session_id,
-      onlineEur: Number(booking.amount_paid_eur ?? 0),
-    };
-  }
   return { orderId: null, onlineEur: 0 };
+}
+
+/**
+ * A booking that LOOKS paid online but has no Redsys payment in its history
+ * (the entry was never written, or the history could not be read): paid,
+ * under an order number, nothing taken at the desk. Not a debt, a doubt: the
+ * office is asked to check the order in the Redsys portal. The amount is what
+ * the booking held before any refund marked on it.
+ */
+export function suspectedOnline(
+  booking: RefundBooking,
+  entries: PaymentEntry[],
+): { orderId: string; amountEur: number } | null {
+  if (booking.payment_mode === "bonus" || !booking.stripe_session_id) {
+    return null;
+  }
+  if (onlinePayment(booking, entries).onlineEur > 0) return null;
+  if (!["paid", "deposit_paid"].includes(booking.payment_status ?? "")) {
+    return null;
+  }
+  if (booking.balance_settled_method) return null;
+  const held =
+    toCents(Number(booking.amount_paid_eur ?? 0)) + refundedCents(entries);
+  return held > 0
+    ? { orderId: booking.stripe_session_id, amountEur: held / 100 }
+    : null;
 }
 
 /**
@@ -286,6 +309,26 @@ export function refundPatch(
     : { amount_paid_eur: (paid - back) / 100 };
 }
 
+/**
+ * What an administrator may mark as returned: the online money on record, or,
+ * when there is none, what a booking that looks paid online held (they mark it
+ * after checking the order in the portal, which is the evidence then).
+ */
+export function markableEur(
+  booking: RefundBooking,
+  entries: PaymentEntry[],
+): number {
+  const online = onlinePayment(booking, entries);
+  if (online.onlineEur > 0) return refundableEur(booking, entries, online);
+  const suspect = suspectedOnline(booking, entries);
+  return suspect
+    ? refundableEur(booking, entries, {
+        orderId: suspect.orderId,
+        onlineEur: suspect.amountEur,
+      })
+    : 0;
+}
+
 /** The dashboard's view of it, from what the server read. */
 export function refundView(
   booking: RefundBooking,
@@ -293,11 +336,14 @@ export function refundView(
   isAdmin: boolean,
 ): BookingRefundView {
   const online = onlinePayment(booking, entries);
-  const refundable = refundableEur(booking, entries, online);
+  const suspect = suspectedOnline(booking, entries);
+  const markable = markableEur(booking, entries);
   return {
-    ...online,
+    orderId: online.orderId ?? suspect?.orderId ?? null,
+    onlineEur: online.onlineEur,
+    unverifiedEur: suspect?.amountEur ?? 0,
     state: refundState(booking, entries, online),
-    refundableEur: refundable,
-    canMark: isAdmin && booking.status === "cancelled" && refundable > 0,
+    refundableEur: markable,
+    canMark: isAdmin && booking.status === "cancelled" && markable > 0,
   };
 }

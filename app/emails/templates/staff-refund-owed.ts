@@ -41,6 +41,13 @@ const COPY = {
       assistant: "por el equipo, desde un asistente",
     },
     noOrder: "sin número (búscalo por fecha e importe)",
+    check: {
+      kicker: "Revisar reembolso",
+      title: (amount: string, client: string) =>
+        `Comprueba si hay que devolver ${amount} a ${client}`,
+      body: "Esta reserva figura pagada online y se ha cancelado, pero no consta el cobro de Redsys en su historial (o no se pudo leer). Comprueba en el portal de Redsys si el pedido se cobró: si es así, devuélvelo y márcalo como reembolsado en la reserva; si no, no hay nada que devolver.",
+      amount: "Importe que figura pagado",
+    },
     button: "Abrir la reserva",
     preheader: (amount: string, client: string) =>
       `Reembolso pendiente de ${amount} para ${client}.`,
@@ -67,6 +74,13 @@ const COPY = {
       assistant: "by the team, from an assistant",
     },
     noOrder: "no number (look it up by date and amount)",
+    check: {
+      kicker: "Check refund",
+      title: (amount: string, client: string) =>
+        `Check whether ${amount} must be returned to ${client}`,
+      body: "This booking shows as paid online and has been cancelled, but no Redsys charge is recorded in its history (or the history could not be read). Check the order in the Redsys portal: if it was charged, return it and mark it as refunded on the booking; if not, there is nothing to return.",
+      amount: "Amount shown as paid",
+    },
     button: "Open the booking",
     preheader: (amount: string, client: string) =>
       `Refund pending of ${amount} for ${client}.`,
@@ -83,6 +97,7 @@ export function staffRefundOwedEmail({
   orderId,
   source,
   late,
+  unverified = false,
   bookingUrl,
 }: {
   locale?: "es" | "en";
@@ -97,15 +112,23 @@ export function staffRefundOwedEmail({
   source: RefundOwedSource;
   /** Cancelled inside the last 24 hours and refunded by the team's choice. */
   late: boolean;
+  /**
+   * No Redsys payment is on record: the office is asked to CHECK the order
+   * before returning anything, not told to refund.
+   */
+  unverified?: boolean;
   bookingUrl: string;
 }): string {
   const c = COPY[locale];
+  const kicker = unverified ? c.check.kicker : c.kicker;
+  const title = unverified ? c.check.title : c.title;
+  const body = unverified ? c.check.body : c.body;
   const rows: [string, string][] = [
     [c.rows.client, clientName],
     ...(clientEmail ? [[c.rows.email, clientEmail] as [string, string]] : []),
     [c.rows.service, service],
     [c.rows.session, session],
-    [c.rows.amount, amount],
+    [unverified ? c.check.amount : c.rows.amount, amount],
     [c.rows.order, orderId ?? c.noOrder],
     [c.rows.by, c.by[source]],
   ];
@@ -121,14 +144,16 @@ export function staffRefundOwedEmail({
 
   return emailBase({
     locale,
-    preheader: esc(c.preheader(amount, clientName)),
+    preheader: esc(
+      unverified ? title(amount, clientName) : c.preheader(amount, clientName),
+    ),
     body: `
-      <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">${esc(c.kicker)}</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">${esc(kicker)}</p>
       <h1 style="margin:0 0 16px;font-size:24px;font-weight:600;color:#103838;line-height:1.3;">
-        ${esc(c.title(amount, clientName))}
+        ${esc(title(amount, clientName))}
       </h1>
       <p style="margin:0 0 ${late ? "12px" : "24px"};font-size:16px;color:#335554;line-height:1.6;">
-        ${esc(c.body)}
+        ${esc(body)}
       </p>${
         late
           ? `
