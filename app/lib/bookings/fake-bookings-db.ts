@@ -29,6 +29,8 @@ export type FakeTables = {
   service_settings: Row[];
   /** Only for the tests that read who is of the team. */
   profiles?: Row[];
+  /** Only for the tests that read a booking's history. */
+  booking_events?: Row[];
 };
 
 export type Failure = { table: string; kind: "select" | "insert" | "update" };

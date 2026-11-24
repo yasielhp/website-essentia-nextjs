@@ -13,7 +13,12 @@ export type RefundOwedSource =
   | "dashboard"
   | "assistant"
   /** Not a cancellation: a second payment for a booking already paid. */
-  | "duplicate";
+  | "duplicate"
+  /**
+   * Not a cancellation: the payment arrived for an hour another booking of the
+   * professional already held, so the booking could not be confirmed.
+   */
+  | "slot_taken";
 
 const esc = (value: string) =>
   value
@@ -45,6 +50,13 @@ const COPY = {
       dashboard: "por el equipo, desde el panel",
       assistant: "por el equipo, desde un asistente",
       duplicate: "no se ha cancelado: es un segundo pago de la misma reserva",
+      slot_taken: "no se ha cancelado: la hora ya la tiene otra reserva",
+    },
+    slotTaken: {
+      kicker: "Pago recibido para una hora ya ocupada",
+      title: (amount: string, client: string) =>
+        `Pago recibido para una hora ya ocupada: reembolsar o recolocar (${amount}, ${client})`,
+      body: "El pago llegó para una reserva que no tenía su hora (un borrador, o una que se liberó por no pagarse a tiempo) y esa hora ya es de otra reserva de la misma profesional. La reserva NO está confirmada y a la clienta se le ha dicho que la llamaréis. Búscale otra hora (edita la reserva, ponle la nueva hora y confírmala) o devuelve el importe en el portal de Redsys con este número de pedido y márcalo como reembolsado en la reserva.",
     },
     duplicate: (first: string | null) =>
       first
@@ -85,6 +97,13 @@ const COPY = {
       dashboard: "by the team, from the dashboard",
       assistant: "by the team, from an assistant",
       duplicate: "not cancelled: a second payment for the same booking",
+      slot_taken: "not cancelled: another booking holds the hour",
+    },
+    slotTaken: {
+      kicker: "Payment received for a taken hour",
+      title: (amount: string, client: string) =>
+        `Payment received for a taken hour: refund or rebook (${amount}, ${client})`,
+      body: "The payment arrived for a booking that did not hold its hour (a draft, or one released for not being paid in time) and that hour now belongs to another booking of the same professional. The booking is NOT confirmed and the client has been told you will call her. Find her another hour (edit the booking, set the new hour and confirm it) or return the amount in the Redsys portal with this order number and mark it as refunded on the booking.",
     },
     duplicate: (first: string | null) =>
       first
@@ -146,17 +165,26 @@ export function staffRefundOwedEmail({
 }): string {
   const c = COPY[locale];
   const duplicate = source === "duplicate";
-  const kicker = unverified ? c.check.kicker : c.kicker;
+  const slotTaken = source === "slot_taken";
+  const kicker = unverified
+    ? c.check.kicker
+    : slotTaken
+      ? c.slotTaken.kicker
+      : c.kicker;
   const title = unverified
     ? c.check.title
     : duplicate
       ? c.duplicateTitle
-      : c.title;
+      : slotTaken
+        ? c.slotTaken.title
+        : c.title;
   const body = unverified
     ? c.check.body
     : duplicate
       ? c.duplicate(duplicateOf ?? null)
-      : c.body;
+      : slotTaken
+        ? c.slotTaken.body
+        : c.body;
   const rows: [string, string][] = [
     [c.rows.client, clientName],
     ...(clientEmail ? [[c.rows.email, clientEmail] as [string, string]] : []),
@@ -179,7 +207,9 @@ export function staffRefundOwedEmail({
   return emailBase({
     locale,
     preheader: esc(
-      unverified ? title(amount, clientName) : c.preheader(amount, clientName),
+      unverified || slotTaken
+        ? title(amount, clientName)
+        : c.preheader(amount, clientName),
     ),
     body: `
       <p style="margin:0 0 8px;font-size:14px;color:#4a6767;text-transform:uppercase;letter-spacing:1px;">${esc(kicker)}</p>

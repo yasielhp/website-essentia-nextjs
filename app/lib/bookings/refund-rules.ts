@@ -20,6 +20,12 @@ import { CANCELLATION_WINDOW_HOURS } from "@/constants/booking";
 export const REFUND_OWED = "refund_owed";
 export const REFUND_WAIVED = "refund_waived";
 export const REFUNDED = "refunded";
+/**
+ * Why a `refund_owed` is owed on a booking that was NOT cancelled: its money
+ * arrived for an hour another booking already held (`handleBookingPaid`), so
+ * it was recorded on the booking as it stood, unconfirmed (a draft).
+ */
+export const SLOT_TAKEN_REASON = "slot_taken";
 
 /** The columns of a booking the rules read. */
 export type RefundBooking = {
@@ -76,7 +82,10 @@ export type BookingRefundView = OnlinePayment & {
   unverifiedEur: number;
   /** What can still be marked as refunded (0 when nothing can). */
   refundableEur: number;
-  /** True for an administrator, on a cancelled booking with money to return. */
+  /**
+   * True for an administrator, on a cancelled booking with money to return, or
+   * on a draft whose payment arrived for an hour already taken (`refundOpen`).
+   */
   canMark: boolean;
   /** Second payments for this booking, each owed back on its own order. */
   duplicates: DuplicateRefund[];
@@ -272,6 +281,31 @@ export function refundableEur(
  * settle it, and only while the booking is cancelled. Owed is what that last
  * `refund_owed` named, less what was returned since; returned, or nothing.
  */
+/**
+ * Whether the booking's money may be owed back, and marked as returned:
+ * a cancelled booking, or a draft whose payment arrived for an hour another
+ * booking held (its last word is a `refund_owed` for that reason). The second
+ * is never cancelled: the team either finds it another hour (and confirms it,
+ * which withdraws the refund) or returns the money from its page.
+ */
+export function refundOpen(
+  booking: Pick<RefundBooking, "status">,
+  entries: PaymentEntry[],
+): boolean {
+  if (booking.status === "cancelled") return true;
+  if (booking.status !== "draft") return false;
+  let lastWord: PaymentEntry | undefined;
+  for (const e of entries) {
+    if ((e.event === REFUND_OWED || e.event === REFUND_WAIVED) && own(e)) {
+      lastWord = e;
+    }
+  }
+  return (
+    lastWord?.event === REFUND_OWED &&
+    lastWord.payload?.reason === SLOT_TAKEN_REASON
+  );
+}
+
 export function refundState(
   booking: RefundBooking,
   entries: PaymentEntry[],
@@ -292,7 +326,7 @@ export function refundState(
     }
   });
   const lastWord = last >= 0 ? entries[last] : undefined;
-  if (booking.status === "cancelled" && lastWord?.event === REFUND_OWED) {
+  if (refundOpen(booking, entries) && lastWord?.event === REFUND_OWED) {
     const owed = toCents(entryAmount(lastWord));
     const returnedSince = refundedCents(entries.slice(last + 1));
     const left = Math.min(
@@ -404,7 +438,7 @@ export function refundView(
     unverifiedEur: suspect?.amountEur ?? 0,
     state: refundState(booking, entries, online),
     refundableEur: markable,
-    canMark: isAdmin && booking.status === "cancelled" && markable > 0,
+    canMark: isAdmin && refundOpen(booking, entries) && markable > 0,
     duplicates: duplicateRefunds(entries),
     canMarkDuplicates: isAdmin,
   };

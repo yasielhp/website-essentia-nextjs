@@ -5,6 +5,7 @@ import {
   staffRefundOwedEmail,
   type RefundOwedSource,
 } from "@/emails/templates/staff-refund-owed";
+import { bookingSlotTakenEmail } from "@/emails/templates/booking-slot-taken";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import type {
   BookingEventActorRole,
@@ -16,6 +17,7 @@ import { hoursUntilSession } from "@/lib/bookings/cancellation-window";
 import {
   REFUND_OWED,
   REFUND_WAIVED,
+  SLOT_TAKEN_REASON,
   onlinePayment,
   refundOnCancel,
   refundState,
@@ -393,6 +395,107 @@ export async function recordDuplicatePayment(input: {
   }
 }
 
+/**
+ * Money that arrived for an hour another booking of the professional already
+ * held (`handleBookingPaid` recorded it on the booking, unconfirmed): it is
+ * owed back unless the team finds the client another hour. A `refund_owed`
+ * (reason `slot_taken`, so the booking's page offers "Marcar como
+ * reembolsado" without cancelling it first), the office's email "Pago
+ * recibido para una hora ya ocupada: reembolsar o recolocar", and an email to
+ * the client in her language: her payment arrived, the hour was taken, the
+ * centre will contact her. Never throws.
+ */
+export async function recordSlotTakenPayment(input: {
+  bookingId: string;
+  orderId: string | null;
+  amountEur: number;
+  locale: "es" | "en";
+}): Promise<void> {
+  const { bookingId, orderId, amountEur, locale } = input;
+  try {
+    await recordBookingEvent({
+      bookingId,
+      channel: "payment",
+      event: REFUND_OWED,
+      actorRole: "system",
+      summary:
+        `Reembolso pendiente · ${formatPrice(amountEur, "es")}` +
+        (orderId ? ` · pedido ${orderId}` : "") +
+        " · la hora ya la tenía otra reserva: devolver o recolocar",
+      providerId: orderId,
+      payload: { amountEur, orderId, reason: SLOT_TAKEN_REASON },
+    });
+    const ctx = await readRefundContext(bookingId);
+    if (!ctx) {
+      console.error("[refunds] slot-taken payment, booking unreadable:", {
+        bookingId,
+        orderId,
+      });
+      return;
+    }
+    await tellTheOffice(ctx, {
+      amount: formatPrice(amountEur, "es"),
+      orderId,
+      source: "slot_taken",
+      late: false,
+      actorRole: "system",
+      actorId: null,
+    });
+    await tellTheClientTheHourWasTaken(ctx, amountEur, locale);
+  } catch (err) {
+    console.error("[refunds] could not record the slot-taken payment:", err);
+  }
+}
+
+/** The client's email for a payment whose hour was taken, in the history too. */
+async function tellTheClientTheHourWasTaken(
+  ctx: RefundContext,
+  amountEur: number,
+  locale: "es" | "en",
+): Promise<void> {
+  const b = ctx.booking;
+  if (!b.email) return;
+  const subject =
+    locale === "en"
+      ? "We received your payment: about your hour"
+      : "Hemos recibido tu pago: sobre tu hora";
+  const entry: BookingEventInput = {
+    bookingId: b.id,
+    channel: "email",
+    event: "paid",
+    actorRole: "system",
+    recipient: b.email,
+    summary: `Al cliente: pago recibido, la hora ya estaba ocupada · ${b.email}`,
+  };
+  try {
+    const { error, id } = await sendEmail({
+      to: b.email,
+      subject,
+      html: bookingSlotTakenEmail({
+        name: b.first_name?.trim() || b.email,
+        service: [b.service_title, b.service_tiers?.label]
+          .filter(Boolean)
+          .join(" — "),
+        date: formatLongDate(b.date, locale),
+        time: b.time ?? "",
+        amount: formatPrice(amountEur, locale),
+        locale,
+      }),
+    });
+    await recordBookingEvent(
+      error
+        ? { ...entry, status: "failed", error: error.message }
+        : { ...entry, status: "sent", providerId: id ?? null },
+    );
+  } catch (err) {
+    await recordBookingEvent({
+      ...entry,
+      status: "failed",
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 /** The email to the office, recorded in the history like every other. */
 async function tellTheOffice(
   ctx: RefundContext,
@@ -416,7 +519,10 @@ async function tellTheOffice(
   const service = [b.service_title, b.service_tiers?.label]
     .filter(Boolean)
     .join(" — ");
-  const subject = `${notice.unverified ? "Revisar reembolso" : notice.source === "duplicate" ? "Reembolso pendiente (pago duplicado)" : "Reembolso pendiente"} — ${notice.amount} · ${clientName}`;
+  const subject =
+    notice.source === "slot_taken" && !notice.unverified
+      ? `Pago recibido para una hora ya ocupada: reembolsar o recolocar — ${notice.amount} · ${clientName}`
+      : `${notice.unverified ? "Revisar reembolso" : notice.source === "duplicate" ? "Reembolso pendiente (pago duplicado)" : "Reembolso pendiente"} — ${notice.amount} · ${clientName}`;
   const entry: BookingEventInput = {
     bookingId: b.id,
     channel: "email",

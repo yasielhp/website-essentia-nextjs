@@ -5,6 +5,7 @@ import {
   duplicateRefunds,
   onlinePayment,
   refundOnCancel,
+  refundOpen,
   refundPatch,
   refundState,
   refundView,
@@ -486,5 +487,41 @@ describe("duplicate payments are kept apart from the booking's own refund", () =
     expect(
       refundableEur(paidOnline, entries, onlinePayment(paidOnline, entries)),
     ).toBe(100);
+  });
+});
+
+describe("refundOpen: when money may be owed back without a cancellation", () => {
+  const slotTaken = (amountEur: number) =>
+    entry("refund_owed", amountEur, {
+      payload: { amountEur, reason: "slot_taken" },
+    });
+
+  it("a cancelled booking, always", () => {
+    expect(refundOpen({ status: "cancelled" }, [])).toBe(true);
+  });
+
+  it("a draft whose payment arrived for an hour already taken", () => {
+    const entries = [redsysPaid(100), slotTaken(100)];
+    expect(refundOpen({ status: "draft" }, entries)).toBe(true);
+    const draft = { ...paidOnline, status: "draft" };
+    expect(refundState(draft, entries, onlinePayment(draft, entries))).toEqual({
+      kind: "owed",
+      amountEur: 100,
+    });
+    expect(refundView(draft, entries, true).canMark).toBe(true);
+  });
+
+  it("not once that refund was withdrawn (rebooked), nor any other draft, nor a live booking", () => {
+    expect(
+      refundOpen({ status: "draft" }, [
+        redsysPaid(100),
+        slotTaken(100),
+        entry("refund_waived", 100),
+      ]),
+    ).toBe(false);
+    expect(refundOpen({ status: "draft" }, [redsysPaid(100)])).toBe(false);
+    expect(
+      refundOpen({ status: "confirmed" }, [redsysPaid(100), slotTaken(100)]),
+    ).toBe(false);
   });
 });

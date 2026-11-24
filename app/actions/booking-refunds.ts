@@ -16,6 +16,7 @@ import {
   refundedEur,
   suspectedOnline,
   type BookingRefundView,
+  refundOpen,
   type MarkRefundError,
 } from "@/lib/bookings/refund-rules";
 import { formatPrice } from "@/utils/format";
@@ -141,7 +142,9 @@ export async function markBookingRefunded(
     return { error: null };
   }
 
-  if (booking.status !== "cancelled") return { error: "not_cancelled" };
+  // A cancelled booking, or one whose payment arrived for an hour already
+  // taken: that one is not cancelled first (it may yet get another hour).
+  if (!refundOpen(booking, entries)) return { error: "not_cancelled" };
 
   const online = onlinePayment(booking, entries);
   // The Redsys payment on record, or, with none, what the booking held under
@@ -160,7 +163,7 @@ export async function markBookingRefunded(
     .database.from("bookings")
     .update(patch)
     .eq("id", bookingId)
-    .eq("status", "cancelled")
+    .eq("status", booking.status ?? "")
     .eq("payment_status", booking.payment_status ?? "")
     .eq("amount_paid_eur", Number(booking.amount_paid_eur ?? 0))
     .select("id");

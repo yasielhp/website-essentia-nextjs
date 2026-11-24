@@ -33,7 +33,9 @@ let history: {
   event: string;
   summary: string;
   payload?: unknown;
+  status?: string;
 }[] = [];
+let mails: { to: string; subject: string; html: string }[] = [];
 let told: string[] = [];
 
 const real = {
@@ -56,10 +58,12 @@ beforeAll(async () => {
   }));
   mock.module("@/emails/send", () => ({
     ...real.send,
-    sendEmail: async (m: { to: string }) => {
+    sendEmail: async (m: { to: string; subject: string; html: string }) => {
       told.push(`email:${m.to}`);
+      mails.push(m);
       return { error: null, id: "re-1" };
     },
+    officeAddress: async () => "office@example.test",
   }));
   mock.module("@/lib/booking-events/record", () => ({
     ...real.record,
@@ -142,6 +146,7 @@ const holder = {
 beforeEach(() => {
   history = [];
   told = [];
+  mails = [];
   tables = {
     bookings: [],
     service_tiers: [],
@@ -155,7 +160,7 @@ const booking = () => tables.bookings.find((r) => r.id === BOOKING)!;
 
 describe("money for an hour another booking holds", () => {
   test.each(["draft", "cancelled"])(
-    "a %s booking: the money is recorded, it stays unconfirmed, the history says why and only the office is told",
+    "a %s booking: the money is recorded, it stays unconfirmed, a refund is owed, and the office and the client are told",
     async (status) => {
       tables.bookings.push(paidFor(status), { ...holder });
       await handleBookingPaid(BOOKING, 8100, "o-1");
@@ -173,9 +178,44 @@ describe("money for an hour another booking holds", () => {
         "la hora ya la tiene otra reserva de esta profesional",
       );
       expect(paid[0]!.payload).toMatchObject({ slotTaken: true });
-      expect(told).toEqual(["office"]);
+      // Owed back, as a duplicate payment is, unless the team rebooks her.
+      const owed = history.filter(
+        (e) => e.channel === "payment" && e.event === "refund_owed",
+      );
+      expect(owed).toHaveLength(1);
+      expect(owed[0]!.payload).toMatchObject({
+        amountEur: 81,
+        orderId: "o-1",
+        reason: "slot_taken",
+      });
+      // The office's own email, and the client's; no calendars, no
+      // confirmation, no WhatsApp.
+      expect(told).toEqual([
+        "email:office@example.test",
+        "email:ana@example.test",
+      ]);
+      expect(mails[0]!.subject).toStartWith(
+        "Pago recibido para una hora ya ocupada: reembolsar o recolocar",
+      );
+      expect(mails[0]!.html).toContain("o-1");
+      expect(mails[1]!.subject).toBe("Hemos recibido tu pago: sobre tu hora");
+      expect(mails[1]!.html).toContain("esa hora se acaba de ocupar");
+      expect(
+        history.filter((e) => e.channel === "email").map((e) => e.status),
+      ).toEqual(["sent", "sent"]);
     },
   );
+
+  test("the client's email is in her language", async () => {
+    tables.bookings.push(
+      { ...paidFor("draft"), contact_id: "c-1" },
+      { ...holder },
+    );
+    tables.contacts.push({ id: "c-1", preferred_language: "en" });
+    await handleBookingPaid(BOOKING, 8100, "o-1");
+    expect(mails[1]!.subject).toBe("We received your payment: about your hour");
+    expect(mails[1]!.html).toContain("that hour was just taken");
+  });
 
   test("Redsys repeating the notification records nothing more", async () => {
     tables.bookings.push(paidFor("draft"), { ...holder });

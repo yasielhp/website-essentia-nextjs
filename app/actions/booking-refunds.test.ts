@@ -243,6 +243,43 @@ describe("markBookingRefunded", () => {
     expect(writes).toEqual([]);
   });
 
+  test("or on a draft whose payment arrived for an hour already taken: marked without cancelling it", async () => {
+    bookingRow = { ...bookingRow, status: "draft" };
+    entries = [
+      entries[0]!,
+      {
+        event: "refund_owed",
+        actor_role: "system",
+        provider_id: "790098209516",
+        payload: {
+          amountEur: 100,
+          orderId: "790098209516",
+          reason: "slot_taken",
+        },
+        created_at: "2026-07-01T10:00:01Z",
+      },
+    ];
+    const view = await actions.fetchBookingRefund("token", "b-1");
+    expect(view).toMatchObject({
+      state: { kind: "owed", amountEur: 100 },
+      canMark: true,
+    });
+    expect(await mark({})).toEqual({ error: null });
+    expect(writes[0]!.filters).toEqual([
+      ["id", "6f1c1f5e-2a4b-4c39-9d1e-3b2f1a0c9e11"],
+      ["status", "draft"],
+      ["payment_status", "paid"],
+      ["amount_paid_eur", 100],
+    ]);
+  });
+
+  test("a draft with money but no refund owed for a taken hour is not marked", async () => {
+    bookingRow = { ...bookingRow, status: "draft" };
+    entries = [entries[0]!];
+    expect(await mark({})).toEqual({ error: "not_cancelled" });
+    expect(writes).toEqual([]);
+  });
+
   test("not twice", async () => {
     bookingRow = { ...bookingRow, payment_status: "refunded" };
     expect(await mark({})).toEqual({ error: "nothing_to_refund" });

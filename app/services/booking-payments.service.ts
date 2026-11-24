@@ -13,7 +13,10 @@ import { pendingConsentUrl } from "@/lib/consent/server";
 import { amountOwed, paymentStatusAfter } from "@/lib/payments/amounts";
 import { notifyClientOnWhatsApp } from "@/lib/whatsapp/notify-client";
 import { judgeArrival } from "@/lib/payments/duplicate-payment";
-import { recordDuplicatePayment } from "@/lib/bookings/refunds";
+import {
+  recordDuplicatePayment,
+  recordSlotTakenPayment,
+} from "@/lib/bookings/refunds";
 import type { PaymentEntry } from "@/lib/bookings/refund-rules";
 import { isSlotTaken } from "@/lib/bookings/slot-taken";
 
@@ -198,11 +201,22 @@ export async function handleBookingPaid(
     },
   });
 
-  // Paid, but for an hour another booking holds: the office is told (the
-  // staff notice), nothing goes on the calendars and the client is not told
-  // "confirmed". The money is recorded above; what happens next is the team's.
+  // Paid, but for an hour another booking holds: the money is recorded above
+  // and owed back unless the team finds her another hour. A `refund_owed`,
+  // the office's own email ("reembolsar o recolocar") and the client's ("your
+  // payment arrived, the hour was taken, we will call you"). Nothing goes on
+  // the calendars and nobody is told "confirmed".
   if (slotLost) {
-    if (firstPayment) await notifyStaffOfPaidBooking(bookingId);
+    await recordSlotTakenPayment({
+      bookingId,
+      orderId,
+      amountEur: received,
+      locale: await contactLocale(
+        adminClient,
+        booking.contact_id as string | null,
+        booking.email as string,
+      ),
+    });
     return;
   }
 

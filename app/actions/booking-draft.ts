@@ -595,8 +595,13 @@ export async function updateBookingByAdmin(
           options?.bonusReturnLate === true &&
           (actor.role === "admin" || actor.role === "staff"),
       });
-    } else if (was.status === "cancelled" && payload.status !== "cancelled") {
-      // Brought back: a refund still pending is no longer owed.
+    } else if (
+      (was.status === "cancelled" || was.status === "draft") &&
+      payload.status !== "cancelled" &&
+      payload.status !== "draft"
+    ) {
+      // Brought back, or a paid draft whose hour was taken given another
+      // one and confirmed: a refund still pending is no longer owed.
       await withdrawRefundOnReactivation({
         bookingId,
         actorId: actor.userId,
