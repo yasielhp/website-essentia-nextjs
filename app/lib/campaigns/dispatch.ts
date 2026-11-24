@@ -32,7 +32,7 @@ import { haltDecision, type LocaleHalt } from "./language-halt";
 import { audienceLocales, recipientLocale } from "./languages";
 import { readAllPages } from "./paged-read";
 import { pause } from "./pause";
-import { conflictTarget, recipientRow } from "./recipient-rows";
+import { conflictTarget, dealVariants, recipientRow } from "./recipient-rows";
 import { NO_ANSWER_ERROR } from "./run-markers";
 
 /**
@@ -893,10 +893,14 @@ export async function dispatchCampaign(
 
     // Emails arrive lowercased and deduped from the resolver, which is what
     // the unique index on (campaign_id, email, cycle) relies on. An A/B test
-    // deals its recipients out alternately, so both halves are the same size.
+    // deals its recipients out alternately within each language (each has its
+    // two subjects), so both halves of every language are the same size.
     //
     // See `recipientRow` for what a WhatsApp row holds.
     const split = campaign.kind === "split";
+    const variants = dealVariants(
+      recipients.map((r) => recipientLocale(campaign.audience, r.language)),
+    );
     const { error: insertError } = await db.from("campaign_recipients").upsert(
       recipients.map((r, index) =>
         recipientRow({
@@ -904,7 +908,7 @@ export async function dispatchCampaign(
           recipient: r,
           channel: campaign.channel,
           cycle: "",
-          extra: { variant: split ? (index % 2 === 0 ? "a" : "b") : null },
+          extra: { variant: split ? variants[index] : null },
         }),
       ),
       { onConflict: conflictTarget(campaign.channel), ignoreDuplicates: true },

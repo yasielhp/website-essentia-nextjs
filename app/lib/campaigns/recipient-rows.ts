@@ -1,4 +1,4 @@
-import type { CampaignChannel } from "@/types/campaign";
+import type { CampaignChannel, CampaignLocale } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
 
 /**
@@ -49,4 +49,23 @@ export function recipientRow(input: {
     cycle: input.cycle,
     ...input.extra,
   };
+}
+
+/**
+ * The A/B variant of each recipient of a split send, in the order given: dealt
+ * alternately WITHIN each language (a, b, a, b… among the Spanish ones, and
+ * again among the English). Each language has its two subjects, so it is in
+ * each language that the two halves must be the same size; dealt over the
+ * whole list, a list that alternates languages would give every Spanish
+ * contact the first subject and every English one the second.
+ */
+export function dealVariants(
+  languages: readonly CampaignLocale[],
+): ("a" | "b")[] {
+  const dealt: Partial<Record<CampaignLocale, number>> = {};
+  return languages.map((language) => {
+    const count = dealt[language] ?? 0;
+    dealt[language] = count + 1;
+    return count % 2 === 0 ? "a" : "b";
+  });
 }

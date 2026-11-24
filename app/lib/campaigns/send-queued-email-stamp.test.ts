@@ -1043,3 +1043,35 @@ describe("sendQueued on email: a language with no version to send", () => {
     expect(mailed()).toEqual(["c1@example.test"]);
   });
 });
+
+describe("an A/B test is dealt within each language", () => {
+  test("a frozen audience that alternates languages gives each language both subjects", async () => {
+    const mem = memoryDb([], {
+      campaign: emailCampaign({
+        status: "draft",
+        kind: "split",
+        audience: { ...EMPTY_AUDIENCE, language: "any" },
+      }),
+    });
+    const people = (["es", "en", "es", "en"] as const).map(
+      (language, i) =>
+        ({
+          id: `contact-${i + 1}`,
+          email: `c${i + 1}@example.test`,
+          firstName: "Ana",
+          language,
+        }) as Recipient,
+    );
+    await dispatchCampaign(
+      "camp-1",
+      {},
+      { db: mem.db, resolveAudience: async () => people },
+    );
+    expect(mem.upserts[0]?.rows.map((r) => [r.language, r.variant])).toEqual([
+      ["es", "a"],
+      ["en", "a"],
+      ["es", "b"],
+      ["en", "b"],
+    ]);
+  });
+});

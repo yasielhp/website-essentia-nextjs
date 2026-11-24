@@ -1,13 +1,14 @@
 import type {
+  CampaignAudience,
   CampaignChannel,
   CampaignContent,
   CampaignKind,
-  CampaignLanguage,
+  CampaignLocale,
   CampaignRecipientRow,
   CampaignStatus,
   RecipientStatus,
 } from "@/types/campaign";
-import { audienceLocales } from "./languages";
+import { audienceLocales, recipientLocale } from "./languages";
 import {
   SKIPPED_PREFIX,
   UNCONFIRMED_PREFIX,
@@ -285,22 +286,52 @@ export function statusBreakdown(
   }));
 }
 
+/** One language of one variant of an A/B test: its subject and how it did. */
+export type VariantLanguage = {
+  locale: CampaignLocale;
+  /** The subject that variant carried in that language; null if nobody wrote it. */
+  subject: string | null;
+  total: number;
+  opened: number;
+  clicked: number;
+};
+
 /**
- * The subject one variant of an A/B test carried, in each language the
- * campaign went out in (Spanish first): an A/B test has its two subjects per
- * language, and each recipient was dealt one of hers. A subject nobody wrote
- * is left out.
+ * An A/B test's report: each variant, and within it each language the campaign
+ * went out in (Spanish first). Each language has its own two subjects and each
+ * recipient was dealt one of hers, so a variant's numbers only mean something
+ * language by language: "B opened more" may be "the English B opened more".
+ * A recipient's language is read as the sender read it (`recipientLocale`).
  */
-export function variantSubjects(
+export function variantBreakdown(
   campaign: {
-    audience: { language: CampaignLanguage };
+    audience: Pick<CampaignAudience, "language">;
     content: Pick<CampaignContent, "es" | "en">;
   },
-  variant: "a" | "b",
-): string[] {
-  return audienceLocales(campaign.audience).flatMap((locale) => {
-    const block = campaign.content[locale];
-    const subject = variant === "a" ? block?.subject : block?.subjectB;
-    return subject?.trim() ? [subject] : [];
-  });
+  recipients: Pick<CampaignRecipientRow, "variant" | "language" | "status">[],
+): { variant: "a" | "b"; languages: VariantLanguage[] }[] {
+  return (["a", "b"] as const).map((variant) => ({
+    variant,
+    languages: audienceLocales(campaign.audience).map((locale) => {
+      const rows = recipients.filter(
+        (r) =>
+          r.variant === variant &&
+          recipientLocale(campaign.audience, r.language) === locale,
+      );
+      const block = campaign.content[locale];
+      const subject = (
+        variant === "a" ? block?.subject : block?.subjectB
+      )?.trim();
+      return {
+        locale,
+        subject: subject || null,
+        total: rows.length,
+        opened: rows.filter((r) => OPENED.has(r.status)).length,
+        clicked: rows.filter((r) => r.status === "clicked").length,
+      };
+    }),
+  }));
 }
+
+/** The states in which an email was opened (a click is an open too). */
+const OPENED: ReadonlySet<RecipientStatus> = new Set(["opened", "clicked"]);

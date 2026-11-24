@@ -36,7 +36,7 @@ import {
   reportTiles,
   sentCountOf,
   statusBreakdown,
-  variantSubjects,
+  variantBreakdown,
   type ReportTile,
 } from "@/lib/campaigns/report";
 import { RecipientTable } from "./recipient-table";
@@ -541,33 +541,37 @@ export default function CampaignDetailPage() {
           <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
             {t("detail.variants")}
           </h2>
+          {/* Each variant has a subject per language the campaign is written
+              in, and every recipient was dealt one of hers: the numbers are
+              per variant AND per language. */}
           <div className="grid grid-cols-2 gap-4">
-            {(["a", "b"] as const).map((variant) => {
-              const rows = recipients.filter((r) => r.variant === variant);
-              const opened = rows.filter((r) =>
-                ["opened", "clicked"].includes(r.status),
-              ).length;
-              const clicked = rows.filter((r) => r.status === "clicked").length;
-              // Each variant has a subject per language the campaign is
-              // written in; every recipient was dealt one of hers.
-              const subject = variantSubjects(campaign, variant).join(" · ");
-              return (
-                <div key={variant}>
+            {variantBreakdown(campaign, recipients).map(
+              ({ variant, languages }) => (
+                <div key={variant} className="flex flex-col gap-3">
                   <p className="text-petroleum-400 text-xs uppercase">
                     {variant}
                   </p>
-                  <p className="text-petroleum-700 truncate text-sm font-medium">
-                    {subject}
-                  </p>
-                  <p className="text-petroleum-500 mt-1 text-sm">
-                    {rows.length} · {t("detail.opened").toLowerCase()}{" "}
-                    {rate(opened, rows.length)} ·{" "}
-                    {t("detail.clicked").toLowerCase()}{" "}
-                    {rate(clicked, rows.length)}
-                  </p>
+                  {languages.map((line) => (
+                    <div key={line.locale}>
+                      <p className="text-petroleum-700 truncate text-sm font-medium">
+                        {languages.length > 1 && (
+                          <span className="text-petroleum-400 mr-2 text-xs uppercase">
+                            {line.locale}
+                          </span>
+                        )}
+                        {line.subject ?? "—"}
+                      </p>
+                      <p className="text-petroleum-500 mt-1 text-sm">
+                        {line.total} · {t("detail.opened").toLowerCase()}{" "}
+                        {rate(line.opened, line.total)} ·{" "}
+                        {t("detail.clicked").toLowerCase()}{" "}
+                        {rate(line.clicked, line.total)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
+              ),
+            )}
           </div>
         </section>
       )}

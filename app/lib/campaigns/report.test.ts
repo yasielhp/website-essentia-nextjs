@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { IntlMessageFormat } from "intl-messageformat";
+import type { RecipientStatus } from "@/types/campaign";
 import es from "../../../messages/es/dashboard.json";
 import en from "../../../messages/en/dashboard.json";
 import { haltMessage, haltMessageIn } from "./error-markers";
@@ -15,7 +16,7 @@ import {
   reportTiles,
   sentCountOf,
   statusBreakdown,
-  variantSubjects,
+  variantBreakdown,
 } from "./report";
 
 describe("describeLastError", () => {
@@ -516,7 +517,7 @@ describe("the markers of the engine never reach the screen as they are stored", 
   });
 });
 
-describe("variantSubjects: the two subjects of an A/B test, in each language it went out in", () => {
+describe("variantBreakdown: an A/B test's two variants, language by language", () => {
   const block = (subject: string, subjectB?: string) => ({
     subject,
     ...(subjectB ? { subjectB } : {}),
@@ -528,31 +529,84 @@ describe("variantSubjects: the two subjects of an A/B test, in each language it 
     es: block("Hola", "Hola de nuevo"),
     en: block("Hello", "Hello again"),
   };
+  const r = (
+    variant: "a" | "b",
+    language: "es" | "en",
+    status: RecipientStatus = "sent",
+  ) => ({ variant, language, status });
 
-  test("an audience of both languages: each variant's subject in Spanish and in English", () => {
-    const campaign = { audience: { language: "any" as const }, content };
-    expect(variantSubjects(campaign, "a")).toEqual(["Hola", "Hello"]);
-    expect(variantSubjects(campaign, "b")).toEqual([
-      "Hola de nuevo",
-      "Hello again",
+  test("each variant shows its subject and its numbers in Spanish and in English", () => {
+    const recipients = [
+      r("a", "es", "opened"),
+      r("a", "es"),
+      r("b", "es", "clicked"),
+      r("b", "es", "opened"),
+      r("a", "en", "clicked"),
+      r("b", "en"),
+    ];
+    expect(
+      variantBreakdown({ audience: { language: "any" }, content }, recipients),
+    ).toEqual([
+      {
+        variant: "a",
+        languages: [
+          { locale: "es", subject: "Hola", total: 2, opened: 1, clicked: 0 },
+          { locale: "en", subject: "Hello", total: 1, opened: 1, clicked: 1 },
+        ],
+      },
+      {
+        variant: "b",
+        languages: [
+          {
+            locale: "es",
+            subject: "Hola de nuevo",
+            total: 2,
+            opened: 2,
+            clicked: 1,
+          },
+          {
+            locale: "en",
+            subject: "Hello again",
+            total: 1,
+            opened: 0,
+            clicked: 0,
+          },
+        ],
+      },
     ]);
   });
 
-  test("an audience that fixes a language: that language's alone", () => {
-    expect(
-      variantSubjects({ audience: { language: "en" as const }, content }, "b"),
-    ).toEqual(["Hello again"]);
+  test("an audience that fixes a language: that language alone, and every row counts in it", () => {
+    const breakdown = variantBreakdown(
+      { audience: { language: "en" }, content },
+      // Queued as Spanish under an earlier audience: sent the English version.
+      [r("b", "es"), r("b", "en")],
+    );
+    expect(breakdown[1]).toEqual({
+      variant: "b",
+      languages: [
+        {
+          locale: "en",
+          subject: "Hello again",
+          total: 2,
+          opened: 0,
+          clicked: 0,
+        },
+      ],
+    });
   });
 
-  test("a subject nobody wrote is left out, not shown as a blank", () => {
-    expect(
-      variantSubjects(
-        {
-          audience: { language: "any" as const },
-          content: { es: block("Hola"), en: block("Hello", "Hello again") },
-        },
-        "b",
-      ),
-    ).toEqual(["Hello again"]);
+  test("a subject nobody wrote is null, not a blank", () => {
+    const [, b] = variantBreakdown(
+      {
+        audience: { language: "any" },
+        content: { es: block("Hola"), en: block("Hello", "Hello again") },
+      },
+      [],
+    );
+    expect(b?.languages.map((line) => line.subject)).toEqual([
+      null,
+      "Hello again",
+    ]);
   });
 });

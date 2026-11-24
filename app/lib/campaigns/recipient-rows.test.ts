@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Recipient } from "./audience-filter";
-import { conflictTarget, recipientRow } from "./recipient-rows";
+import { conflictTarget, dealVariants, recipientRow } from "./recipient-rows";
 
 const emailRecipient: Recipient = {
   id: "contact-1",
@@ -94,5 +94,37 @@ describe("recipientRow", () => {
       cycle: "",
     });
     expect(row.email).toBeNull();
+  });
+});
+
+describe("dealVariants", () => {
+  test("alternates a and b within each language, not over the whole list", () => {
+    // Languages alternating: dealt over the list, every Spanish contact would
+    // get the first subject and every English one the second.
+    expect(dealVariants(["es", "en", "es", "en", "es", "en"])).toEqual([
+      "a",
+      "a",
+      "b",
+      "b",
+      "a",
+      "a",
+    ]);
+  });
+
+  test("each language ends with its two halves the same size, one apart at most", () => {
+    const languages = [
+      ...Array.from({ length: 7 }, () => "es" as const),
+      ...Array.from({ length: 4 }, () => "en" as const),
+    ].sort(() => 0.5 - Math.random());
+    const variants = dealVariants(languages);
+    for (const locale of ["es", "en"] as const) {
+      const mine = variants.filter((_, i) => languages[i] === locale);
+      const a = mine.filter((v) => v === "a").length;
+      expect(Math.abs(a - (mine.length - a))).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("one language is the alternation it always was", () => {
+    expect(dealVariants(["es", "es", "es"])).toEqual(["a", "b", "a"]);
   });
 });
