@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { EMPTY_AUDIENCE } from "@/types/campaign";
+import { validateCampaign } from "@/lib/schemas";
+import es from "../../../messages/es/dashboard.json";
+import en from "../../../messages/en/dashboard.json";
 import {
   CAMPAIGN_LOCALES,
+  INCOMPLETE_ERRORS,
   audienceLocales,
   incompleteError,
   missingLocales,
@@ -97,5 +101,81 @@ describe("incompleteError", () => {
   test("anything else is the plain 'check the fields'", () => {
     expect(incompleteError({ name: "nameRequired" })).toBe("invalid");
     expect(incompleteError({})).toBe("invalid");
+  });
+
+  test("a version that is all written but wrong has errors, it is not missing", () => {
+    expect(incompleteError({ "content.en.subject": "subjectTooLong" })).toBe(
+      "errors_en",
+    );
+    expect(
+      incompleteError({
+        "content.es.preheader": "preheaderTooLong",
+        "content.en.title": "titleTooLong",
+      }),
+    ).toBe("errors_both");
+    expect(
+      incompleteError({ "content.whatsapp.es.params.0": "paramTooLong" }),
+    ).toBe("errors_es");
+  });
+
+  test("an empty field anywhere in a version makes it missing, whatever else is wrong in it", () => {
+    expect(
+      incompleteError({
+        "content.en.subject": "subjectTooLong",
+        "content.en.doc": "bodyRequired",
+      }),
+    ).toBe("missing_en");
+  });
+
+  test("one missing and the other with errors: the refusal says both", () => {
+    expect(
+      incompleteError({
+        "content.es.doc": "bodyRequired",
+        "content.en.subject": "subjectTooLong",
+      }),
+    ).toBe("missing_es_errors_en");
+    expect(
+      incompleteError({
+        "content.es.subject": "subjectTooLong",
+        "content.whatsapp.en.templateId": "templateRequired",
+      }),
+    ).toBe("missing_en_errors_es");
+  });
+
+  test("on what the real validation says of a subject too long", () => {
+    const tooLong = "x".repeat(121);
+    const written = (subject: string) => ({
+      subject,
+      preheader: "",
+      title: "Título",
+      doc: {
+        type: "doc",
+        content: [
+          { type: "paragraph", content: [{ type: "text", text: "Hola" }] },
+        ],
+      },
+    });
+    const check = validateCampaign({
+      name: "Reapertura",
+      channel: "email",
+      kind: "standard",
+      trigger: {},
+      audience: { ...EMPTY_AUDIENCE, language: "any" },
+      content: { es: written("Hola"), en: written(tooLong) },
+    });
+    expect(check.ok).toBe(false);
+    if (!check.ok) expect(incompleteError(check.errors)).toBe("errors_en");
+  });
+
+  test("every answer has its sentence, in Spanish and in English", () => {
+    for (const messages of [es, en]) {
+      const errors = messages.campaigns.errors as Record<string, string>;
+      for (const code of INCOMPLETE_ERRORS) {
+        expect([code, Boolean(errors[code])]).toEqual([code, true]);
+      }
+    }
+    expect((es.campaigns.errors as Record<string, string>).errors_en).toBe(
+      "La versión en inglés tiene errores: revisa los campos marcados.",
+    );
   });
 });

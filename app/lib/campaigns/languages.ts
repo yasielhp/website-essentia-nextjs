@@ -87,15 +87,59 @@ export function missingLocales(
 }
 
 /**
+ * The message keys that say a field was left empty, as opposed to filled in
+ * wrong (too long, a link that is not https…). A version with one of them is
+ * missing; a version with only the others is there, with errors.
+ */
+const EMPTY_FIELD_CODES: ReadonlySet<string> = new Set([
+  "subjectRequired",
+  "subjectBRequired",
+  "titleRequired",
+  "bodyRequired",
+  "templateRequired",
+]);
+
+/** What a refusal can say about the versions, from `incompleteError`. */
+export const INCOMPLETE_ERRORS = [
+  "missing_es",
+  "missing_en",
+  "missing_both",
+  "errors_es",
+  "errors_en",
+  "errors_both",
+  "missing_es_errors_en",
+  "missing_en_errors_es",
+  "invalid",
+] as const;
+
+export type IncompleteError = (typeof INCOMPLETE_ERRORS)[number];
+
+/**
  * What a send, a schedule or an activation answers for a campaign that fails
- * its validation: WHICH version is missing when that is what is wrong (the
- * dashboard has a sentence for each), else the plain "check the fields".
+ * its validation: WHICH version is wrong and HOW (the dashboard has a sentence
+ * for each), else the plain "check the fields". A version is missing when a
+ * field it needs was left empty; it has errors when everything is written but
+ * something is wrong (a subject too long, say), which "missing" would misstate.
  */
 export function incompleteError(
   errors: Record<string, string>,
-): "missing_es" | "missing_en" | "missing_both" | "invalid" {
-  const missing = missingLocales(errors);
-  if (missing.length === 0) return "invalid";
-  if (missing.length > 1) return "missing_both";
-  return missing[0] === "es" ? "missing_es" : "missing_en";
+): IncompleteError {
+  const state = (locale: CampaignLocale): "missing" | "errors" | null => {
+    const own = Object.entries(errors).filter(
+      ([key]) =>
+        key.startsWith(`content.${locale}.`) ||
+        key.startsWith(`content.whatsapp.${locale}.`),
+    );
+    if (own.length === 0) return null;
+    return own.some(([, code]) => EMPTY_FIELD_CODES.has(code))
+      ? "missing"
+      : "errors";
+  };
+  const es = state("es");
+  const en = state("en");
+  if (es === null && en === null) return "invalid";
+  if (es === en) return es === "missing" ? "missing_both" : "errors_both";
+  if (en === null) return es === "missing" ? "missing_es" : "errors_es";
+  if (es === null) return en === "missing" ? "missing_en" : "errors_en";
+  return es === "missing" ? "missing_es_errors_en" : "missing_en_errors_es";
 }

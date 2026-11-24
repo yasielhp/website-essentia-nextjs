@@ -21,6 +21,8 @@ let kind: string | null = "standard";
 let language: "any" | "es" | "en" = "any";
 /** Which versions the saved campaign has written. */
 let written: ("es" | "en")[] = ["es", "en"];
+/** A version written in full whose subject is longer than the limit. */
+let tooLong: ("es" | "en")[] = [];
 let readError = false;
 let missing = false;
 let dispatched: string[] = [];
@@ -53,8 +55,12 @@ const saved = () => ({
     manualIds: [],
   },
   content: {
-    es: written.includes("es") ? version("Hola") : EMPTY,
-    en: written.includes("en") ? version("Hello") : EMPTY,
+    es: written.includes("es")
+      ? version(tooLong.includes("es") ? "H".repeat(121) : "Hola")
+      : EMPTY,
+    en: written.includes("en")
+      ? version(tooLong.includes("en") ? "H".repeat(121) : "Hello")
+      : EMPTY,
   },
 });
 
@@ -114,6 +120,7 @@ beforeEach(() => {
   kind = "standard";
   language = "any";
   written = ["es", "en"];
+  tooLong = [];
   readError = false;
   missing = false;
   dispatched = [];
@@ -255,5 +262,27 @@ describe("nothing goes out with a language of its audience missing", () => {
       error: "missing_en",
     });
     expect(dispatched).toEqual([]);
+  });
+});
+
+describe("a version written in full but wrong is not called missing", () => {
+  test("an English subject past the limit: the refusal says the English version has errors", async () => {
+    written = ["es", "en"];
+    tooLong = ["en"];
+    expect(await sendCampaignNow("t", "camp-1")).toEqual({
+      ok: false,
+      error: "errors_en",
+    });
+    expect(dispatched).toEqual([]);
+  });
+
+  test("Spanish missing and English wrong: it says both", async () => {
+    written = ["en"];
+    tooLong = ["en"];
+    expect(await scheduleCampaign("t", "camp-1", FUTURE)).toEqual({
+      ok: false,
+      error: "missing_es_errors_en",
+    });
+    expect(updates).toEqual([]);
   });
 });

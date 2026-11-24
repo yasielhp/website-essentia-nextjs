@@ -1970,7 +1970,12 @@
       "pause_to_save": "Pausa la campaña para guardarla incompleta.",
       "missing_es": "Falta la versión en español: la audiencia incluye ese idioma.",
       "missing_en": "Falta la versión en inglés: la audiencia incluye ese idioma.",
-      "missing_both": "Faltan las versiones en español y en inglés."
+      "missing_both": "Faltan las versiones en español y en inglés.",
+      "errors_es": "La versión en español tiene errores: revisa los campos marcados.",
+      "errors_en": "La versión en inglés tiene errores: revisa los campos marcados.",
+      "errors_both": "Las versiones en español y en inglés tienen errores: revisa los campos marcados.",
+      "missing_es_errors_en": "Falta la versión en español, y la versión en inglés tiene errores.",
+      "missing_en_errors_es": "Falta la versión en inglés, y la versión en español tiene errores."
     },
     "type": {
       "title": "Tipo de campaña",

@@ -1970,7 +1970,12 @@
       "pause_to_save": "Pause the campaign to save it incomplete.",
       "missing_es": "The Spanish version is missing: the audience includes that language.",
       "missing_en": "The English version is missing: the audience includes that language.",
-      "missing_both": "The Spanish and English versions are missing."
+      "missing_both": "The Spanish and English versions are missing.",
+      "errors_es": "The Spanish version has errors: check the marked fields.",
+      "errors_en": "The English version has errors: check the marked fields.",
+      "errors_both": "The Spanish and English versions have errors: check the marked fields.",
+      "missing_es_errors_en": "The Spanish version is missing, and the English version has errors.",
+      "missing_en_errors_es": "The English version is missing, and the Spanish version has errors."
     },
     "type": {
       "title": "Campaign type",
