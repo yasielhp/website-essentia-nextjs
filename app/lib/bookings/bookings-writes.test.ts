@@ -113,8 +113,11 @@ describe("nothing in the browser writes a booking", () => {
     expect(browser).toContain(
       "app/components/sections/booking/booking-submit.ts",
     );
+    // The desk's screen ("New booking"): its helper, `create-booking.ts`,
+    // holds no database client of its own any more (everything it writes is a
+    // server action), so the screen is what names the browser side here.
     expect(browser).toContain(
-      "app/(dashboard)/dashboard/bookings/new/create-booking.ts",
+      "app/(dashboard)/dashboard/bookings/new/page.tsx",
     );
     expect(browser.filter((path) => NOT_A_READ.test(read(path)))).toEqual([]);
   });

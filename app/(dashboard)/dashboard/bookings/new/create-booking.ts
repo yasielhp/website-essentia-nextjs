@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import { getSessionUser } from "@/actions/auth";
-import { createDeskBooking } from "@/actions/desk-booking";
+import { createDeskBooking, linkDeskContact } from "@/actions/desk-booking";
 import {
   recordBookingCreated,
   recordBookingPaymentNote,
@@ -101,7 +100,8 @@ function addressOf(draft: NewBookingDraft): string | null {
  * Bookings created here never set `contact_id`, which is why 81 of 100 rows had
  * none and a client's history looked empty on their own page. `upsert_contact`
  * creates the contact or returns the existing one, exactly as the public
- * booking flow does.
+ * booking flow does. It runs on the server (`linkDeskContact`, the team only):
+ * the browser's key can no longer call it.
  *
  * A booking is worth more than its contact link, so a failure does not stop the
  * write — but it is said out loud. Swallowing it is how every dashboard booking
@@ -111,27 +111,25 @@ async function linkContact(draft: NewBookingDraft): Promise<string | null> {
   const email = draft.email.trim();
   if (!email) return null;
 
-  const { data: contactUuid, error } = await insforge.database.rpc(
-    "upsert_contact",
-    {
-      p_email: email,
-      p_first_name: draft.firstName.trim(),
-      p_last_name: draft.lastName.trim(),
-      p_phone: draft.phone.trim() || null,
-      p_language: draft.language,
-      p_gender: toStoredGender(draft.gender),
-      // `null`, not `false`: an untouched switch must not undo an earlier yes.
-      p_newsletter: draft.newsletter ? true : null,
-    },
-  );
+  const result = await linkDeskContact(getAccessToken(), {
+    email,
+    firstName: draft.firstName.trim(),
+    lastName: draft.lastName.trim(),
+    phone: draft.phone.trim() || null,
+    language: draft.language === "en" ? "en" : "es",
+    gender: toStoredGender(draft.gender),
+    // `null`, not `false`: an untouched switch must not undo an earlier yes.
+    newsletter: draft.newsletter ? true : null,
+  }).catch(() => ({ ok: false as const, error: "failed" as const }));
 
-  if (error) {
+  if (!result.ok) {
     console.error(
-      "[booking] upsert_contact failed; the booking will have no contact:",
-      error,
+      "[booking] the contact could not be saved; the booking will have no contact:",
+      result.error,
     );
+    return null;
   }
-  return (contactUuid as string | null) ?? null;
+  return result.contactId;
 }
 
 export type CreateResult =

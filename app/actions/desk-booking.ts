@@ -5,6 +5,10 @@ import {
   createDeskBookingCore,
   type DeskCreateResult,
 } from "@/lib/bookings/desk-create";
+import {
+  linkDeskContactCore,
+  type DeskContactResult,
+} from "@/lib/bookings/desk-contact";
 
 /**
  * Takes a booking at the desk (the dashboard's "New booking").
@@ -27,4 +31,22 @@ export async function createDeskBooking(
     throw err;
   }
   return createDeskBookingCore(actor, input);
+}
+
+/**
+ * The client's contact for a booking taken at the desk: written, or found by
+ * its address, before the booking itself. The team only, as above. What is
+ * written, and why it is the server's, is in `app/lib/bookings/desk-contact.ts`.
+ */
+export async function linkDeskContact(
+  accessToken: string | null,
+  input: unknown,
+): Promise<DeskContactResult | { ok: false; error: "session" }> {
+  try {
+    await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: "session" };
+    throw err;
+  }
+  return linkDeskContactCore(input);
 }
