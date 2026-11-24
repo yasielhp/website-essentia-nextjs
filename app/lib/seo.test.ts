@@ -254,3 +254,28 @@ describe("the Running Club is in Santa Cruz de Tenerife, with no fixed address",
     }
   });
 });
+
+describe("the Experiences and Memberships descriptions promise nothing that is not open", () => {
+  const meta = (locale: string, file: string) =>
+    (
+      JSON.parse(
+        readFileSync(
+          join(import.meta.dir, "../../messages", locale, `${file}.json`),
+          "utf8",
+        ),
+      ) as { meta: { title: string; description: string } }
+    ).meta;
+
+  test("no exclusive memberships, member events or plans, within the limits", () => {
+    for (const locale of ["es", "en"]) {
+      for (const file of ["experiences", "memberships"]) {
+        const { title, description } = meta(locale, file);
+        expect(`${locale} ${file}: ${description}`).not.toMatch(
+          /exclusiv|miembros?\b|\bmembers?\b|planes|plans|acceso completo|full access/i,
+        );
+        expect(description.length).toBeLessThanOrEqual(META_DESCRIPTION_MAX);
+        expect(title.length).toBeLessThanOrEqual(META_TITLE_MAX);
+      }
+    }
+  });
+});
