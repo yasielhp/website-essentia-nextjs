@@ -2,6 +2,7 @@
 
 import { getAdminClient } from "@/lib/insforge-admin";
 import { AuthError, requireRole } from "@/lib/auth-guard";
+import { bookingAccess } from "@/lib/bookings/booking-access";
 import type {
   BookingEventActorRole,
   BookingEventChannel,
@@ -22,13 +23,14 @@ export async function fetchBookingEvents(
   bookingId: string,
 ): Promise<BookingEventRow[]> {
   try {
-    await requireRole(accessToken);
+    const actor = await requireRole(accessToken);
+    // Admin and staff any booking, a partner only her own: the history names
+    // clients and staff, by address and by phone.
+    if (!(await bookingAccess(actor, bookingId)).ok) return [];
   } catch (err) {
     if (err instanceof AuthError) return [];
     throw err;
   }
-
-  if (!bookingId) return [];
 
   const db = getAdminClient().database;
 

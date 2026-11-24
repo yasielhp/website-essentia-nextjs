@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { contactAccess } from "@/lib/bookings/booking-access";
 import {
   ADMIN_ROLES,
   AuthError,
@@ -55,7 +56,9 @@ export async function fetchContacts(
   search?: string,
 ): Promise<{ contacts: ContactRow[]; total: number }> {
   try {
-    await requireRole(accessToken);
+    // The list of every contact is not a partner's: her screens show her own
+    // bookings, and a client of hers from one of them (`fetchContactDetail`).
+    await requireRole(accessToken, ["admin", "staff"]);
   } catch (err) {
     if (err instanceof AuthError) return { contacts: [], total: 0 };
     throw err;
@@ -108,12 +111,17 @@ export async function fetchContactDetail(
   accessToken: string | null,
   id: string,
 ): Promise<ContactDetailResult> {
+  let actor;
   try {
-    await requireRole(accessToken);
+    actor = await requireRole(accessToken);
   } catch (err) {
     if (err instanceof AuthError) return { found: false };
     throw err;
   }
+  // A partner sees a contact only when it is a client of hers, and then only
+  // her own bookings with it (below); not found otherwise.
+  if (!(await contactAccess(actor, id))) return { found: false };
+  const partnerId = actor.role === "partner" ? actor.userId : null;
 
   const db = getAdminClient().database;
 
@@ -149,39 +157,58 @@ export async function fetchContactDetail(
     { data: raceRegData },
     { data: eduRegData },
   ] = await Promise.all([
-    db
-      .from("bookings")
-      .select(bookingFields)
-      .eq("contact_id", id)
-      .order("created_at", { ascending: false }),
+    partnerId
+      ? db
+          .from("bookings")
+          .select(bookingFields)
+          .eq("contact_id", id)
+          .eq("partner_id", partnerId)
+          .order("created_at", { ascending: false })
+      : db
+          .from("bookings")
+          .select(bookingFields)
+          .eq("contact_id", id)
+          .order("created_at", { ascending: false }),
     // Two queries merged by id rather than one `or(...)`: an address embedded
     // in PostgREST filter syntax would need escaping, and getting that wrong
     // silently changes which rows match.
     contact.email
-      ? db
-          .from("bookings")
-          .select(bookingFields)
-          .ilike("email", contact.email)
-          .order("created_at", { ascending: false })
+      ? partnerId
+        ? db
+            .from("bookings")
+            .select(bookingFields)
+            .ilike("email", contact.email)
+            .eq("partner_id", partnerId)
+            .order("created_at", { ascending: false })
+        : db
+            .from("bookings")
+            .select(bookingFields)
+            .ilike("email", contact.email)
+            .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
-    // Memberships carry the person's email, not a contact id.
-    contact.email
+    // Memberships carry the person's email, not a contact id. Not a
+    // partner's to see, nor the registrations below.
+    contact.email && !partnerId
       ? db
           .from("memberships")
           .select("id, plan, status, start_date, created_at")
           .ilike("email", contact.email)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
-    db
-      .from("race_registrations")
-      .select("id, created_at, race_id")
-      .eq("contact_id", id)
-      .order("created_at", { ascending: false }),
-    db
-      .from("education_registrations")
-      .select("id, created_at, session_id")
-      .eq("contact_id", id)
-      .order("created_at", { ascending: false }),
+    partnerId
+      ? Promise.resolve({ data: [] })
+      : db
+          .from("race_registrations")
+          .select("id, created_at, race_id")
+          .eq("contact_id", id)
+          .order("created_at", { ascending: false }),
+    partnerId
+      ? Promise.resolve({ data: [] })
+      : db
+          .from("education_registrations")
+          .select("id, created_at, session_id")
+          .eq("contact_id", id)
+          .order("created_at", { ascending: false }),
   ]);
 
   const bookingsById = new Map<string, ContactBooking>();

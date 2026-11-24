@@ -56,6 +56,8 @@ let notifications: typeof import("@/actions/booking-notifications");
 let staffWhatsApp: typeof import("@/actions/staff-whatsapp");
 let calendars: typeof import("@/actions/calendar-propagate");
 let draft: typeof import("@/actions/booking-draft");
+let events: typeof import("@/actions/booking-events");
+let contacts: typeof import("@/actions/contacts");
 
 beforeAll(async () => {
   mock.module("@/lib/insforge-admin", () => ({
@@ -131,6 +133,8 @@ beforeAll(async () => {
   staffWhatsApp = await import("@/actions/staff-whatsapp");
   calendars = await import("@/actions/calendar-propagate");
   draft = await import("@/actions/booking-draft");
+  events = await import("@/actions/booking-events");
+  contacts = await import("@/actions/contacts");
 });
 
 afterAll(() => {
@@ -469,5 +473,97 @@ describe("a partner edits only while the session is more than 23 h 59 min away (
     expect(await edit("aaaaaaaa-0000-4000-8000-00000000000f")).toEqual({
       error: "not_found",
     });
+  });
+});
+
+const HER_CLIENT = "cccccccc-0000-4000-8000-000000000001";
+const NOT_HERS = "cccccccc-0000-4000-8000-000000000002";
+
+describe("what a partner may read of a booking and its client", () => {
+  beforeEach(() => {
+    tables.bookings[0]!.contact_id = HER_CLIENT;
+    tables.bookings[1]!.contact_id = NOT_HERS;
+    tables.contacts.push(
+      { id: HER_CLIENT, email: "ana@example.com" },
+      { id: NOT_HERS, email: "bea@example.com" },
+    );
+    tables.booking_events = [
+      {
+        id: "e-1",
+        booking_id: MINE,
+        summary: "mine",
+        created_at: "2026-01-01",
+      },
+      {
+        id: "e-2",
+        booking_id: THEIRS,
+        summary: "theirs",
+        created_at: "2026-01-01",
+      },
+    ];
+  });
+
+  test("the history of her own booking, and of nobody else's", async () => {
+    expect(
+      (await events.fetchBookingEvents("token", MINE)).map((e) => e.summary),
+    ).toEqual(["mine"]);
+    expect(await events.fetchBookingEvents("token", THEIRS)).toEqual([]);
+    expect(await events.fetchBookingEvents("token", "1")).toEqual([]);
+  });
+
+  test("staff read any booking's history", async () => {
+    role = "staff";
+    expect(
+      (await events.fetchBookingEvents("token", THEIRS)).map((e) => e.summary),
+    ).toEqual(["theirs"]);
+  });
+
+  test("the list of every contact is not hers", async () => {
+    expect(await contacts.fetchContacts("token", 0, 20)).toEqual({
+      contacts: [],
+      total: 0,
+    });
+  });
+
+  test("a client of hers she sees, with her own bookings only; any other contact is not found", async () => {
+    // A second booking with her client, somebody else's: not shown to her.
+    tables.bookings.push(
+      booking({
+        id: "aaaaaaaa-0000-4000-8000-000000000009",
+        partner_id: SOMEONE,
+        contact_id: HER_CLIENT,
+      }),
+    );
+    const detail = await contacts.fetchContactDetail("token", HER_CLIENT);
+    expect(detail.found).toBe(true);
+    if (detail.found) {
+      expect(detail.bookings.map((b) => b.id)).toEqual([MINE]);
+      expect(detail.memberships).toEqual([]);
+    }
+    expect(await contacts.fetchContactDetail("token", NOT_HERS)).toEqual({
+      found: false,
+    });
+  });
+
+  test("a client of hers by the address alone, when the booking carries no contact", async () => {
+    tables.bookings[0]!.contact_id = null;
+    tables.bookings[0]!.email = "ANA@example.com";
+    expect((await contacts.fetchContactDetail("token", HER_CLIENT)).found).toBe(
+      true,
+    );
+  });
+
+  test("a client's bonuses, only a client of hers", async () => {
+    // Not a client of hers: nothing is read for her (the table is not even
+    // in this database).
+    expect(await bonuses.fetchContactBonuses("token", NOT_HERS)).toEqual([]);
+  });
+
+  test("staff and admin see every contact, with all its bookings", async () => {
+    role = "admin";
+    const detail = await contacts.fetchContactDetail("token", NOT_HERS);
+    expect(detail.found).toBe(true);
+    if (detail.found)
+      expect(detail.bookings.map((b) => b.id)).toEqual([THEIRS]);
   });
 });

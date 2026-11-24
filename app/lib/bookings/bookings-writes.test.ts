@@ -247,6 +247,7 @@ describe("the doors that write instead of the browser", () => {
       ["app/actions/booking-notifications.ts", 1],
       ["app/actions/staff-whatsapp.ts", 1],
       ["app/actions/calendar-propagate.ts", 2],
+      ["app/actions/booking-events.ts", 1],
     ] as const) {
       const found = (read(path).match(/bookingAccess\(/g) ?? []).length;
       expect({ path, calls: found }).toEqual({ path, calls });

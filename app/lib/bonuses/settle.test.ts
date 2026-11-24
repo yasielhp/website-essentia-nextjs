@@ -303,7 +303,10 @@ describe("the contact's bonus card", () => {
         created_at: "2026-07-12T05:00:00Z",
       },
     ];
-    const [bonus] = await fetchContactBonuses("token", "c-1");
+    const [bonus] = await fetchContactBonuses(
+      "token",
+      "cccccccc-0000-4000-8000-000000000001",
+    );
     expect(bonus).toMatchObject({ used: 2, remaining: 3, lost: 1 });
   });
 });

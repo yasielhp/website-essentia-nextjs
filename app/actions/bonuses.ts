@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth-guard";
 import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
-import { bookingAccess } from "@/lib/bookings/booking-access";
+import { bookingAccess, contactAccess } from "@/lib/bookings/booking-access";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import {
@@ -144,7 +144,9 @@ export async function fetchContactBonuses(
   accessToken: string | null,
   contactId: string,
 ): Promise<ContactBonus[]> {
-  if (!(await authorize(accessToken)) || !contactId) return [];
+  const actor = await authorize(accessToken);
+  // A partner, only a client of hers (`contactAccess`).
+  if (!actor || !(await contactAccess(actor, contactId))) return [];
 
   const db = getAdminClient().database;
   const { data } = await db

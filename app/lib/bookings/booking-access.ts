@@ -88,3 +88,47 @@ export async function bookingAccess(
   }
   return { ok: true, booking };
 }
+
+/**
+ * Whether this member of the team may see a contact: admin and staff any, a
+ * partner only a client of hers (a contact with at least one booking whose
+ * `partner_id` is her, linked by the contact or by the address), anybody
+ * else none. A partner reaches the contact page only from one of her own
+ * bookings; the contacts list is not on her screens.
+ */
+export async function contactAccess(
+  actor: BookingActor,
+  contactId: unknown,
+): Promise<boolean> {
+  const id = bookingIdSchema.safeParse(contactId);
+  if (!id.success) return false;
+  if (actor.role === "admin" || actor.role === "staff") return true;
+  if (actor.role !== "partner") return false;
+
+  const db = getAdminClient().database;
+  const { data: linked } = await db
+    .from("bookings")
+    .select("id")
+    .eq("contact_id", id.data)
+    .eq("partner_id", actor.userId)
+    .limit(1);
+  if (((linked ?? []) as unknown[]).length > 0) return true;
+
+  const { data: contact } = await db
+    .from("contacts")
+    .select("email")
+    .eq("id", id.data)
+    .maybeSingle();
+  const email = (contact as { email: string | null } | null)?.email?.trim();
+  if (!email) return false;
+  const { data: byAddress } = await db
+    .from("bookings")
+    .select("id")
+    .ilike(
+      "email",
+      email.replace(/[\\%_]/g, (c) => `\\${c}`),
+    )
+    .eq("partner_id", actor.userId)
+    .limit(1);
+  return ((byAddress ?? []) as unknown[]).length > 0;
+}
