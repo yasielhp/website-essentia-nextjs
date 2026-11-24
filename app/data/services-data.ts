@@ -262,13 +262,18 @@ export const ivProtocols: IvProtocol[] = [
   },
 ];
 
-/** The facial rituals. No tiers in the database yet, so there are no
- *  individual pages and no per-treatment deep link into the booking form. */
+/** The facial rituals. Each is a session type in the database, found by its
+ *  title, which is where its price lives: none is written here. */
 export type FacialTreatment = {
   id: string;
   title: string;
-  /** Duration and price, as one line — the formats differ per ritual. */
-  meta: string;
+  /**
+   * The lengths its card shows. The card finds the session type with this
+   * title and length and prints its price beside it. A ritual without them
+   * (Kinéa Signature: its session type is switched off, and its card states no
+   * length) prints the line written for it in the messages instead.
+   */
+  durations?: string[];
   description: string;
   /** Full-screen hero on the ritual's own page. */
   image: string;
@@ -282,7 +287,7 @@ export const facialTreatments: FacialTreatment[] = [
   {
     id: "anesis",
     title: "Anesis",
-    meta: "50 min · €70",
+    durations: ["50 min"],
     description:
       "Hydration, radiance and comfort with selected cosmetics, a mask and a delicate facial, cervical and cranial massage.",
     // TODO: swap for anesis-1920x1080.webp / anesis-1200x675.webp once the
@@ -310,7 +315,7 @@ export const facialTreatments: FacialTreatment[] = [
   {
     id: "aurum",
     title: "Aurum",
-    meta: "60 min · €180",
+    durations: ["60 min"],
     description:
       "Radiance, firmness and regeneration with gold leaf, premium Aurum cosmetics and Kobido-inspired technique.",
     image: "/images/wellness/facials/heroes/aurum-1920x1080.webp",
@@ -336,7 +341,7 @@ export const facialTreatments: FacialTreatment[] = [
   {
     id: "eleva",
     title: "Eleva",
-    meta: "60 min · €220",
+    durations: ["60 min"],
     description:
       "Definition, structure and a lifting effect with facial wood therapy, natural hyaluronic acid and specific manual technique.",
     image: "/images/wellness/facials/heroes/eleva-1920x1080.webp",
@@ -362,7 +367,6 @@ export const facialTreatments: FacialTreatment[] = [
   {
     id: "kinea-signature",
     title: "Kinéa Signature",
-    meta: "First assessment + session · €240",
     description:
       "Full facial re-education, working posture, breathing, fascia, muscle and skin to recover harmony from the structure out.",
     image: "/images/wellness/facials/heroes/kinea-signature-1920x1080.webp",

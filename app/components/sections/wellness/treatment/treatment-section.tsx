@@ -275,6 +275,11 @@ function IvProtocolsSection() {
 
 function FacialTreatmentsSection() {
   const t = useTranslations("wellness.treatments");
+  const locale = useLocale() === "es" ? "es" : "en";
+  // As on the manual therapies: the price is the session type's, not a figure
+  // typed into a translation, which went on saying the old one after the
+  // centre changed it.
+  const prices = useTreatmentPrices("facial-therapies");
 
   return (
     <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -299,8 +304,13 @@ function FacialTreatmentsSection() {
                   <h3 className="font-display text-petroleum-700 text-xl md:text-2xl">
                     {t(`facialCards.${facial.id}.title`)}
                   </h3>
+                  {/* A ritual with a length shows it and the price of its
+                      session type; one without prints the line written for
+                      it (see `FacialTreatment.durations`). */}
                   <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
-                    {t(`facialCards.${facial.id}.meta`)}
+                    {facial.durations
+                      ? cardMeta(prices, facial.title, facial.durations, locale)
+                      : t(`facialCards.${facial.id}.meta`)}
                   </span>
                 </div>
 

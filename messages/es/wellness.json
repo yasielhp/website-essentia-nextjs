@@ -874,17 +874,14 @@
     "facialCards": {
       "anesis": {
         "title": "Anesis",
-        "meta": "50 min · 70 €",
         "description": "Hidratación, luminosidad y confort con cosmética seleccionada, mascarilla y un delicado masaje facial, cervical y craneal."
       },
       "aurum": {
         "title": "Aurum",
-        "meta": "60 min · 180 €",
         "description": "Luminosidad, firmeza y regeneración con láminas de oro, cosmética premium Aurum y técnicas inspiradas en Kobido."
       },
       "eleva": {
         "title": "Eleva",
-        "meta": "60 min · 220 €",
         "description": "Definición, estructura y efecto lifting con maderoterapia facial, ácido hialurónico natural y técnicas manuales específicas."
       },
       "kinea-signature": {
