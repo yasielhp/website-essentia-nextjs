@@ -10,6 +10,10 @@ import {
 } from "@/data/services-data";
 import { contact } from "@/constants/contact";
 import { isUnlaunched } from "@/constants/unlaunched";
+import {
+  NOTHING_HIDDEN,
+  type HiddenTreatments,
+} from "@/lib/treatments/visibility";
 
 export const siteBase =
   process.env.NEXT_PUBLIC_APP_URL ?? `https://${contact.domain}`;
@@ -177,17 +181,28 @@ export const staticRoutes = allStaticRoutes.filter(
   (r) => !isUnlaunched(r.path),
 );
 
-export function getTreatmentPaths(): { path: string; esPath: string }[] {
+/**
+ * The page of every treatment, less those whose session type is switched off
+ * (`hidden`, from `listAllHiddenTreatments`): their page answers 404 while it
+ * is off, and a sitemap lists only pages worth indexing.
+ */
+export function getTreatmentPaths(
+  hidden: HiddenTreatments = NOTHING_HIDDEN,
+): { path: string; esPath: string }[] {
+  const shown =
+    (family: keyof HiddenTreatments) =>
+    (t: { id: string }): boolean =>
+      !hidden[family].includes(t.id);
   return [
-    ...manualTherapyTreatments.map((t) => ({
+    ...manualTherapyTreatments.filter(shown("manual-therapies")).map((t) => ({
       path: `/wellness/manual-therapies/${t.id}`,
       esPath: `/bienestar/terapias-manuales/${t.id}`,
     })),
-    ...facialTreatments.map((t) => ({
+    ...facialTreatments.filter(shown("facial-therapies")).map((t) => ({
       path: `/wellness/facial-therapies/${t.id}`,
       esPath: `/bienestar/terapias-faciales/${t.id}`,
     })),
-    ...ivProtocols.map((p) => ({
+    ...ivProtocols.filter(shown("intravenous-therapy")).map((p) => ({
       path: `/medicine/intravenous-therapy/${p.id}`,
       esPath: `/medicina/terapia-intravenosa/${p.id}`,
     })),

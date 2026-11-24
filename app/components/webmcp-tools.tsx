@@ -5,7 +5,10 @@ import {
   bookableServices,
   manualTherapyTreatments,
 } from "@/data/services-data";
-import { fetchTreatmentPrices } from "@/actions/treatment-prices";
+import {
+  fetchHiddenTreatments,
+  fetchTreatmentPrices,
+} from "@/actions/treatment-prices";
 import { getAvailableStartTimes } from "@/utils/calendar-helpers";
 import { contact } from "@/constants/contact";
 import { serviceCatalogue } from "@/lib/treatments/catalogue";
@@ -40,12 +43,20 @@ export function WebMcpTools({ locale }: { locale: string }) {
         async execute() {
           // The prices are the session types', read when the agent asks: the
           // code keeps none. A read that fails is the same list without
-          // prices, never an old one.
+          // prices, never an old one. A treatment whose session type is
+          // switched off is left out, as the site leaves out its card.
           const prices = await fetchTreatmentPrices("manual-therapies").catch(
             () => [],
           );
+          const hidden = await fetchHiddenTreatments("manual-therapies").catch(
+            () => [],
+          );
           return {
-            services: serviceCatalogue(prices, locale === "es" ? "es" : "en"),
+            services: serviceCatalogue(
+              prices,
+              locale === "es" ? "es" : "en",
+              hidden,
+            ),
             bookingUrl: bookingUrl(locale),
           };
         },

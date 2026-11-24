@@ -29,10 +29,16 @@ export type CatalogueEntry = {
   priceCenter?: string;
 };
 
-/** The services, then each manual therapy with the price of its session type. */
+/**
+ * The services, then each manual therapy with the price of its session type,
+ * less the ones whose session type is switched off (`hidden`, the ids from
+ * `listHiddenTreatments`): the site has no page for them while they are off,
+ * so an assistant is not told of them either.
+ */
 export function serviceCatalogue(
   prices: readonly TierPrice[],
   locale: SupportedLocale,
+  hidden: readonly string[] = [],
 ): CatalogueEntry[] {
   return [
     ...bookableServices.map((service) => ({
@@ -42,22 +48,24 @@ export function serviceCatalogue(
       description: service.description,
       durations: service.durations,
     })),
-    ...manualTherapyTreatments.map((treatment) => {
-      const price = priceText(
-        prices,
-        treatment.title,
-        treatment.durations,
-        locale,
-      );
-      return {
-        id: `manual-therapies:${treatment.id}`,
-        category: "wellness",
-        title: treatment.title,
-        description: treatment.description,
-        durations: treatment.durations,
-        ...(price ? { priceCenter: price } : {}),
-      };
-    }),
+    ...manualTherapyTreatments
+      .filter((treatment) => !hidden.includes(treatment.id))
+      .map((treatment) => {
+        const price = priceText(
+          prices,
+          treatment.title,
+          treatment.durations,
+          locale,
+        );
+        return {
+          id: `manual-therapies:${treatment.id}`,
+          category: "wellness",
+          title: treatment.title,
+          description: treatment.description,
+          durations: treatment.durations,
+          ...(price ? { priceCenter: price } : {}),
+        };
+      }),
   ];
 }
 

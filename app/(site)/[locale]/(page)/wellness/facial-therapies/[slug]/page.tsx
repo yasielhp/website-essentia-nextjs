@@ -6,7 +6,10 @@ import { ServiceDetailView } from "@components/sections/wellness/treatment/servi
 import { breadcrumbSchema } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { cardMeta } from "@/lib/treatments/prices";
-import { listPublicTierPrices } from "@/lib/treatments/public-prices";
+import {
+  isTreatmentHidden,
+  listPublicTierPrices,
+} from "@/lib/treatments/public-prices";
 
 // The page prints the price of its session type, which the centre changes
 // from the dashboard: it is rebuilt at most every five minutes so a new price
@@ -28,7 +31,9 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params;
   const facial = facialTreatments.find((s) => s.id === slug);
-  if (!facial) return {};
+  // A treatment whose session type is switched off has no page while it is
+  // off: no title or description of its own on the 404 either.
+  if (!facial || (await isTreatmentHidden("facial-therapies", slug))) return {};
 
   const t = await getTranslations({ locale, namespace: "wellness.treatments" });
   const cardKey = `facialCards.${slug}`;
@@ -65,7 +70,12 @@ export default async function FacialDetailPage({ params }: Props) {
   setRequestLocale(locale);
 
   const facial = facialTreatments.find((s) => s.id === slug);
-  if (!facial) notFound();
+  // Switched off in Settings: 404 while it is off, not a redirect. The page
+  // comes back by itself when it is switched on, and a 404 tells a search
+  // engine to drop it until then, where a redirect to the list would be read
+  // as a soft 404 (or, permanent, be kept by browsers after it is back).
+  if (!facial || (await isTreatmentHidden("facial-therapies", slug)))
+    notFound();
 
   const t = await getTranslations("wellness.pages");
   // The same line as its card on the list, read on the server. A ritual with

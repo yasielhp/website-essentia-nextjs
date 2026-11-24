@@ -577,7 +577,9 @@ describe("nothing else writes a session type", () => {
 
   test("it reads the app, the scripts and the root, tests and scratch files aside", () => {
     expect(all).toContain("proxy.ts");
-    expect(all).toContain("scripts/build-llms.ts");
+    // `scripts/` holds no TypeScript today (the files for assistants are
+    // served by route handlers, `app/llms.txt`): one added there is read too.
+    expect(all).toContain("app/llms.txt/route.ts");
     expect(all).toContain("i18n/request.ts");
     expect(all).toContain(SAVE);
     expect(all.some((path) => path.includes(".test."))).toBe(false);

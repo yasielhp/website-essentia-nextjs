@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { UNLAUNCHED_ROUTES } from "@/constants/unlaunched";
 import {
@@ -8,23 +8,82 @@ import {
   manualTherapyTreatments,
 } from "@/data/services-data";
 import { buildLlmsFullTxt, buildLlmsTxt, llmsFamilies } from "@/lib/llms";
+import {
+  NOTHING_HIDDEN,
+  type HiddenTreatments,
+} from "@/lib/treatments/visibility";
 
 /**
  * The files for assistants are built from the site's own data, and these keep
- * them that way: the two files in `public/` must be exactly what the builder
- * writes, and what it writes must be what the site offers today, with no price
- * and nothing of the centre's past.
+ * them that way: what the builder writes must be what the site offers today,
+ * with no price, nothing of the centre's past, and no treatment whose session
+ * type is switched off. They are served by two route handlers, which hand the
+ * builder the treatments switched off at the time (`listAllHiddenTreatments`).
  */
 
-const PUBLIC = join(import.meta.dir, "../../public");
-const brief = readFileSync(join(PUBLIC, "llms.txt"), "utf8");
-const full = readFileSync(join(PUBLIC, "llms-full.txt"), "utf8");
+const ROOT = join(import.meta.dir, "../..");
+const brief = buildLlmsTxt();
+const full = buildLlmsFullTxt();
 const BOTH = { "llms.txt": brief, "llms-full.txt": full };
 
-describe("public/llms.txt and public/llms-full.txt", () => {
-  test("are what the builder writes: run `bun run build:llms` if this fails", () => {
-    expect(brief).toBe(buildLlmsTxt());
-    expect(full).toBe(buildLlmsFullTxt());
+/** The session types switched off on 2026-11-24, as the read hands them over. */
+const TODAY: HiddenTreatments = {
+  "manual-therapies": ["alure-duo", "essentia-signature"],
+  "facial-therapies": ["kinea-signature"],
+  "intravenous-therapy": [],
+};
+
+describe("/llms.txt and /llms-full.txt", () => {
+  test("are served by the route handlers, with the treatments switched off read at the time", () => {
+    for (const name of ["llms.txt", "llms-full.txt"]) {
+      // A file of the same name in `public/` would be served instead (or
+      // refused by the build) and say what was true the day it was written.
+      expect(`${name}: ${existsSync(join(ROOT, "public", name))}`).toBe(
+        `${name}: false`,
+      );
+      const route = readFileSync(join(ROOT, "app", name, "route.ts"), "utf8");
+      expect(route).toContain("await listAllHiddenTreatments()");
+      expect(route).toContain("export const revalidate = 300;");
+    }
+  });
+
+  test("leave out a treatment whose session type is switched off, in both files", () => {
+    const hidden = {
+      "llms.txt": buildLlmsTxt(TODAY),
+      "llms-full.txt": buildLlmsFullTxt(TODAY),
+    };
+    for (const [name, text] of Object.entries(hidden)) {
+      for (const page of [
+        "/wellness/manual-therapies/alure-duo",
+        "/wellness/manual-therapies/essentia-signature",
+        "/wellness/facial-therapies/kinea-signature",
+      ]) {
+        expect(`${name} ${page}: ${text.includes(`.com${page}`)}`).toBe(
+          `${name} ${page}: false`,
+        );
+      }
+      expect(text).not.toMatch(/Alure Duo|Essentia Signature|Kinéa Signature/);
+      expect(text).toContain(".com/wellness/manual-therapies/espira");
+      expect(text).toContain(".com/wellness/facial-therapies/aurum");
+    }
+  });
+
+  test("count only the treatments shown", () => {
+    const shown = llmsFamilies(TODAY);
+    expect(
+      shown.find((f) => f.id === "manual-therapies")?.entries,
+    ).toHaveLength(manualTherapyTreatments.length - 2);
+    expect(
+      shown.find((f) => f.id === "facial-therapies")?.entries,
+    ).toHaveLength(facialTreatments.length - 1);
+    expect(buildLlmsTxt(TODAY)).toContain(
+      `${manualTherapyTreatments.length - 2} treatments, each with its own page.`,
+    );
+  });
+
+  test("with nothing hidden (no read, or one that failed), every treatment is listed", () => {
+    expect(buildLlmsTxt(NOTHING_HIDDEN)).toBe(brief);
+    expect(buildLlmsFullTxt(NOTHING_HIDDEN)).toBe(full);
   });
 
   test("give no price: each treatment's own page has the current one", () => {

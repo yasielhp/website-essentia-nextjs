@@ -52,6 +52,14 @@ const database = {
                     duration_minutes: 30,
                     price_eur: 70,
                     price_center_eur: 70,
+                    active: true,
+                  },
+                  {
+                    label: "Alure Duo",
+                    duration_minutes: 50,
+                    price_eur: 120,
+                    price_center_eur: 120,
+                    active: false,
                   },
                 ],
                 error: null,
@@ -128,7 +136,9 @@ describe("listPublicTierPrices", () => {
       revalidate: prices.TIER_PRICES_REVALIDATE_SECONDS,
       tags: [TIER_PRICES_CACHE_TAG],
     });
-    expect(kept?.keyParts).toEqual(["tier-prices"]);
+    // The second part names the shape kept (prices and the names on sale and
+    // switched off), so an entry of the bare list of prices is never read.
+    expect(kept?.keyParts).toEqual(["tier-prices", "snapshot"]);
   });
 
   test("a read that fails is no prices for the page, and never an exception", async () => {
@@ -163,5 +173,56 @@ describe("listPublicTierPrices", () => {
     await prices.listPublicTierPrices("manual-therapies");
     await prices.listPublicTierPrices("facial-therapies");
     expect(cached).toEqual([["manual-therapies"], ["facial-therapies"]]);
+  });
+});
+
+describe("listHiddenTreatments", () => {
+  test("a treatment whose session type is switched off is hidden, and the others are not", async () => {
+    expect(await prices.listHiddenTreatments("manual-therapies")).toEqual([
+      "alure-duo",
+    ]);
+  });
+
+  test("from the same kept read as the prices: one entry per service", async () => {
+    await prices.listPublicTierPrices("manual-therapies");
+    await prices.listHiddenTreatments("manual-therapies");
+    expect(cached).toEqual([["manual-therapies"], ["manual-therapies"]]);
+    expect(kept?.options.tags).toEqual([TIER_PRICES_CACHE_TAG]);
+  });
+
+  test("a read that fails hides nothing: every card stays, without a price", async () => {
+    failing = true;
+    expect(await prices.listHiddenTreatments("manual-therapies")).toEqual([]);
+    expect(
+      await prices.isTreatmentHidden("manual-therapies", "alure-duo"),
+    ).toBe(false);
+    expect(await prices.listAllHiddenTreatments()).toEqual({
+      "manual-therapies": [],
+      "facial-therapies": [],
+      "intravenous-therapy": [],
+    });
+  });
+
+  test("isTreatmentHidden answers for one treatment", async () => {
+    expect(
+      await prices.isTreatmentHidden("manual-therapies", "alure-duo"),
+    ).toBe(true);
+    expect(await prices.isTreatmentHidden("manual-therapies", "espira")).toBe(
+      false,
+    );
+  });
+
+  test("listAllHiddenTreatments asks each of the three services", async () => {
+    const all = await prices.listAllHiddenTreatments();
+    expect(Object.keys(all).sort()).toEqual([
+      "facial-therapies",
+      "intravenous-therapy",
+      "manual-therapies",
+    ]);
+    expect(cached.map(([serviceId]) => serviceId).sort()).toEqual([
+      "facial-therapies",
+      "intravenous-therapy",
+      "manual-therapies",
+    ]);
   });
 });

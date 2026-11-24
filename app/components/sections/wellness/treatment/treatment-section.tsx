@@ -96,13 +96,23 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
  * charges, not a figure kept in code: the centre changes its prices itself.
  * The page reads them on the server and hands in each card's line as text
  * (`cardLines`), so the price is in the HTML the card arrives with. A
- * treatment whose session type is not on sale, or not in the length the card
- * says, shows its length alone; so does every card when the read failed.
+ * treatment whose session type is not on sale in the length the card says
+ * shows its length alone; so does every card when the read failed. One whose
+ * session type the centre switched off has no card at all while it is off
+ * (`hidden`), and is back on the list when it is switched on again.
  */
-function ManualTherapiesSection({ lines }: { lines: Record<string, string> }) {
+function ManualTherapiesSection({
+  lines,
+  hidden,
+}: {
+  lines: Record<string, string>;
+  hidden: readonly string[];
+}) {
   const t = useTranslations("wellness.treatments");
 
-  const manualServices = manualTherapyTreatments;
+  const manualServices = manualTherapyTreatments.filter(
+    (treatment) => !hidden.includes(treatment.id),
+  );
 
   return (
     <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -191,8 +201,11 @@ function ManualTherapiesSection({ lines }: { lines: Record<string, string> }) {
  * them, and stacked full-width rows would turn the page into a scroll. Each
  * card deep-links into the booking form with its own tier.
  */
-function IvProtocolsSection() {
+function IvProtocolsSection({ hidden }: { hidden: readonly string[] }) {
   const t = useTranslations("medicine.iv");
+  const protocols = ivProtocols.filter(
+    (protocol) => !hidden.includes(protocol.id),
+  );
 
   return (
     <section id="protocols" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -213,7 +226,7 @@ function IvProtocolsSection() {
             one side, photo on the other. Twelve of them make a long page, and
             that is the trade for a card that can hold a real description. */}
         <div className="flex flex-col gap-4">
-          {ivProtocols.map((protocol) => (
+          {protocols.map((protocol) => (
             <article
               key={protocol.id}
               className="bg-sand-100 grid overflow-hidden rounded-2xl md:grid-cols-2"
@@ -278,8 +291,17 @@ function IvProtocolsSection() {
  * page on the server, not a figure typed into a translation, which went on
  * saying the old one after the centre changed it.
  */
-function FacialTreatmentsSection({ lines }: { lines: Record<string, string> }) {
+function FacialTreatmentsSection({
+  lines,
+  hidden,
+}: {
+  lines: Record<string, string>;
+  hidden: readonly string[];
+}) {
   const t = useTranslations("wellness.treatments");
+  const facials = facialTreatments.filter(
+    (facial) => !hidden.includes(facial.id),
+  );
 
   return (
     <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -294,7 +316,7 @@ function FacialTreatmentsSection({ lines }: { lines: Record<string, string> }) {
         </div>
 
         <div className="flex flex-col gap-4">
-          {facialTreatments.map((facial) => (
+          {facials.map((facial) => (
             <article
               key={facial.id}
               className="bg-sand-100 grid overflow-hidden rounded-2xl md:grid-cols-2"
@@ -320,7 +342,8 @@ function FacialTreatmentsSection({ lines }: { lines: Record<string, string> }) {
 
                 {/* Each ritual opens the booking form on its own session
                     type, found by its name. One whose session type is switched
-                    off lands on the list of the others, with none chosen. */}
+                    off has no card here (`hidden`); an old link to it lands on
+                    the list of the others, with none chosen. */}
                 <div className="mt-2 flex w-full flex-col gap-2 sm:flex-row md:w-auto">
                   <Button
                     variant="solid"
@@ -442,6 +465,7 @@ function SessionSection({ data }: { data: TreatmentData }) {
 export default function TreatmentSection({
   data,
   cardLines = {},
+  hiddenIds = [],
 }: {
   data: TreatmentData;
   /**
@@ -450,17 +474,25 @@ export default function TreatmentSection({
    * take no price from the database.
    */
   cardLines?: Record<string, string>;
+  /**
+   * The treatments whose session type is switched off in Settings, which get
+   * no card while it is off (`listHiddenTreatments`, read by the page on the
+   * server). Empty when the read failed: then every card is shown.
+   */
+  hiddenIds?: readonly string[];
 }) {
   return (
     <>
       <TreatmentHero data={data} />
       {data.slug === "manual-therapies" && (
-        <ManualTherapiesSection lines={cardLines} />
+        <ManualTherapiesSection lines={cardLines} hidden={hiddenIds} />
       )}
       {data.slug === "facial-therapies" && (
-        <FacialTreatmentsSection lines={cardLines} />
+        <FacialTreatmentsSection lines={cardLines} hidden={hiddenIds} />
       )}
-      {data.slug === "intravenous-therapy" && <IvProtocolsSection />}
+      {data.slug === "intravenous-therapy" && (
+        <IvProtocolsSection hidden={hiddenIds} />
+      )}
       <BenefitsSection data={data} />
       <SessionSection data={data} />
     </>

@@ -16,7 +16,10 @@ import {
 import { getOgImage } from "@/constants/metadata";
 import { JsonLd } from "@/components/json-ld";
 import { cardLines } from "@/lib/treatments/prices";
-import { listPublicTierPrices } from "@/lib/treatments/public-prices";
+import {
+  listHiddenTreatments,
+  listPublicTierPrices,
+} from "@/lib/treatments/public-prices";
 
 // The cards print the price of each session type, which the centre changes
 // from the dashboard: the page is rebuilt at most every five minutes so a new
@@ -69,8 +72,11 @@ export default async function ManualTherapiesPage({
   // Read here, on the server, so each card arrives with its price in the
   // HTML. Never throws: with no prices the cards show their duration alone.
   const prices = await listPublicTierPrices("manual-therapies");
+  // The treatments whose session type is switched off get no card. The same
+  // cached read; one that fails hides nothing.
+  const hidden = await listHiddenTreatments("manual-therapies");
   const lines = cardLines(
-    manualTherapyTreatments,
+    manualTherapyTreatments.filter((t) => !hidden.includes(t.id)),
     prices,
     locale === "es" ? "es" : "en",
   );
@@ -98,6 +104,7 @@ export default async function ManualTherapiesPage({
       <TreatmentSection
         data={treatments["manual-therapies"]}
         cardLines={lines}
+        hiddenIds={hidden}
       />
       <ServiceFaq faqs={faqs} serviceSlug="manual-therapies" />
     </>

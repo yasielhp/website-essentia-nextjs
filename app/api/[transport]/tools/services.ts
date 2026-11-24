@@ -4,7 +4,10 @@ import { getAvailableStartTimes } from "@/utils/calendar-helpers";
 import { json, defineTool, text, type ToolServer } from "@/lib/mcp/tool";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { catalogueText, serviceCatalogue } from "@/lib/treatments/catalogue";
-import { listPublicTierPrices } from "@/lib/treatments/public-prices";
+import {
+  listHiddenTreatments,
+  listPublicTierPrices,
+} from "@/lib/treatments/public-prices";
 
 const siteUrl =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://www.essentiawellnessclub.com";
@@ -25,9 +28,14 @@ export function registerServiceTools(server: ToolServer): void {
       // The prices are the session types', read from the database like the
       // public site's cards: the code no longer keeps any. A treatment with no
       // session type on sale is listed without a price, and so is every one of
-      // them if the read fails.
-      const prices = await listPublicTierPrices("manual-therapies");
-      return text(catalogueText(serviceCatalogue(prices, "en")));
+      // them if the read fails. One whose session type is switched off is not
+      // listed while it is off (the site has no page for it), and nothing is
+      // left out when the read fails.
+      const [prices, hidden] = await Promise.all([
+        listPublicTierPrices("manual-therapies"),
+        listHiddenTreatments("manual-therapies"),
+      ]);
+      return text(catalogueText(serviceCatalogue(prices, "en", hidden)));
     },
   );
 

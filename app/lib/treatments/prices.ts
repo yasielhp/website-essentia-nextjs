@@ -67,6 +67,45 @@ export function toTierPrices(rows: unknown): TierPrice[] {
 }
 
 /**
+ * One service's session types as the public site needs them: what the ones on
+ * sale cost, and the names of those on sale and of those the centre switched
+ * off in Settings. The names are what hides a treatment while its session type
+ * is off (`hiddenTreatmentIds`) and brings it back the moment it is on again.
+ */
+export type TierSnapshot = {
+  /** The session types on sale, with a name and a price (`toTierPrices`). */
+  prices: TierPrice[];
+  /** The name of every session type on sale, priced or not. */
+  onSale: string[];
+  /** The name of every session type switched off (`active` false). */
+  switchedOff: string[];
+};
+
+/**
+ * The rows of `service_tiers`, on sale or not, as a snapshot. Only a row that
+ * says `active: false` is switched off, and only one that says `true` is on
+ * sale: anything else is neither, so a row the database answers oddly hides
+ * nothing and prices nothing.
+ */
+export function toTierSnapshot(rows: unknown): TierSnapshot {
+  const named = (Array.isArray(rows) ? rows : []).filter(
+    (row): row is { label: string; active: unknown } =>
+      !!row &&
+      typeof row === "object" &&
+      typeof (row as { label?: unknown }).label === "string" &&
+      (row as { label: string }).label.trim() !== "",
+  );
+  const onSale = named.filter((row) => row.active === true);
+  return {
+    prices: toTierPrices(onSale),
+    onSale: onSale.map((row) => row.label),
+    switchedOff: named
+      .filter((row) => row.active === false)
+      .map((row) => row.label),
+  };
+}
+
+/**
  * The minutes a card's length states: `"30 min"` is 30. Anything that is not
  * one plain length (`"45–60 min"`, `"1 h"`) is null and is not guessed at: a
  * price tied to the wrong length is a wrong price.

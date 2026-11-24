@@ -4,6 +4,7 @@ import {
   getTreatmentPaths,
   fetchBlogPosts,
 } from "@/lib/sitemap-data";
+import { listAllHiddenTreatments } from "@/lib/treatments/public-prices";
 
 export const revalidate = 3600;
 
@@ -32,7 +33,11 @@ function urlEntry(
 }
 
 export async function GET() {
-  const blogPosts = await fetchBlogPosts();
+  const [blogPosts, hidden] = await Promise.all([
+    fetchBlogPosts(),
+    // Never throws; a read that fails hides nothing.
+    listAllHiddenTreatments(),
+  ]);
 
   const staticEntries = staticRoutes
     .map((r) =>
@@ -40,7 +45,7 @@ export async function GET() {
     )
     .join("");
 
-  const treatmentEntries = getTreatmentPaths()
+  const treatmentEntries = getTreatmentPaths(hidden)
     .map(({ path, esPath }) =>
       urlEntry(path, esPath, undefined, "monthly", 0.7),
     )

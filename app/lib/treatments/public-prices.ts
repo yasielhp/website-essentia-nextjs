@@ -1,17 +1,31 @@
 import { unstable_cache } from "next/cache";
 import { insforgePublic } from "@/lib/insforge-public";
-import { TIER_PRICES_CACHE_TAG, type TierPrice } from "@/lib/treatments/prices";
+import {
+  TIER_PRICES_CACHE_TAG,
+  type TierPrice,
+  type TierSnapshot,
+} from "@/lib/treatments/prices";
 import {
   isBookableService,
-  readTierPrices,
+  readTierSnapshot,
 } from "@/lib/treatments/read-prices";
+import {
+  hiddenTreatmentIds,
+  TREATMENTS_OF,
+  type HiddenTreatments,
+  type TreatmentFamily,
+} from "@/lib/treatments/visibility";
 
 /**
- * What the session types of one service cost, as the public site may show it.
+ * What the session types of one service cost, as the public site may show it,
+ * and which of its treatments the site hides because their session type is
+ * switched off.
  *
  * SERVER ONLY. It is what the treatment pages print on their cards (in the
  * HTML they are served with, so there is no price appearing after the page
  * does and a search engine reads it) and what the agent tools answer with.
+ * Both answers come from ONE cached read of the service's session types, so a
+ * page cannot show a card whose treatment the sitemap left out.
  *
  * Kept for five minutes: the pages are prerendered, and a price the centre
  * changes is on the site within that time, with no deploy. Saving a session
@@ -25,12 +39,26 @@ import {
 export const TIER_PRICES_REVALIDATE_SECONDS = 300;
 
 // The anonymous client: these rows are the same for every visitor, and it is
-// the read the booking form already makes from the browser.
-const cachedTierPrices = unstable_cache(
-  (serviceId: string) => readTierPrices(insforgePublic.database, serviceId),
-  ["tier-prices"],
+// the read the booking form already makes from the browser. The second key
+// part is the shape of the answer: an entry kept by the code before it (a bare
+// list of prices) is never handed to this one.
+const cachedTierSnapshot = unstable_cache(
+  (serviceId: string) => readTierSnapshot(insforgePublic.database, serviceId),
+  ["tier-prices", "snapshot"],
   { revalidate: TIER_PRICES_REVALIDATE_SECONDS, tags: [TIER_PRICES_CACHE_TAG] },
 );
+
+/** The kept snapshot, or null when the read failed. Never throws. */
+async function publicTierSnapshot(
+  serviceId: string,
+): Promise<TierSnapshot | null> {
+  if (!isBookableService(serviceId)) return null;
+  try {
+    return await cachedTierSnapshot(serviceId);
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Never throws. A read that fails is no prices: a card without its price is
@@ -50,10 +78,47 @@ const cachedTierPrices = unstable_cache(
 export async function listPublicTierPrices(
   serviceId: string,
 ): Promise<TierPrice[]> {
-  if (!isBookableService(serviceId)) return [];
-  try {
-    return await cachedTierPrices(serviceId);
-  } catch {
-    return [];
-  }
+  return (await publicTierSnapshot(serviceId))?.prices ?? [];
+}
+
+/**
+ * The ids of the treatments of one service the site hides: their session type
+ * is switched off and none of theirs is on sale (`hiddenTreatmentIds`).
+ *
+ * Never throws, and a read that fails hides NOTHING: every card is shown, as
+ * the site always did, without a price (`listPublicTierPrices` answers no
+ * prices on the same failure). A treatment taken off the site because the
+ * database did not answer would be a worse mistake than one shown that is off.
+ *
+ * Kept under the same tag as the prices: switching a session type on or off in
+ * Settings drops it (`refreshTierPrices`), and with it every prerendered page,
+ * sitemap and file for assistants that hid or showed the treatment.
+ */
+export async function listHiddenTreatments(
+  family: TreatmentFamily,
+): Promise<string[]> {
+  const snapshot = await publicTierSnapshot(family);
+  return snapshot ? hiddenTreatmentIds(TREATMENTS_OF[family], snapshot) : [];
+}
+
+/** Whether one treatment is hidden (its page answers 404 while it is). */
+export async function isTreatmentHidden(
+  family: TreatmentFamily,
+  treatmentId: string,
+): Promise<boolean> {
+  return (await listHiddenTreatments(family)).includes(treatmentId);
+}
+
+/** The hidden treatments of every family, for the sitemaps and `llms.txt`. */
+export async function listAllHiddenTreatments(): Promise<HiddenTreatments> {
+  const [manual, facial, iv] = await Promise.all([
+    listHiddenTreatments("manual-therapies"),
+    listHiddenTreatments("facial-therapies"),
+    listHiddenTreatments("intravenous-therapy"),
+  ]);
+  return {
+    "manual-therapies": manual,
+    "facial-therapies": facial,
+    "intravenous-therapy": iv,
+  };
 }

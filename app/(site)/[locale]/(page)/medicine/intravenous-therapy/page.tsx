@@ -12,6 +12,13 @@ import {
   faqPageSchema,
   medicalTherapySchema,
 } from "@/lib/seo";
+import { listHiddenTreatments } from "@/lib/treatments/public-prices";
+
+// A protocol whose session type is switched off in Settings has no card, and
+// one switched back on has its card again: read from the database, so the page
+// is rebuilt at most every five minutes (at once when Settings saves). Same
+// figure as `TIER_PRICES_REVALIDATE_SECONDS`; Next needs it as a literal.
+export const revalidate = 300;
 
 export async function generateMetadata({
   params,
@@ -56,6 +63,8 @@ export default async function IvTherapyPage({
 
   const faqs = serviceFaqs["intravenous-therapy"];
   const service = bookableServices.find((s) => s.id === "intravenous-therapy");
+  // Never throws, and a read that fails hides nothing.
+  const hidden = await listHiddenTreatments("intravenous-therapy");
 
   return (
     <>
@@ -78,7 +87,10 @@ export default async function IvTherapyPage({
           category: "medicine",
         })}
       />
-      <TreatmentSection data={treatments["intravenous-therapy"]!} />
+      <TreatmentSection
+        data={treatments["intravenous-therapy"]!}
+        hiddenIds={hidden}
+      />
       <ServiceFaq faqs={faqs} serviceSlug="intravenous-therapy" />
     </>
   );

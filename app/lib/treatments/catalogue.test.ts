@@ -48,6 +48,17 @@ describe("serviceCatalogue", () => {
     expect(entries.some((e) => "priceCenter" in e)).toBe(false);
   });
 
+  test("a treatment whose session type is switched off is not listed while it is off", () => {
+    const ids = serviceCatalogue(PRICES, "en", [
+      "alure-duo",
+      "essentia-signature",
+    ]).map((e) => e.id);
+    expect(ids).not.toContain("manual-therapies:alure-duo");
+    expect(ids).not.toContain("manual-therapies:essentia-signature");
+    expect(ids).toContain("manual-therapies:espira");
+    expect(ids).toContain("manual-therapies");
+  });
+
   test("the services themselves come first, as they always did, without a price", () => {
     const first = serviceCatalogue(PRICES, "en")[0];
     expect(first?.id).toBe("manual-therapies");

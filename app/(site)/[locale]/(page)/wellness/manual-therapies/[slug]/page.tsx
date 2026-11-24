@@ -6,7 +6,10 @@ import { ServiceDetailView } from "@components/sections/wellness/treatment/servi
 import { breadcrumbSchema, treatmentMetaTitle } from "@/lib/seo";
 import { withoutTierLabels } from "@/lib/treatments/match";
 import { cardMeta } from "@/lib/treatments/prices";
-import { listPublicTierPrices } from "@/lib/treatments/public-prices";
+import {
+  isTreatmentHidden,
+  listPublicTierPrices,
+} from "@/lib/treatments/public-prices";
 
 // The page prints the price of its session type, which the centre changes
 // from the dashboard: it is rebuilt at most every five minutes so a new price
@@ -31,7 +34,10 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, locale } = await params;
   const service = manualTherapyTreatments.find((s) => s.id === slug);
-  if (!service) return {};
+  // A treatment whose session type is switched off has no page while it is
+  // off: no title or description of its own on the 404 either.
+  if (!service || (await isTreatmentHidden("manual-therapies", slug)))
+    return {};
 
   const t = await getTranslations({ locale, namespace: "wellness.treatments" });
   const cardKey = `manualTherapiesCards.${slug}`;
@@ -70,7 +76,11 @@ export default async function ManualTherapyDetailPage({ params }: Props) {
   setRequestLocale(locale);
 
   const found = manualTherapyTreatments.find((s) => s.id === slug);
-  if (!found) notFound();
+  // Switched off in Settings: 404 while it is off, not a redirect. The page
+  // comes back by itself when it is switched on, and a 404 tells a search
+  // engine to drop it until then, where a redirect to the list would be read
+  // as a soft 404 (or, permanent, be kept by browsers after it is back).
+  if (!found || (await isTreatmentHidden("manual-therapies", slug))) notFound();
   // The view is a client component, so what it is handed is written into the
   // page: without the labels its session type has carried, which are for the
   // server to find it by and not for the page to show.

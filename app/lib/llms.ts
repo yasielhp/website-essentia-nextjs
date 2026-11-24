@@ -7,12 +7,16 @@ import {
   ivProtocols,
   manualTherapyTreatments,
 } from "@/data/services-data";
+import {
+  NOTHING_HIDDEN,
+  type HiddenTreatments,
+} from "@/lib/treatments/visibility";
 
 /**
- * The two files the site publishes for assistants, `public/llms.txt` and
- * `public/llms-full.txt`, BUILT from what the site itself is made of: the
- * services that can be booked, their treatments, the names and descriptions in
- * the English translations, the address of the centre.
+ * The two files the site publishes for assistants, `/llms.txt` and
+ * `/llms-full.txt`, BUILT from what the site itself is made of: the services
+ * that can be booked, their treatments, the names and descriptions in the
+ * English translations, the address of the centre.
  *
  * They used to be written by hand, and went on describing a centre that had
  * moved: a treatment under the name before its last two, a price list with a
@@ -21,12 +25,17 @@ import {
  *
  * So: nothing here is a figure or a name typed for these files. Only what can
  * be booked today is listed (a service that is announced and not open has no
- * place in them), and NO PRICE: the centre changes its prices itself, and each
- * treatment's own page prints the current one.
+ * place in them, nor a treatment whose session type the centre switched off),
+ * and NO PRICE: the centre changes its prices itself, and each treatment's own
+ * page prints the current one.
  *
- * `bun run build:llms` (`scripts/build-llms.ts`) writes the two files; `llms.test.ts` fails when they
- * are not what this builds, which is what makes a renamed treatment or a new
- * one reach them.
+ * They are served by two route handlers (`app/llms.txt/route.ts`,
+ * `app/llms-full.txt/route.ts`), not kept as files in `public/`: which
+ * treatments are switched off is read from the database (`hidden`, from
+ * `listAllHiddenTreatments`), and a file written at build time would go on
+ * listing a treatment after it was switched off, or leave it out after it was
+ * switched back on, until somebody rebuilt it and deployed. Pure: the hidden
+ * treatments are handed in, and nothing hidden is the default.
  */
 
 const SITE = `https://${contact.domain}`;
@@ -72,16 +81,25 @@ function family(id: string, entries: Entry[], note?: string): Family {
   };
 }
 
-/** The services that can be booked today, each with its treatments. */
-export function llmsFamilies(): Family[] {
+/**
+ * The services that can be booked today, each with its treatments, less those
+ * whose session type is switched off (`hidden`).
+ */
+export function llmsFamilies(
+  hidden: HiddenTreatments = NOTHING_HIDDEN,
+): Family[] {
   const manualUrl = `${SITE}/wellness/manual-therapies`;
   const facialUrl = `${SITE}/wellness/facial-therapies`;
   const ivUrl = `${SITE}/medicine/intravenous-therapy`;
+  const shown =
+    (family: keyof HiddenTreatments) =>
+    (t: { id: string }): boolean =>
+      !hidden[family].includes(t.id);
 
   return [
     family(
       "manual-therapies",
-      manualTherapyTreatments.map((t) => ({
+      manualTherapyTreatments.filter(shown("manual-therapies")).map((t) => ({
         name: manualCards[t.id]?.title ?? t.title,
         url: `${manualUrl}/${t.id}`,
         length: t.durations.join(" / "),
@@ -91,7 +109,7 @@ export function llmsFamilies(): Family[] {
     ),
     family(
       "facial-therapies",
-      facialTreatments.map((t) => ({
+      facialTreatments.filter(shown("facial-therapies")).map((t) => ({
         name: facialCards[t.id]?.title ?? t.title,
         url: `${facialUrl}/${t.id}`,
         length: t.durations
@@ -102,7 +120,7 @@ export function llmsFamilies(): Family[] {
     ),
     family(
       "intravenous-therapy",
-      ivProtocols.map((p) => ({
+      ivProtocols.filter(shown("intravenous-therapy")).map((p) => ({
         name: ivCards[p.id]?.title ?? p.title,
         url: `${ivUrl}/${p.id}`,
         length: ivCards[p.id]?.meta ?? "",
@@ -162,9 +180,11 @@ const LEGAL: { label: string; path: string }[] = [
 const social = () =>
   contact.socialMedia.map((s) => `- ${s.name}: ${s.url}`).join("\n");
 
-/** `public/llms.txt`: the short index. */
-export function buildLlmsTxt(): string {
-  const families = llmsFamilies();
+/** `/llms.txt`: the short index. */
+export function buildLlmsTxt(
+  hidden: HiddenTreatments = NOTHING_HIDDEN,
+): string {
+  const families = llmsFamilies(hidden);
   return [
     "# Essentia Wellness Club",
     "",
@@ -210,9 +230,11 @@ export function buildLlmsTxt(): string {
   ].join("\n");
 }
 
-/** `public/llms-full.txt`: every treatment, with its description. */
-export function buildLlmsFullTxt(): string {
-  const families = llmsFamilies();
+/** `/llms-full.txt`: every treatment, with its description. */
+export function buildLlmsFullTxt(
+  hidden: HiddenTreatments = NOTHING_HIDDEN,
+): string {
+  const families = llmsFamilies(hidden);
   return [
     "# Essentia Wellness Club — Complete Reference",
     "",

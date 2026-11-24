@@ -171,6 +171,45 @@ describe("the pages that print prices are rebuilt as often as a price is kept", 
   }
 });
 
+describe("a treatment whose session type is switched off is not on the site", () => {
+  const SITE = join(import.meta.dir, "../../../../(site)/[locale]/(page)");
+  const SECTION = readFileSync(
+    join(import.meta.dir, "treatment-section.tsx"),
+    "utf8",
+  );
+
+  for (const [path, service] of [
+    ["wellness/manual-therapies", "manual-therapies"],
+    ["wellness/facial-therapies", "facial-therapies"],
+    ["medicine/intravenous-therapy", "intravenous-therapy"],
+  ] as const) {
+    test(`${path} hands the list the treatments to leave out, read on the server`, () => {
+      const source = readFileSync(join(SITE, path, "page.tsx"), "utf8");
+      expect(source).toContain(`await listHiddenTreatments("${service}")`);
+      expect(source).toMatch(/<TreatmentSection[^>]*hiddenIds=\{hidden\}/);
+      expect(source).toContain("export const revalidate = 300;");
+    });
+
+    test(`${path}/[slug] answers 404 while it is switched off`, () => {
+      const source = readFileSync(join(SITE, path, "[slug]/page.tsx"), "utf8");
+      expect(source).toContain(`await isTreatmentHidden("${service}", slug)`);
+      expect(source).toMatch(/isTreatmentHidden\([^)]*\)\)\)\s*notFound\(\);/);
+    });
+  }
+
+  test("the list draws a card only for the treatments not left out", () => {
+    for (const list of [
+      "manualTherapyTreatments.filter(",
+      "facialTreatments.filter(",
+      "ivProtocols.filter(",
+    ]) {
+      expect(SECTION).toContain(list);
+    }
+    expect(SECTION).not.toContain("{facialTreatments.map(");
+    expect(SECTION).not.toContain("{ivProtocols.map(");
+  });
+});
+
 describe("the page of each treatment shows its price from the first screen", () => {
   const SITE = join(import.meta.dir, "../../../../(site)/[locale]/(page)");
   const KEPT_FOR = readFileSync(
