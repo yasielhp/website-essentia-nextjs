@@ -57,7 +57,6 @@
     "hyperbaric-chambers": {
       "title": "Hyperbaric Oxygen.",
       "heroAlt": "Hyperbaric oxygen chamber at Essentia",
-      "price": "€120",
       "duration": "60 min",
       "intro": "Hyperbaric oxygen therapy (HBOT) delivers 100% oxygen at pressures above atmospheric, allowing blood plasma to carry significantly more oxygen to tissues. At Essentia, our protocols are supervised by our medical team and tailored to your health goals.",
       "benefitsHeading": "What it does.",
@@ -102,7 +101,6 @@
     "intravenous-therapy": {
       "title": "IV Therapy.",
       "heroAlt": "IV therapy at Essentia Tenerife",
-      "price": "€95",
       "duration": "45 min",
       "intro": "Intravenous nutrient therapy bypasses the digestive system entirely, delivering vitamins, minerals, and amino acids directly into the bloodstream at concentrations impossible to achieve orally. At Essentia, every IV formulation is prescribed by our medical team after reviewing your bloodwork.",
       "benefitsHeading": "What it does.",
@@ -147,7 +145,6 @@
     "regenerative-medicine": {
       "title": "Regenerative Medicine.",
       "heroAlt": "Regenerative medicine consultation at Essentia",
-      "price": "From €250",
       "duration": "Consultation + protocol",
       "intro": "Regenerative medicine activates the body's own repair mechanisms using biological signals — peptides, growth factors, and advanced protocols that target the cellular processes underlying ageing and injury. At Essentia, these treatments are prescribed and supervised by our medical director.",
       "benefitsHeading": "What it does.",

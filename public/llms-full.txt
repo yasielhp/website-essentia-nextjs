@@ -92,51 +92,63 @@
 
 ### Manual Therapies
 - **URL:** https://www.essentiawellnessclub.com/wellness/manual-therapies
-- **Description:** 10 precision massage and bodywork treatments tailored to recovery, performance, relaxation, or aesthetics. Available at the centre in Santa Cruz de Tenerife.
+- **Description:** Precision massage and bodywork treatments tailored to recovery, performance, relaxation, or aesthetics. Available at the centre in Santa Cruz de Tenerife.
+- **Prices:** not listed here. The centre changes them, and a figure copied into this file would go on saying the old one. The current price of each treatment is on its own page, linked below, next to its duration.
 
 #### ESPIRA
 - Express neck and shoulder ritual. Deep gliding manoeuvres with essential oils.
-- 30 min · €90 (centre) / €120 (suite)
+- 30 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/espira
 
 #### PULSE
 - Deep-tissue massage for chronic contractures. Friction, ischaemic compression, passive mobilisation.
-- 45 min · €100 (centre) / €130 (suite)
+- 45 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/pulse
 
 #### DRENAJE LINFÁTICO INTEGRATIVO — MÉTODO ESSENTIA
 - Rhythmic lymphatic drainage. Reduces fluid retention, sculpts and smooths skin.
-- 50 min · €100 (centre) / €130 (suite)
+- 50 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/drenaje-linfatico
 
 #### ESSENTIA ACTIVE
 - Sports recovery massage. Neuromuscular compression and assisted stretching.
-- 45 min · €110 (centre) / €140 (suite)
+- 45 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/essentia-active
 
 #### NURTURA
 - Prenatal massage for second and third trimesters. Gentle, safe, deeply restorative.
-- 50 min · €130 (centre) / €160 (suite)
+- 50 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/nurtura
 
 #### SERENNA
 - Full-body relaxation with warm oils and slow, flowing movements.
-- 50 min · €130 (centre) / €160 (suite)
+- 50 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/serenna
 
 #### SOLÉA
 - Post-sun ritual: aloe vera wrap followed by a full-body massage.
-- 70 min · €150 (centre) / €180 (suite)
+- 70 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/solea
 
 #### SOMA
 - Intensive myofascial release. Deep-tissue techniques and joint mobilisation.
-- 60 min · €160 (centre) / €190 (suite)
+- 60 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/soma
 
 #### LUME
 - Craniofacial massage, foot reflexology, and personalised aromatherapy.
-- 80 min · €220 (centre) / €250 (suite)
+- 80 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/lume
 
 #### ALURE DUO
 - Synchronised ritual for two, with two therapists working simultaneously.
-- 50 min · €270 (centre only)
+- 50 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/alure-duo
 
 #### ESSENTIA (Signature)
 - Complete protocol: peel, hydrating wrap, rejuvenating facial, and full-body massage.
-- 120 min · €350 (centre only — not available in-suite)
+- 120 min
+- Page and current price: https://www.essentiawellnessclub.com/wellness/manual-therapies/essentia-signature
 
 ### Functional Well-Being
 - **Status:** announced, not yet bookable. Do not present as available.

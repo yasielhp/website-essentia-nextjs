@@ -6,7 +6,6 @@ export type TreatmentData = {
   heroAlt: string;
   title: string;
   tagline: string;
-  price: string;
   duration: string;
   intro: string;
   benefitsHeading: string;
@@ -26,7 +25,6 @@ export const treatments: Record<string, TreatmentData> = {
     heroAlt: "IV therapy at Essentia, with VitalDrip",
     title: "IV Therapy",
     tagline: "With VitalDrip",
-    price: "From €260",
     duration: "60 min",
     intro:
       "A new way of supporting wellbeing from within. Personalised intravenous protocols with vitamins, minerals and other micronutrients, brought to Essentia together with VitalDrip and always under medical assessment and supervision.",
@@ -58,7 +56,6 @@ export const treatments: Record<string, TreatmentData> = {
     heroAlt: "Contrast therapy — sauna and cold plunge at Essentia",
     title: "Contrast Therapy",
     tagline: "Heat & Cold",
-    price: "€45",
     duration: "60 min",
     intro:
       "Alternating heat and cold is one of the most studied recovery modalities in sports science. At Essentia, we have designed a structured protocol that maximises the cardiovascular, hormonal, and anti-inflammatory response of each transition.",
@@ -121,7 +118,6 @@ export const treatments: Record<string, TreatmentData> = {
     heroAlt: "Breathwork session at Essentia Tenerife",
     title: "Breathing Sessions",
     tagline: "Breathwork",
-    price: "€35",
     duration: "45 min",
     intro:
       "Controlled respiration is the fastest lever we have over the autonomic nervous system. Our guided breathwork sessions are built on the evidence: Wim Hof, coherence breathing, box breathing, and CO2 tolerance work — applied to your current state.",
@@ -184,7 +180,6 @@ export const treatments: Record<string, TreatmentData> = {
     heroAlt: "Red light therapy panel at Essentia",
     title: "Red Light Therapy",
     tagline: "Photobiomodulation",
-    price: "€25",
     duration: "20 min",
     intro:
       "Photobiomodulation uses specific wavelengths of red and near-infrared light to penetrate skin and tissue, stimulating the mitochondria at a cellular level. At Essentia we use medical-grade full-body panels calibrated to the wavelengths with the strongest clinical evidence.",
@@ -247,7 +242,6 @@ export const treatments: Record<string, TreatmentData> = {
     heroAlt: "Manual therapy session at Essentia",
     title: "Manual Therapies",
     tagline: "Touch & Restoration",
-    price: "€80 / €110",
     duration: "60 or 90 min",
     intro:
       "Our manual therapists work with the whole body: fascia, muscle, joint, and nervous system. Every session is an assessment as much as a treatment — finding what is restricted, what is compensating, and what needs to be released before it becomes a problem.",
@@ -310,7 +304,6 @@ export const treatments: Record<string, TreatmentData> = {
     heroAlt: "Facial therapy session at Essentia",
     title: "Therapeutic Facials",
     tagline: "Skin & Radiance",
-    price: "€75",
     duration: "60 min",
     intro:
       "Every face has a story. Our facials combine manual technique, professional cosmetics and a personalised eye, to bring back radiance, firmness and natural harmony.",

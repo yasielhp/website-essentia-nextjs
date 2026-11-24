@@ -14,9 +14,11 @@ Essentia is not a spa or a gym. It is a precision wellness environment where eve
 
 ## Services
 
-Bookable online at the centre in Santa Cruz de Tenerife.
+Bookable online at the centre in Santa Cruz de Tenerife. Prices are not listed
+here: the centre changes them, and the current price of each treatment is on
+its own page, next to its duration.
 
-- [Manual Therapies](https://www.essentiawellnessclub.com/wellness/manual-therapies): 10 precision massage and bodywork treatments, from €90 to €350. 30–120 min.
+- [Manual Therapies](https://www.essentiawellnessclub.com/wellness/manual-therapies): Precision massage and bodywork treatments, 30–120 min. Each has its own page with its current price.
 - [Therapeutic Facials](https://www.essentiawellnessclub.com/wellness/facial-therapies): Advanced facial protocols combining manual technique and technology to restore skin health. 60 min.
 - [IV Therapy](https://www.essentiawellnessclub.com/medicine/intravenous-therapy): 12 medically supervised infusion protocols — vitamin C, NAD+, Myers, glutathione, amino acids. 45–90 min, NAD+ 2–3 h.
 

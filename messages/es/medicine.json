@@ -57,7 +57,6 @@
     "hyperbaric-chambers": {
       "title": "Oxígeno Hiperbárico.",
       "heroAlt": "Cámara de oxígeno hiperbárico en Essentia",
-      "price": "€120",
       "duration": "60 min",
       "intro": "La terapia de oxígeno hiperbárico (TOHB) administra oxígeno al 100% a presiones superiores a la atmosférica, permitiendo que el plasma sanguíneo transporte mucho más oxígeno a los tejidos. En Essentia, nuestros protocolos están supervisados por nuestro equipo médico y adaptados a tus objetivos de salud.",
       "benefitsHeading": "Qué hace.",
@@ -102,7 +101,6 @@
     "intravenous-therapy": {
       "title": "Terapia IV.",
       "heroAlt": "Terapia IV en Essentia Tenerife",
-      "price": "€95",
       "duration": "45 min",
       "intro": "La terapia nutricional intravenosa evita por completo el sistema digestivo, administrando vitaminas, minerales y aminoácidos directamente al torrente sanguíneo en concentraciones imposibles de alcanzar por vía oral. En Essentia, cada fórmula IV está prescrita por nuestro equipo médico tras revisar tus análisis.",
       "benefitsHeading": "Qué hace.",
@@ -147,7 +145,6 @@
     "regenerative-medicine": {
       "title": "Medicina Regenerativa.",
       "heroAlt": "Consulta de medicina regenerativa en Essentia",
-      "price": "Desde €250",
       "duration": "Consulta + protocolo",
       "intro": "La medicina regenerativa activa los propios mecanismos de reparación del cuerpo utilizando señales biológicas — péptidos, factores de crecimiento y protocolos avanzados que actúan sobre los procesos celulares que subyacen al envejecimiento y a la lesión. En Essentia, estos tratamientos los prescribe y supervisa nuestro director médico.",
       "benefitsHeading": "Qué hace.",

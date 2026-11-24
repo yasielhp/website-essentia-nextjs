@@ -88,8 +88,6 @@ export type IvProtocol = {
   id: string;
   /** English fallback for metadata before the translations load. */
   title: string;
-  /** Duration and price as one line; the formats differ per protocol. */
-  meta: string;
   description: string;
   /** Full-screen hero on the protocol's own page. */
   image: string;
@@ -103,7 +101,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "essentia-iv-signature",
     title: "Essentia IV Signature",
-    meta: "110 min · €360",
     description: "",
     image:
       "/images/medicine/iv-therapy/heroes/essentia-iv-signature-1920x1080.webp",
@@ -119,7 +116,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "power-drip",
     title: "Power Drip",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/power-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/power-drip-1200x675.webp",
@@ -133,7 +129,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "immunity-drip",
     title: "Immunity Drip",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/immunity-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/immunity-drip-1200x675.webp",
@@ -147,7 +142,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "nirvana-drip",
     title: "Nirvana Drip",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/nirvana-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/nirvana-drip-1200x675.webp",
@@ -161,7 +155,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "stress-balance",
     title: "Stress Balance",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/stress-balance-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/stress-balance-1200x675.webp",
@@ -175,7 +168,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "beauty-hair-glow",
     title: "Beauty & Hair Glow",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/beauty-hair-glow-1920x1080.webp",
     thumbnail:
@@ -191,7 +183,6 @@ export const ivProtocols: IvProtocol[] = [
     id: "vitamin-c",
     // Matches `service_tiers.label`, which the deep link looks up by title.
     title: "Vitamina C",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/vitamin-c-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/vitamin-c-1200x675.webp",
@@ -205,7 +196,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "nad-plus",
     title: "NAD+",
-    meta: "45–60 min · €200",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/nad-plus-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/nad-plus-1200x675.webp",
@@ -219,7 +209,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "resurrection-drip",
     title: "Resurrection Drip",
-    meta: "45–60 min · €260",
     description: "",
     image:
       "/images/medicine/iv-therapy/heroes/resurrection-drip-1920x1080.webp",
@@ -235,7 +224,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "body-drip",
     title: "Body Drip",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/body-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/body-drip-1200x675.webp",
@@ -249,7 +237,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "fit-drip",
     title: "Fit Drip",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/fit-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/fit-drip-1200x675.webp",
@@ -263,7 +250,6 @@ export const ivProtocols: IvProtocol[] = [
   {
     id: "calm-drip",
     title: "Calm Drip",
-    meta: "45–60 min · €260",
     description: "",
     image: "/images/medicine/iv-therapy/heroes/calm-drip-1920x1080.webp",
     thumbnail: "/images/medicine/iv-therapy/cards/calm-drip-1200x675.webp",

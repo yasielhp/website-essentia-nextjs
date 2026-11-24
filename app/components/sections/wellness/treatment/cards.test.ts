@@ -3,10 +3,14 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import en from "../../../../../messages/en/wellness.json";
 import es from "../../../../../messages/es/wellness.json";
+import enMedicine from "../../../../../messages/en/medicine.json";
+import esMedicine from "../../../../../messages/es/medicine.json";
 import {
   facialTreatments,
+  ivProtocols,
   manualTherapyTreatments,
 } from "@/data/services-data";
+import { treatments } from "./data";
 import { minutesOf } from "@/lib/treatments/prices";
 
 /**
@@ -94,6 +98,55 @@ describe("facial cards: the price is not written anywhere", () => {
   });
 });
 
+describe("no price is typed anywhere on these pages", () => {
+  // The rule the cards and the pages follow: a price is the session type's,
+  // read from the database. One typed into a translation or into the data goes
+  // on saying what it said after the centre changes it, and a typed price that
+  // nothing prints is the next one somebody will print.
+  const PRICE = /€|\beur\b|\beuros?\b/i;
+
+  test("not in the translations of wellness and medicine, in either language", () => {
+    const typed: string[] = [];
+    const walk = (value: unknown, path: string) => {
+      if (typeof value === "string") {
+        if (PRICE.test(value)) typed.push(`${path}: ${value}`);
+      } else if (value && typeof value === "object") {
+        for (const [key, child] of Object.entries(value)) {
+          walk(child, `${path}.${key}`);
+        }
+      }
+    };
+    walk(es, "es.wellness");
+    walk(en, "en.wellness");
+    walk(esMedicine, "es.medicine");
+    walk(enMedicine, "en.medicine");
+    expect(typed).toEqual([]);
+  });
+
+  test("not in the data of any treatment, protocol or service page", () => {
+    for (const entry of [
+      ...manualTherapyTreatments,
+      ...facialTreatments,
+      ...ivProtocols,
+      ...Object.values(treatments),
+    ]) {
+      const text = JSON.stringify(entry);
+      expect(`${entry.title}: ${PRICE.test(text)}`).toBe(
+        `${entry.title}: false`,
+      );
+    }
+  });
+
+  test("a ritual with a line of its own says what the visit is, and no figure", () => {
+    expect(facialCards(es)["kinea-signature"]!.meta).toBe(
+      "Primera valoración + sesión",
+    );
+    expect(facialCards(en)["kinea-signature"]!.meta).toBe(
+      "First assessment + session",
+    );
+  });
+});
+
 describe("the pages that print prices are rebuilt as often as a price is kept", () => {
   // `revalidate` must be a literal in the page (Next reads it without running
   // the module), so it cannot import the figure: this is what keeps the two
@@ -154,5 +207,39 @@ describe("the page of each treatment shows its price from the first screen", () 
     expect(title).toBeGreaterThan(-1);
     expect(line).toBeGreaterThan(title);
     expect(description).toBeGreaterThan(line);
+  });
+});
+
+describe("the files written for assistants (llms.txt) carry no price of a treatment", () => {
+  // They are static text: a price copied into them cannot follow the centre's.
+  // They say where the current one is instead.
+  const PUBLIC = join(import.meta.dir, "../../../../../public");
+  const brief = readFileSync(join(PUBLIC, "llms.txt"), "utf8");
+  const full = readFileSync(join(PUBLIC, "llms-full.txt"), "utf8");
+  const services = brief.slice(
+    brief.indexOf("## Services"),
+    brief.indexOf("## Coming soon"),
+  );
+  const manual = full.slice(
+    full.indexOf("### Manual Therapies"),
+    full.indexOf("### Functional Well-Being"),
+  );
+
+  test("neither the list of services nor the manual therapies give a figure, or speak of a suite", () => {
+    for (const text of [services, manual]) {
+      expect(text.length).toBeGreaterThan(100);
+      expect(text).not.toMatch(/€|\beur\b|suite/i);
+    }
+  });
+
+  test("every manual therapy points at its own page, where the price is", () => {
+    const linked = [
+      ...manual.matchAll(
+        /https:\/\/www\.essentiawellnessclub\.com\/wellness\/manual-therapies\/([a-z-]+)/g,
+      ),
+    ].map((m) => m[1]);
+    expect(linked.sort()).toEqual(
+      manualTherapyTreatments.map((t) => t.id).sort(),
+    );
   });
 });
