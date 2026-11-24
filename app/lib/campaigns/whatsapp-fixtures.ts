@@ -322,20 +322,31 @@ export function memoryDb(queued: QueuedRow[], opts: MemoryDbOptions = {}) {
         const statusEq = stepArgs(chain, "eq").find(
           (a) => a[0] === "status",
         )?.[1];
-        if (head) {
-          return {
-            count: [...rows.values()].filter(
-              (r) => statusEq === undefined || r.status === statusEq,
-            ).length,
-            error: null,
-          };
-        }
         // The retry's filter, as PostgREST applies it to a read.
         const orFilter = stepArgs(chain, "or")[0]?.[0];
         const retryable = (error: string | null) =>
           orFilter !== RETRYABLE_FAILURE_FILTER ||
           error === null ||
           !(error.startsWith("[unconfirmed]") || error.startsWith("[skipped]"));
+        if (head) {
+          // A count by language, as a preflight asks for it.
+          const languageEq = stepArgs(chain, "eq").find(
+            (a) => a[0] === "language",
+          )?.[1];
+          const languageNeq = stepArgs(chain, "neq").find(
+            (a) => a[0] === "language",
+          )?.[1];
+          return {
+            count: [...rows.values()].filter(
+              (r) =>
+                (statusEq === undefined || r.status === statusEq) &&
+                (languageEq === undefined || r.language === languageEq) &&
+                (languageNeq === undefined || r.language !== languageNeq) &&
+                retryable(r.error),
+            ).length,
+            error: null,
+          };
+        }
         return {
           data: queued.filter((q) => {
             const stored = rows.get(q.id);

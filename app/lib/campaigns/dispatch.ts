@@ -20,13 +20,15 @@ import {
   START_MARGIN_MS,
   WRITE_RETRY_MS,
   campaignTemplateIssue,
+  firstTemplateIssue,
+  loadCampaignTemplates,
   reconcileInterrupted,
   sendQueuedWhatsApp,
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
 import { parseHalted } from "./error-markers";
 import { haltDecision, type LocaleHalt } from "./language-halt";
-import { recipientLocale } from "./languages";
+import { audienceLocales, recipientLocale } from "./languages";
 import { readAllPages } from "./paged-read";
 import { pause } from "./pause";
 import { conflictTarget, recipientRow } from "./recipient-rows";
@@ -584,10 +586,71 @@ type Preflight =
   | Extract<DispatchResult, { ok: false }>;
 
 /**
+ * Which languages a preflight judges the templates of:
+ *
+ * - `audience`, a fresh send: every language of the audience. A one-off send
+ *   does not start with one of them unable to go out.
+ * - `queued`, a resume: only the languages that still have rows in the queue,
+ *   and it is blocked only when NONE of them can go out. A language whose
+ *   template stopped being sendable halfway holds its own rows (the sender
+ *   leaves them queued) while the other is finished; one that has nothing
+ *   left to send is not looked at.
+ * - `retry`: the languages of what the retry would send (the queue and the
+ *   failures it requeues), and any of them that cannot go out refuses it:
+ *   the person who asked is told at once, and nothing is reopened.
+ */
+type PreflightScope = "audience" | "queued" | "retry";
+
+/**
+ * The languages, of the audience's, that still have rows to send: queued
+ * ones, and with `retryable` the failures a retry would requeue. A row's
+ * language is read as the sender reads it (`recipientLocale`): the audience's
+ * when it fixes one, else Spanish or (anything else) English. One count per
+ * language, never the rows themselves. Throws on a read error.
+ */
+async function pendingLocales(
+  db: Db,
+  campaignId: string,
+  audience: CampaignRow["audience"],
+  retryable: boolean,
+): Promise<CampaignLocale[]> {
+  const locales = audienceLocales(audience);
+  const spans = locales.length > 1;
+  const pending: CampaignLocale[] = [];
+  for (const locale of locales) {
+    const statuses = retryable ? (["queued", "failed"] as const) : ["queued"];
+    let found = false;
+    for (const status of statuses) {
+      let query = db
+        .from("campaign_recipients")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", campaignId)
+        .eq("status", status);
+      if (status === "failed") query = query.or(RETRYABLE_FAILURE_FILTER);
+      if (spans) {
+        query =
+          locale === "es"
+            ? query.eq("language", "es")
+            : query.neq("language", "es");
+      }
+      const { count, error } = await query;
+      if (error) throw new Error(error.message);
+      if ((count ?? 0) > 0) {
+        found = true;
+        break;
+      }
+    }
+    if (found) pending.push(locale);
+  }
+  return pending;
+}
+
+/**
  * What must hold before a WhatsApp campaign is claimed or its audience frozen:
- * Meta is reachable and the chosen template can go out. Both are problems of
- * configuration, not of the campaign, so a failure here changes nothing: the
- * campaign stays as it was and can be sent once the cause is fixed.
+ * Meta is reachable and the chosen templates can go out (which ones:
+ * `PreflightScope`). Both are problems of configuration, not of the campaign,
+ * so a failure here changes nothing: the campaign stays as it was and can be
+ * sent once the cause is fixed.
  *
  * It reads the campaign to learn its channel; an email campaign passes at once.
  */
@@ -595,6 +658,7 @@ async function preflight(
   campaignId: string,
   db: Db,
   configured: () => boolean,
+  scope: PreflightScope = "audience",
 ): Promise<Preflight> {
   const { data, error } = await db
     .from("campaigns")
@@ -676,9 +740,23 @@ async function preflight(
     return blocked({ ok: false, error: "whatsapp_not_configured" });
   }
   try {
-    // The template of every language of the audience: a one-off send does
-    // not start with one of them unable to go out.
-    const found = await campaignTemplateIssue(db, campaign);
+    // A fresh send: the template of every language of the audience, and a
+    // one-off send does not start with one of them unable to go out. A resume
+    // or a retry: only the languages it would send (`PreflightScope`).
+    let found: Awaited<ReturnType<typeof campaignTemplateIssue>>;
+    if (scope === "audience") {
+      found = await campaignTemplateIssue(db, campaign);
+    } else {
+      const pending = await pendingLocales(
+        db,
+        campaignId,
+        campaign.audience,
+        scope === "retry",
+      );
+      const judged = await loadCampaignTemplates(db, campaign, pending);
+      const canGo = pending.some((locale) => judged[locale]?.ok);
+      found = scope === "queued" && canGo ? null : firstTemplateIssue(judged);
+    }
     if (found) {
       return blocked({
         ok: false,
@@ -734,7 +812,12 @@ export async function dispatchCampaign(
   /** `sending_started_at` as it was before the claim below stamps it anew. */
   let startedBefore = opts.startedAt ?? null;
   if (!opts.preflighted) {
-    const checked = await preflight(campaignId, db, configured);
+    const checked = await preflight(
+      campaignId,
+      db,
+      configured,
+      resume ? "queued" : "audience",
+    );
     if (!checked.ok) return checked;
     startedBefore = checked.sendingStartedAt;
   }
@@ -935,10 +1018,13 @@ export async function retryFailed(
 
   // Before anything is reopened: a WhatsApp campaign whose template can no
   // longer go out must not be left `sending` with its rows already requeued.
+  // Only the languages it would send again are judged: a retry of the Spanish
+  // failures does not wait on an English template nothing is left for.
   const checked = await preflight(
     campaignId,
     db,
     deps.isWhatsAppConfigured ?? isWhatsAppConfigured,
+    "retry",
   );
   if (!checked.ok) return checked;
 

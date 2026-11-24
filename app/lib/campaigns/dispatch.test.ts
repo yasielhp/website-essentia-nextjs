@@ -971,3 +971,135 @@ describe("dispatchCampaign: Meta refuses the template of one language of two", (
     expect(mem.campaign.last_error ?? null).toBeNull();
   });
 });
+
+describe("a resume or a retry judges only the languages it would send", () => {
+  const firstName = { kind: "field" as const, field: "first_name" as const };
+  const TEMPLATES = {
+    "tpl-es": template({ id: "tpl-es", language: "es", param_count: 1 }),
+    "tpl-en": template({ id: "tpl-en", language: "en", param_count: 1 }),
+  };
+  /** English paused by Meta, as the local copy now says. */
+  const ENGLISH_PAUSED = {
+    ...TEMPLATES,
+    "tpl-en": { ...TEMPLATES["tpl-en"], status: "PAUSED" as const },
+  };
+  const bilingual = (over: Partial<CampaignRow> = {}) =>
+    campaign({
+      audience: { language: "any" } as never,
+      content: {
+        whatsapp: {
+          es: { templateId: "tpl-es", params: [firstName] },
+          en: { templateId: "tpl-en", params: [firstName] },
+        },
+      } as never,
+      ...over,
+    });
+  const STUCK_SINCE = "2026-01-01T00:00:00Z";
+  const stuck = () =>
+    bilingual({ status: "sending", sending_started_at: STUCK_SINCE });
+  /** Four rows: Spanish 1 and 3, English 2 and 4. */
+  const four = () =>
+    [1, 2, 3, 4].map((n) => row(n, { language: n % 2 === 1 ? "es" : "en" }));
+  const world = (
+    running: CampaignRow,
+    stored: MemoryDbOptions["rows"],
+    templates = ENGLISH_PAUSED,
+  ) => {
+    const mem = memoryDb(four(), {
+      campaign: running,
+      templates,
+      rows: stored,
+    });
+    const sender = fakeSend(() => ok("w"));
+    const deps = {
+      db: mem.db,
+      resolveAudience: async () => [],
+      isWhatsAppConfigured: () => true,
+      whatsapp: { send: sender.send, sleep: async () => {} },
+    };
+    return { mem, sender, deps };
+  };
+
+  test("only Spanish left in the queue and the English template paused: the resume sends Spanish and the campaign is done", async () => {
+    const { mem, sender, deps } = world(stuck(), [
+      { id: "row-2", status: "sent" },
+      { id: "row-4", status: "sent" },
+    ]);
+    const result = await dispatchCampaign("camp-1", { resume: true }, deps);
+    expect(result).toMatchObject({ ok: true, sent: 2 });
+    expect(sender.calls.map((c) => c.language)).toEqual(["es", "es"]);
+    expect(mem.campaign.status).toBe("sent");
+  });
+
+  test("both left and English paused: Spanish goes out, English waits, and the campaign stays open", async () => {
+    const { mem, sender, deps } = world(stuck(), []);
+    const result = await dispatchCampaign("camp-1", { resume: true }, deps);
+    expect(sender.calls.map((c) => c.language)).toEqual(["es", "es"]);
+    expect(result).toMatchObject({ ok: true, sent: 2, remaining: 2 });
+    expect(mem.campaign.status).toBe("sending");
+    expect(mem.status("row-2")).toBe("queued");
+  });
+
+  test("only English left and English paused: the resume is blocked before the claim, so the send keeps its age", async () => {
+    const { mem, sender, deps } = world(stuck(), [
+      { id: "row-1", status: "sent" },
+      { id: "row-3", status: "sent" },
+    ]);
+    const result = await dispatchCampaign("camp-1", { resume: true }, deps);
+    expect(result).toEqual({
+      ok: false,
+      error: "template_unavailable",
+      detail: "template_not_approved",
+      locale: "en",
+    });
+    expect(sender.calls).toHaveLength(0);
+    expect(mem.campaign.status).toBe("sending");
+    expect(mem.campaign.sending_started_at).toBe(STUCK_SINCE);
+    expect(mem.campaign.last_error).toBe(
+      "template_unavailable: template_not_approved (en)",
+    );
+  });
+
+  test("a retry of the Spanish failures does not wait on the English template", async () => {
+    const { mem, sender, deps } = world(bilingual({ status: "sent" }), [
+      { id: "row-1", status: "failed", error: "131000: Something went wrong" },
+      { id: "row-2", status: "sent" },
+      { id: "row-3", status: "sent" },
+      { id: "row-4", status: "sent" },
+    ]);
+    const result = await retryFailed("camp-1", {}, deps);
+    expect(result).toMatchObject({ ok: true, sent: 1 });
+    expect(sender.calls.map((c) => c.language)).toEqual(["es"]);
+    expect(mem.campaign.status).toBe("sent");
+  });
+
+  test("a retry that would send English with its template paused is refused, and nothing is reopened", async () => {
+    const { mem, sender, deps } = world(bilingual({ status: "sent" }), [
+      { id: "row-1", status: "sent" },
+      { id: "row-2", status: "failed", error: "131000: Something went wrong" },
+      { id: "row-3", status: "sent" },
+      { id: "row-4", status: "sent" },
+    ]);
+    const result = await retryFailed("camp-1", {}, deps);
+    expect(result).toMatchObject({
+      ok: false,
+      error: "template_unavailable",
+      locale: "en",
+    });
+    expect(sender.calls).toHaveLength(0);
+    expect(mem.campaign.status).toBe("sent");
+    expect(mem.status("row-2")).toBe("failed");
+  });
+
+  test("failures a retry never requeues do not count as English to send", async () => {
+    const { mem, deps } = world(bilingual({ status: "sent" }), [
+      { id: "row-1", status: "failed", error: "131000: Something went wrong" },
+      { id: "row-2", status: "failed", error: "[skipped] no_consent" },
+      { id: "row-3", status: "sent" },
+      { id: "row-4", status: "failed", error: "[unconfirmed] interrupted" },
+    ]);
+    const result = await retryFailed("camp-1", {}, deps);
+    expect(result).toMatchObject({ ok: true, sent: 1 });
+    expect(mem.status("row-2")).toBe("failed");
+  });
+});
