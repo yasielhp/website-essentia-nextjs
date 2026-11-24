@@ -13,9 +13,11 @@ export type ManualTherapyTreatment = {
   description: string;
   body: string;
   highlights: { title: string; description: string }[];
+  /**
+   * The lengths its card shows. Its price is not kept here: it is the one of
+   * the session type with this title and length in the database.
+   */
   durations: string[];
-  priceCenter?: string;
-  priceSuite?: string;
   /** Full-screen hero on the treatment page. */
   image: string;
   /** Landscape crop for the card on the manual therapies page. */
@@ -416,8 +418,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["30 min"],
-    priceCenter: "90 €",
-    priceSuite: "120 €",
     image: "/images/wellness/treatments/espira-1920x1080.webp",
     thumbnail: "/images/wellness/treatments/cards/espira-1200x675.webp",
   },
@@ -445,8 +445,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["45 min"],
-    priceCenter: "100 €",
-    priceSuite: "130 €",
     image: "/images/wellness/treatments/pulse-1920x1080.webp",
     thumbnail: "/images/wellness/treatments/cards/pulse-1200x675.webp",
   },
@@ -474,8 +472,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["50 min"],
-    priceCenter: "100 €",
-    priceSuite: "130 €",
     image: "/images/wellness/treatments/drenaje-linfatico-1920x1080.webp",
     thumbnail:
       "/images/wellness/treatments/cards/drenaje-linfatico-1200x675.webp",
@@ -504,8 +500,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["45 min"],
-    priceCenter: "110 €",
-    priceSuite: "140 €",
     image: "/images/wellness/treatments/essentia-active-1920x1080.webp",
     thumbnail:
       "/images/wellness/treatments/cards/essentia-active-1200x675.webp",
@@ -534,8 +528,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["50 min"],
-    priceCenter: "130 €",
-    priceSuite: "160 €",
     image: "/images/wellness/treatments/nurtura-1920x1080.webp",
     thumbnail: "/images/wellness/treatments/cards/nurtura-1200x675.webp",
   },
@@ -563,8 +555,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["50 min"],
-    priceCenter: "130 €",
-    priceSuite: "160 €",
     image: "/images/wellness/treatments/serenna-1920x1080.webp",
     thumbnail: "/images/wellness/treatments/cards/serenna-1200x675.webp",
   },
@@ -592,8 +582,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["70 min"],
-    priceCenter: "150 €",
-    priceSuite: "180 €",
     image: "/images/wellness/treatments/solea-1920x1080.webp",
     thumbnail: "/images/wellness/treatments/cards/solea-1200x675.webp",
   },
@@ -621,8 +609,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["60 min"],
-    priceCenter: "160 €",
-    priceSuite: "190 €",
     image: "/images/wellness/treatments/soma-1920x1080.webp",
     thumbnail: "/images/wellness/treatments/cards/soma-1200x675.webp",
   },
@@ -650,8 +636,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["80 min"],
-    priceCenter: "220 €",
-    priceSuite: "250 €",
     image: "/images/wellness/treatments/lume-1920x1080.webp",
     thumbnail: "/images/wellness/treatments/cards/lume-1200x675.webp",
   },
@@ -679,7 +663,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["50 min"],
-    priceCenter: "270 €",
     image: "/images/wellness/treatments/alure-duo-1920x1080.webp",
     thumbnail: "/images/wellness/treatments/cards/alure-duo-1200x675.webp",
   },
@@ -707,7 +690,6 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
       },
     ],
     durations: ["120 min"],
-    priceCenter: "350 €",
     image: "/images/wellness/treatments/essentia-signature-1920x1080.webp",
     thumbnail:
       "/images/wellness/treatments/cards/essentia-signature-1200x675.webp",

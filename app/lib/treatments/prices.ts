@@ -137,3 +137,29 @@ export function cardMeta(
     })
     .join(" · ");
 }
+
+/**
+ * What a treatment costs, in words, for a list an assistant reads: `€70`; with
+ * several lengths, which price is whose (`60 min: €140, 90 min: €190`). Empty
+ * when it has no price to tell, under the same rule as a card's (`priceOf`).
+ */
+export function priceText(
+  prices: readonly TierPrice[],
+  title: string,
+  durations: readonly string[],
+  locale: SupportedLocale,
+): string {
+  if (durations.length === 0) {
+    const price = priceOf(prices, title, null);
+    return price === null ? "" : cardPrice(price, locale);
+  }
+  const priced = durations.flatMap((duration) => {
+    const minutes = minutesOf(duration);
+    const price = minutes === null ? null : priceOf(prices, title, minutes);
+    return price === null
+      ? []
+      : [{ duration, price: cardPrice(price, locale) }];
+  });
+  if (durations.length === 1) return priced[0]?.price ?? "";
+  return priced.map((p) => `${p.duration}: ${p.price}`).join(", ");
+}

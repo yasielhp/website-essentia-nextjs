@@ -4,6 +4,7 @@ import {
   cardPrice,
   minutesOf,
   priceOf,
+  priceText,
   toTierPrices,
 } from "@/lib/treatments/prices";
 
@@ -202,5 +203,38 @@ describe("cardMeta: the line under a card's title", () => {
     expect(meta("Espira", [])).toBe("70 €");
     expect(meta("Soma", [])).toBe("");
     expect(meta("Alure Duo", [])).toBe("");
+  });
+});
+
+describe("priceText: what a treatment costs, for a list read by an assistant", () => {
+  const PRICES = [
+    tier("Espira", 30, 70),
+    tier("Soma", 60, 140),
+    tier("Soma", 90, 190),
+  ];
+
+  test("one length, one price", () => {
+    expect(priceText(PRICES, "Espira", ["30 min"], "en")).toBe("€70");
+    expect(plain(priceText(PRICES, "Espira", ["30 min"], "es"))).toBe("70 €");
+  });
+
+  test("several lengths say which price is whose", () => {
+    expect(priceText(PRICES, "Soma", ["60 min", "90 min"], "en")).toBe(
+      "60 min: €140, 90 min: €190",
+    );
+    expect(priceText(PRICES, "Soma", ["60 min", "75 min"], "en")).toBe(
+      "60 min: €140",
+    );
+  });
+
+  test("not on sale, or not in that length, is no text at all", () => {
+    expect(priceText(PRICES, "Alure Duo", ["50 min"], "en")).toBe("");
+    expect(priceText(PRICES, "Espira", ["45 min"], "en")).toBe("");
+    expect(priceText([], "Espira", ["30 min"], "en")).toBe("");
+  });
+
+  test("a treatment with no length takes the one price its name has", () => {
+    expect(priceText(PRICES, "Espira", [], "en")).toBe("€70");
+    expect(priceText(PRICES, "Soma", [], "en")).toBe("");
   });
 });

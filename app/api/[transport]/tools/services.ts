@@ -1,11 +1,10 @@
 import { z } from "zod";
-import {
-  bookableServices,
-  manualTherapyTreatments,
-} from "@/data/services-data";
+import { bookableServices } from "@/data/services-data";
 import { getAvailableStartTimes } from "@/utils/calendar-helpers";
 import { json, defineTool, text, type ToolServer } from "@/lib/mcp/tool";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { catalogueText, serviceCatalogue } from "@/lib/treatments/catalogue";
+import { listPublicTierPrices } from "@/lib/treatments/public-prices";
 
 const siteUrl =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://www.essentiawellnessclub.com";
@@ -22,54 +21,13 @@ export function registerServiceTools(server: ToolServer): void {
       description:
         "List all available services and treatments at Essentia Wellness Club, including prices, durations, and descriptions.",
     },
-    () => {
-      type ServiceEntry = {
-        id: string;
-        category: string;
-        title: string;
-        description: string;
-        durations: string[];
-        priceCenter?: string;
-        priceSuite?: string;
-      };
-
-      const services: ServiceEntry[] = bookableServices.map((s) => ({
-        id: s.id,
-        category: s.category,
-        title: s.title,
-        description: s.description,
-        durations: s.durations,
-      }));
-
-      const manualTreatments: ServiceEntry[] = manualTherapyTreatments.map(
-        (t) => ({
-          id: `manual-therapies:${t.id}`,
-          category: "wellness",
-          title: t.title,
-          description: t.description,
-          durations: t.durations,
-          priceCenter: t.priceCenter,
-          priceSuite: t.priceSuite,
-        }),
-      );
-
-      const body = [...services, ...manualTreatments]
-        .map((s) => {
-          const price = s.priceCenter
-            ? `Price: ${s.priceCenter} (at centre)${s.priceSuite ? ` / ${s.priceSuite} (in-suite)` : ""}`
-            : "";
-          return [
-            `**${s.title}** (${s.category}) — ID: ${s.id}`,
-            `Duration: ${s.durations.join(", ")}`,
-            price,
-            s.description,
-          ]
-            .filter(Boolean)
-            .join("\n");
-        })
-        .join("\n\n---\n\n");
-
-      return text(body);
+    async () => {
+      // The prices are the session types', read from the database like the
+      // public site's cards: the code no longer keeps any. A treatment with no
+      // session type on sale is listed without a price, and so is every one of
+      // them if the read fails.
+      const prices = await listPublicTierPrices("manual-therapies");
+      return text(catalogueText(serviceCatalogue(prices, "en")));
     },
   );
 

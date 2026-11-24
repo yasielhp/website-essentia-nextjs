@@ -5,8 +5,10 @@ import {
   bookableServices,
   manualTherapyTreatments,
 } from "@/data/services-data";
+import { fetchTreatmentPrices } from "@/actions/treatment-prices";
 import { getAvailableStartTimes } from "@/utils/calendar-helpers";
 import { contact } from "@/constants/contact";
+import { serviceCatalogue } from "@/lib/treatments/catalogue";
 import { registerWebMcpTools } from "@/lib/webmcp";
 
 /**
@@ -35,26 +37,15 @@ export function WebMcpTools({ locale }: { locale: string }) {
         description:
           "List the services and treatments that can be booked at Essentia Wellness Club in Tenerife, with their category, description and available session lengths. Use this to answer what Essentia offers, or before checking availability, because the service id is needed there.",
         annotations: { readOnlyHint: true },
-        execute() {
+        async execute() {
+          // The prices are the session types', read when the agent asks: the
+          // code keeps none. A read that fails is the same list without
+          // prices, never an old one.
+          const prices = await fetchTreatmentPrices("manual-therapies").catch(
+            () => [],
+          );
           return {
-            services: [
-              ...bookableServices.map((service) => ({
-                id: service.id,
-                category: service.category,
-                title: service.title,
-                description: service.description,
-                durations: service.durations,
-              })),
-              ...manualTherapyTreatments.map((treatment) => ({
-                id: `manual-therapies:${treatment.id}`,
-                category: "wellness",
-                title: treatment.title,
-                description: treatment.description,
-                durations: treatment.durations,
-                priceCenter: treatment.priceCenter,
-                priceSuite: treatment.priceSuite,
-              })),
-            ],
+            services: serviceCatalogue(prices, locale === "es" ? "es" : "en"),
             bookingUrl: bookingUrl(locale),
           };
         },
