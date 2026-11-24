@@ -13,7 +13,6 @@ import {
   campaignChannelSchema,
   campaignKindSchema,
   channelChangeAllowed,
-  requiredLocales,
   sendLocaleOf,
   segmentSchema,
   validateCampaign,
@@ -1090,7 +1089,9 @@ function withDefaults(
 }
 
 /**
- * Sends the campaign, as written, to the administrator who asked.
+ * Sends ONE version of the campaign, as written, to the administrator who
+ * asked: the language on their screen. A campaign for both languages has two
+ * versions, and a test of "the campaign" would be two emails nobody asked for.
  *
  * Nothing is recorded: a test is the admin reading their own draft, not a
  * recipient. The subject is prefixed so it cannot be mistaken for the real
@@ -1099,7 +1100,7 @@ function withDefaults(
 export async function sendTestCampaign(
   accessToken: string | null,
   content: CampaignContent,
-  audience: Pick<CampaignAudience, "language" | "sendLocale">,
+  locale: CampaignLocale,
 ): Promise<{ ok: true; to: string } | Failure> {
   let caller: AuthContext;
   try {
@@ -1108,22 +1109,24 @@ export async function sendTestCampaign(
     return authFailure(err);
   }
   if (!caller.email) return { ok: false, error: "no_email" };
-
-  for (const locale of requiredLocales(audience)) {
-    const { subject, html } = await campaignEmail({
-      content: withDefaults(content[locale]),
-      firstName: locale === "es" ? "Ana" : "Anna",
-      unsubscribeUrl: "#",
-      locale,
-    });
-    const { error } = await sendEmail({
-      to: caller.email,
-      subject: `[PRUEBA] ${subject}`,
-      html,
-      blindCopy: false,
-    });
-    if (error) return { ok: false, error: error.message };
+  // Comes from the browser: one of the two, or nothing is sent.
+  if (locale !== "es" && locale !== "en") {
+    return { ok: false, error: "invalid" };
   }
+
+  const { subject, html } = await campaignEmail({
+    content: withDefaults(content?.[locale]),
+    firstName: locale === "es" ? "Ana" : "Anna",
+    unsubscribeUrl: "#",
+    locale,
+  });
+  const { error } = await sendEmail({
+    to: caller.email,
+    subject: `[PRUEBA] ${subject}`,
+    html,
+    blindCopy: false,
+  });
+  if (error) return { ok: false, error: error.message };
 
   return { ok: true, to: caller.email };
 }

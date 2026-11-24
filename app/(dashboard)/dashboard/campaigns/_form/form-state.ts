@@ -14,7 +14,8 @@ import {
   type CampaignTrigger,
   DEFAULT_TRIGGER,
 } from "@/types/campaign";
-import { sendLocaleOf } from "@/lib/schemas";
+import { requiredLocales, sendLocaleOf, validateCampaign } from "@/lib/schemas";
+import { missingLocales } from "@/lib/campaigns/languages";
 import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
 
@@ -87,6 +88,11 @@ export type FormState = {
   segmentName: string | null;
   audience: CampaignAudience;
   content: CampaignContent;
+  /**
+   * The language on screen in the content step and the review, of the ones the
+   * campaign is written in (`requiredLocales`): the preview and "send me a
+   * test" are of this one.
+   */
   activeLocale: CampaignLocale;
   pickedContacts: PickedContact[];
   reach: { count: number; en: number; es: number } | null;
@@ -125,6 +131,11 @@ export type FormAction =
       type: "SET_CONTENT_ALL";
       locale: CampaignLocale;
       content: CampaignLocaleContent;
+    }
+  | {
+      /** A starting point: both languages at once, whatever was there. */
+      type: "SET_CONTENT_BOTH";
+      content: Record<CampaignLocale, CampaignLocaleContent>;
     }
   | { type: "SET_DOC"; locale: CampaignLocale; doc: EmailDoc }
   | { type: "SET_LOCALE"; locale: CampaignLocale }
@@ -192,7 +203,33 @@ function without(
   return next;
 }
 
+/**
+ * The language on screen for an audience: the one already there when the
+ * campaign is still written in it, else the first it is written in. Narrowing
+ * the audience to Spanish takes the English version off the form, so it cannot
+ * stay on screen.
+ */
+function activeLocaleFor(
+  audience: CampaignAudience,
+  current: CampaignLocale,
+): CampaignLocale {
+  const locales = requiredLocales(audience);
+  return locales.includes(current) ? current : (locales[0] ?? current);
+}
+
+/** Every change of the audience goes through here, so the two never part. */
+function settle(state: FormState): FormState {
+  const activeLocale = activeLocaleFor(state.audience, state.activeLocale);
+  return activeLocale === state.activeLocale
+    ? state
+    : { ...state, activeLocale };
+}
+
 export function formReducer(state: FormState, action: FormAction): FormState {
+  return settle(reduce(state, action));
+}
+
+function reduce(state: FormState, action: FormAction): FormState {
   switch (action.type) {
     case "SET_NAME":
       return {
@@ -355,6 +392,19 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         content: { ...state.content, [action.locale]: action.content },
         fieldErrors: without(state.fieldErrors, `content.${action.locale}`),
       };
+    case "SET_CONTENT_BOTH":
+      return {
+        ...state,
+        content: {
+          ...state.content,
+          es: action.content.es,
+          en: action.content.en,
+        },
+        fieldErrors: without(
+          without(state.fieldErrors, "content.es"),
+          "content.en",
+        ),
+      };
     case "SET_DOC":
       return {
         ...state,
@@ -365,6 +415,7 @@ export function formReducer(state: FormState, action: FormAction): FormState {
         fieldErrors: without(state.fieldErrors, `content.${action.locale}.doc`),
       };
     case "SET_LOCALE":
+      // `settle` puts it back if the campaign is not written in it.
       return { ...state, activeLocale: action.locale };
     case "GO":
       return { ...state, step: action.step, error: null };
@@ -396,9 +447,8 @@ export function formReducer(state: FormState, action: FormAction): FormState {
             ? { whatsapp: action.campaign.content.whatsapp }
             : {}),
         },
-        activeLocale:
-          action.campaign.audience.sendLocale ??
-          (action.campaign.audience.language === "en" ? "en" : "es"),
+        // The first language it is written in; `settle` sees to it.
+        activeLocale: "es",
         pickedContacts: action.picked,
       };
     default:
@@ -406,13 +456,36 @@ export function formReducer(state: FormState, action: FormAction): FormState {
   }
 }
 
-/** The first locale whose block carries an error, for the content tabs. */
+/**
+ * The language to put on screen after a refused validation: the one already
+ * there when it has an error of its own (no jumping away from what the admin
+ * is looking at), else the first that has one. Null when no language has.
+ */
 export function firstErroredLocale(
   errors: Record<string, string>,
+  active?: CampaignLocale,
 ): CampaignLocale | null {
-  if (Object.keys(errors).some((k) => k.startsWith("content.es."))) return "es";
-  if (Object.keys(errors).some((k) => k.startsWith("content.en."))) return "en";
-  return null;
+  const errored = missingLocales(errors);
+  if (active && errored.includes(active)) return active;
+  return errored[0] ?? null;
+}
+
+/**
+ * The versions with something missing, for the marks on the language switch:
+ * what the full rules would refuse right now, language by language. Not the
+ * errors on screen (those appear when the admin tries to go on); this is true
+ * from the first keystroke.
+ */
+export function incompleteLocales(state: FormState): CampaignLocale[] {
+  const check = validateCampaign({
+    name: state.name,
+    channel: state.channel,
+    kind: state.kind,
+    trigger: state.trigger,
+    audience: state.audience,
+    content: contentOf(state),
+  });
+  return check.ok ? [] : missingLocales(check.errors);
 }
 
 /**

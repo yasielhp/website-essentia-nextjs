@@ -5,13 +5,18 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { bookableServices } from "@/data/services-data";
+import { LocaleTabs } from "@/components/dashboard/locale-tabs";
 import { requiredLocales, sendLocaleOf } from "@/lib/schemas";
 import {
   WHATSAPP_MESSAGES_PER_RUN,
   sampleParams,
   triggerEventKey,
 } from "@/lib/campaigns/whatsapp-form";
-import { isAutomatedKind, type CampaignAudience } from "@/types/campaign";
+import {
+  isAutomatedKind,
+  type CampaignAudience,
+  type CampaignLocale,
+} from "@/types/campaign";
 import { TemplatePreview } from "@/components/dashboard/template-preview";
 import { useAppointmentTrigger } from "../kind-line";
 import type { FormState } from "./form-state";
@@ -82,6 +87,7 @@ function defaultScheduleValue(): string {
 export function ReviewStep({
   state,
   templates,
+  onLocale,
   onTest,
   onSchedule,
   onSendNow,
@@ -90,6 +96,9 @@ export function ReviewStep({
   state: FormState;
   /** The account's templates; only a WhatsApp campaign has one to show. */
   templates: TemplatesState;
+  /** Puts another of the campaign's languages on screen. */
+  onLocale: (locale: CampaignLocale) => void;
+  /** Sends the version on screen to the admin. */
   onTest: () => Promise<void>;
   onSchedule: (iso: string) => Promise<void>;
   onSendNow: () => Promise<void>;
@@ -107,6 +116,12 @@ export function ReviewStep({
   const tWhatsApp = useTranslations("dashboard.campaigns.form.whatsapp");
   const [today] = useState(() => new Date());
   const sendLocale = sendLocaleOf(audience);
+  // The email is written in each of these; the one on screen is the one the
+  // summary shows and the test sends.
+  const locales = requiredLocales(audience);
+  const locale = state.activeLocale;
+  const localeLabel = (value: CampaignLocale) =>
+    value === "es" ? tContent("localeEs") : tContent("localeEn");
   const chosenTemplate =
     whatsapp && templates.status === "ready"
       ? (templates.templates.find(
@@ -204,29 +219,34 @@ export function ReviewStep({
               <div className="bg-sand-100 h-24 animate-pulse rounded-xl" />
             )
           ) : (
-            <dl className="flex flex-col gap-3">
-              {requiredLocales(audience).map((locale) => (
-                <div key={locale}>
-                  <dt className="text-petroleum-400 text-xs font-medium">
-                    {locale === "es"
-                      ? tContent("localeEs")
-                      : tContent("localeEn")}
-                  </dt>
+            <div className="flex flex-col gap-3">
+              <LocaleTabs
+                id="campaign-review-language"
+                label={tContent("language")}
+                locales={locales}
+                active={locale}
+                onChange={onLocale}
+                nameOf={localeLabel}
+                disabled={disabled}
+              />
+              <dl>
+                <dt className="text-petroleum-400 text-xs font-medium">
+                  {localeLabel(locale)}
+                </dt>
+                <dd className="text-petroleum-700 text-sm font-medium">
+                  {kind === "split" ? "A · " : ""}
+                  {content[locale].subject}
+                </dd>
+                {kind === "split" && (
                   <dd className="text-petroleum-700 text-sm font-medium">
-                    {kind === "split" ? "A · " : ""}
-                    {content[locale].subject}
+                    B · {content[locale].subjectB}
                   </dd>
-                  {kind === "split" && (
-                    <dd className="text-petroleum-700 text-sm font-medium">
-                      B · {content[locale].subjectB}
-                    </dd>
-                  )}
-                  <dd className="text-petroleum-500 text-sm">
-                    {content[locale].title}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+                )}
+                <dd className="text-petroleum-500 text-sm">
+                  {content[locale].title}
+                </dd>
+              </dl>
+            </div>
           )}
         </section>
       </div>
@@ -253,10 +273,16 @@ export function ReviewStep({
           >
             {busy === "test" ? t("sendingTest") : t("sendTest")}
           </Button>
-          {whatsapp && (
+          {whatsapp ? (
             <p className="text-petroleum-400 text-xs">
               {t("whatsappTestHint")}
             </p>
+          ) : (
+            locales.length > 1 && (
+              <p className="text-petroleum-400 text-xs">
+                {t("testLanguage", { language: localeLabel(locale) })}
+              </p>
+            )
           )}
         </div>
 

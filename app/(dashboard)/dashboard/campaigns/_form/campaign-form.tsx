@@ -7,10 +7,11 @@ import { toast } from "sonner";
 import { getAccessToken } from "@/lib/client-session";
 import { notifySuccess } from "@/lib/feedback";
 import {
-  sendLocaleOf,
+  requiredLocales,
   validateCampaign,
   validateCampaignDraft,
 } from "@/lib/schemas";
+import { incompleteError } from "@/lib/campaigns/languages";
 import { Button } from "@/components/ui/button";
 import {
   activateCampaign,
@@ -147,7 +148,7 @@ export function CampaignForm({
     });
     if (!check.ok) {
       dispatch({ type: "SET_ERRORS", errors: check.errors });
-      const locale = firstErroredLocale(check.errors);
+      const locale = firstErroredLocale(check.errors, state.activeLocale);
       if (locale) {
         dispatch({ type: "SET_LOCALE", locale });
         reopen(STEP_OF.content);
@@ -162,7 +163,8 @@ export function CampaignForm({
       } else if (check.errors.name) {
         reopen(STEP_OF.name);
       }
-      toast.error(errorText("invalid"));
+      // Says which version is missing when that is what is wrong.
+      toast.error(errorText(incompleteError(check.errors)));
       return null;
     }
 
@@ -211,10 +213,11 @@ export function CampaignForm({
     if (!id) return;
     if (whatsapp) return handleWhatsAppTest();
     try {
+      // The version on screen, and only that one.
       const result = await sendTestCampaign(
         getAccessToken(),
         state.content,
-        state.audience,
+        state.activeLocale,
       );
       if (result.ok) {
         notifySuccess(tToasts("campaignTestSent", { email: result.to }));
@@ -341,9 +344,12 @@ export function CampaignForm({
     });
     if (!check.ok) {
       dispatch({ type: "SET_ERRORS", errors: check.errors });
-      const locale = firstErroredLocale(check.errors);
+      // The version with something missing comes on screen, and the toast
+      // names it: with two languages the error may be on the other one.
+      const locale = firstErroredLocale(check.errors, state.activeLocale);
       if (locale) {
         dispatch({ type: "SET_LOCALE", locale });
+        toast.error(errorText(incompleteError(check.errors)));
         return;
       }
       // A WhatsApp campaign without its template stays on this step.
@@ -407,7 +413,10 @@ export function CampaignForm({
       : undefined;
   const contentSummary = whatsapp
     ? (chosenTemplateName ?? t("form.whatsapp.chosen"))
-    : state.content[sendLocaleOf(state.audience)].subject;
+    : requiredLocales(state.audience)
+        .map((locale) => state.content[locale].subject)
+        .filter(Boolean)
+        .join(" · ");
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -551,6 +560,7 @@ export function CampaignForm({
           <ReviewStep
             state={state}
             templates={templates}
+            onLocale={(locale) => dispatch({ type: "SET_LOCALE", locale })}
             onTest={handleTest}
             onSchedule={handleSchedule}
             onSendNow={handleSendNow}

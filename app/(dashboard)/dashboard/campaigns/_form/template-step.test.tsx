@@ -57,15 +57,21 @@ describe("the starting point is a select, with the cards gone", () => {
 });
 
 describe("picking does what pressing a card did", () => {
-  test("the blank page (or keeping the text) finishes the step and changes nothing; a template writes its content for the send language, then finishes", () => {
+  test("the blank page (or keeping the text) finishes the step and changes nothing; a template writes its content in BOTH languages, then finishes", () => {
     expect(source).toContain("commitOnArrows={false}");
     expect(source).toContain(
       "value === BLANK_START ? keepAsIs() : applyTemplate(value)",
     );
-    // The template writes the content as the card did.
+    // The template writes Spanish and English at once, whatever the audience.
     expect(source).toMatch(
-      /type: "SET_CONTENT_ALL"[\s\S]*blocksToDoc\(blocks\)/,
+      /type: "SET_CONTENT_BOTH",\s*content: templateVersions\(template\)/,
     );
+    // And so does a campaign already written.
+    expect(source).toMatch(
+      /type: "SET_CONTENT_BOTH",\s*content: previousVersions\(row\.content\)/,
+    );
+    // Nothing writes one language alone any more.
+    expect(source).not.toContain("SET_CONTENT_ALL");
   });
 
   test("each pick tells the form what it picked, for the folded summary", () => {

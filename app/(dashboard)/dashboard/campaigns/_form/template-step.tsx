@@ -3,9 +3,12 @@
 import { useEffect, useState, type Dispatch } from "react";
 import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
-import { sendLocaleOf } from "@/lib/schemas";
 import { templatesFor } from "@/lib/campaigns/templates";
-import { blocksToDoc, docIsEmpty } from "@/lib/campaigns/doc";
+import {
+  anyWords,
+  previousVersions,
+  templateVersions,
+} from "@/lib/campaigns/starting-content";
 import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
 import { Button } from "@/components/ui/button";
 import { IconEdit, IconPlus } from "@/components/ui/icons";
@@ -17,7 +20,10 @@ import type { FormAction, FormState } from "./form-state";
 /**
  * Where the words start from: a blank page, one of the house templates, or
  * the body of a campaign already written. Whatever is picked lands in the
- * content step, fully editable; a template is a head start, not a cage.
+ * content step, fully editable; a template is a head start, not a cage. A
+ * template or a previous campaign writes BOTH languages at once (the campaign
+ * is written in every language its audience includes), and the blank page
+ * leaves both empty.
  *
  * The blank page and the house templates are ONE select (picture, name and
  * description of each); picking one does what pressing its card did: the arrow
@@ -37,9 +43,10 @@ export function TemplateStep({
   onPick?: (name: string) => void;
 }) {
   const t = useTranslations("dashboard.campaigns.template");
-  const locale = sendLocaleOf(state.audience);
-  const current = state.content[locale];
-  const hasContent = !docIsEmpty(current.doc) || current.subject !== "";
+  // The language the form is on: the one a campaign already written is
+  // described in, in its select.
+  const locale = state.activeLocale;
+  const hasContent = anyWords(state.content);
   const templates = templatesFor(state.kind);
 
   const [previous, setPrevious] = useState<CampaignContentSummary[] | null>(
@@ -73,12 +80,7 @@ export function TemplateStep({
   function applyTemplate(id: string) {
     const template = templates.find((item) => item.id === id);
     if (!template) return;
-    const { blocks, ...rest } = template.content[locale];
-    dispatch({
-      type: "SET_CONTENT_ALL",
-      locale,
-      content: { ...rest, doc: blocksToDoc(blocks) },
-    });
+    dispatch({ type: "SET_CONTENT_BOTH", content: templateVersions(template) });
     onPick?.(t(`names.${template.id}`));
     onDone();
   }
@@ -109,11 +111,9 @@ export function TemplateStep({
   function usePrevious() {
     const row = previous?.find((item) => item.id === previousId);
     if (!row) return;
-    const block = row.content[locale] ?? row.content.es;
     dispatch({
-      type: "SET_CONTENT_ALL",
-      locale,
-      content: structuredClone(block),
+      type: "SET_CONTENT_BOTH",
+      content: previousVersions(row.content),
     });
     onPick?.(row.name);
     onDone();

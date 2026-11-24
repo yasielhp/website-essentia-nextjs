@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useRef, type Dispatch } from "react";
+import { useEffect, useMemo, useRef, type Dispatch } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import "@maily-to/core/style.css";
 import { INPUT_CLASS } from "@/constants/form-styles";
 import { Button } from "@/components/ui/button";
-import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
+import { LocaleTabs } from "@/components/dashboard/locale-tabs";
 import { useFieldError } from "@/hooks/use-field-error";
-import { sendLocaleOf } from "@/lib/schemas";
+import { requiredLocales } from "@/lib/schemas";
 import { emptyDoc } from "@/lib/campaigns/doc";
 import type {
   CampaignLocale,
@@ -16,7 +16,11 @@ import type {
   EmailDoc,
 } from "@/types/campaign";
 import { EmailPreview } from "./email-preview";
-import type { FormAction, FormState } from "./form-state";
+import {
+  incompleteLocales,
+  type FormAction,
+  type FormState,
+} from "./form-state";
 
 // The editor is a browser-only thing (ProseMirror needs a DOM); it is loaded
 // after the page, with a placeholder the height it will take.
@@ -38,9 +42,13 @@ const LIMITS: Partial<Record<keyof CampaignLocaleContent, number>> = {
 /**
  * What the email says: subject line, title, and the body in a Maily editor —
  * type, press `/` for a block (button, image, divider, columns…), select text
- * for the formatting bar. One language only, decided by the segment (or by
- * the dropdown when the segment spans both). The preview below is drawn by
- * the sending template.
+ * for the formatting bar.
+ *
+ * Written in every language the audience includes, and each contact gets the
+ * version of her own. When that is both, a switch over the subject changes the
+ * whole version on screen (subject, preheader, title and body), marks the one
+ * with something missing, and the preview below is of the one on screen. A
+ * segment that fixes a language has one version and no switch.
  */
 export function ContentStep({
   state,
@@ -55,12 +63,11 @@ export function ContentStep({
   const t = useTranslations("dashboard.campaigns.content");
   const fieldError = useFieldError();
   const { content, audience, fieldErrors, submitting } = state;
-  const locale = sendLocaleOf(audience);
+  const locales = requiredLocales(audience);
+  // The reducer keeps it among the languages the campaign is written in.
+  const locale = state.activeLocale;
   const block = content[locale];
-  const localeOptions: SelectOption<CampaignLocale>[] = [
-    { value: "es", label: t("localeEs") },
-    { value: "en", label: t("localeEn") },
-  ];
+  const incomplete = incompleteLocales(state);
   const localeLabel = (value: CampaignLocale) =>
     value === "es" ? t("localeEs") : t("localeEn");
 
@@ -74,6 +81,32 @@ export function ContentStep({
   // The editor owns its document while typing; the form is told about it a
   // beat after the last keystroke, so a fast sentence is one state update.
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // What that beat would write, so it can be written at once instead: the
+  // editor is replaced when the language changes, and the last words typed in
+  // the old one must not be lost with it, nor land in the other language.
+  const unsaved = useRef<{ locale: CampaignLocale; read: () => EmailDoc }>(
+    null,
+  );
+  const flush = () => {
+    if (pending.current) clearTimeout(pending.current);
+    pending.current = null;
+    const last = unsaved.current;
+    unsaved.current = null;
+    if (last)
+      dispatch({ type: "SET_DOC", locale: last.locale, doc: last.read() });
+  };
+  // The step folding away is the same loss.
+  const flushRef = useRef(flush);
+  useEffect(() => {
+    flushRef.current = flush;
+  });
+  useEffect(() => () => flushRef.current(), []);
+
+  const switchTo = (next: CampaignLocale) => {
+    if (next === locale) return;
+    flush();
+    dispatch({ type: "SET_LOCALE", locale: next });
+  };
   const initialDoc = useMemo(
     () => (block.doc as EmailDoc | null) ?? emptyDoc(),
     // Only when the language changes: a fresh editor for a fresh document.
@@ -132,26 +165,27 @@ export function ContentStep({
           {t("title")}
         </h2>
 
-        {audience.language === "any" ? (
-          <div className="mb-4 flex flex-col gap-1.5">
-            <label
-              htmlFor="campaign-send-locale"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("emailLanguage")}
-            </label>
-            <OptionSelect
-              id="campaign-send-locale"
-              value={locale}
-              options={localeOptions}
+        {locales.length > 1 ? (
+          <div className="mb-4 flex flex-col gap-2">
+            <LocaleTabs
+              id="campaign-content-language"
+              label={t("language")}
+              locales={locales}
+              active={locale}
+              onChange={switchTo}
+              nameOf={localeLabel}
+              incomplete={incomplete}
+              incompleteText={t("incomplete")}
               disabled={submitting}
-              onChange={(sendLocale) =>
-                dispatch({ type: "SET_AUDIENCE", patch: { sendLocale } })
-              }
             />
-            <p className="text-petroleum-400 text-xs">
-              {t("emailLanguageHint")}
-            </p>
+            <p className="text-petroleum-400 text-xs">{t("languageHint")}</p>
+            {incomplete.length > 0 && (
+              <p aria-live="polite" className="text-xs text-amber-700">
+                {t("missingVersions", {
+                  languages: incomplete.map(localeLabel).join(", "),
+                })}
+              </p>
+            )}
           </div>
         ) : (
           <p className="bg-sand-50 text-petroleum-400 mb-4 rounded-xl px-4 py-3 text-xs">
@@ -194,13 +228,11 @@ export function ContentStep({
             }}
             onUpdate={(editor) => {
               if (pending.current) clearTimeout(pending.current);
-              pending.current = setTimeout(() => {
-                dispatch({
-                  type: "SET_DOC",
-                  locale,
-                  doc: editor.getJSON() as EmailDoc,
-                });
-              }, 300);
+              unsaved.current = {
+                locale,
+                read: () => editor.getJSON() as EmailDoc,
+              };
+              pending.current = setTimeout(flush, 300);
             }}
           />
         </div>

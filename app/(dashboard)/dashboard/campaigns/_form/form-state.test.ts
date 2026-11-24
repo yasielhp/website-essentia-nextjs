@@ -6,7 +6,9 @@ import {
   formStateForStart,
   STEP_OF,
   contentOf,
+  firstErroredLocale,
   formReducer,
+  incompleteLocales,
   initialFormState,
   nextStep,
   reachIn,
@@ -492,5 +494,195 @@ describe("leaving a hand-made list for another segment", () => {
     expect(
       choose(choose(initialFormState, list), other).audience.manualIds,
     ).toEqual([B]);
+  });
+});
+
+describe("the language on screen is always one the campaign is written in", () => {
+  const written = (hello: string) => ({
+    subject: hello,
+    preheader: "",
+    title: hello,
+    doc: {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: hello }] },
+      ],
+    },
+  });
+  const onEnglish = formReducer(initialFormState, {
+    type: "SET_LOCALE",
+    locale: "en",
+  });
+
+  test("a new campaign for everybody opens on Spanish and can be switched to English", () => {
+    expect(initialFormState.activeLocale).toBe("es");
+    expect(onEnglish.activeLocale).toBe("en");
+  });
+
+  test("narrowing the audience to Spanish brings the Spanish version on screen: the English one is gone", () => {
+    const after = formReducer(onEnglish, {
+      type: "SET_AUDIENCE",
+      patch: { language: "es" },
+    });
+    expect(after.activeLocale).toBe("es");
+  });
+
+  test("an English audience is edited in English", () => {
+    const after = formReducer(initialFormState, {
+      type: "SET_AUDIENCE",
+      patch: { language: "en" },
+    });
+    expect(after.activeLocale).toBe("en");
+  });
+
+  test("a segment that fixes a language does the same", () => {
+    const after = formReducer(initialFormState, {
+      type: "SET_SEGMENT",
+      id: "seg-en",
+      name: "English speakers",
+      conditions: { ...EMPTY_AUDIENCE, language: "en" } as SegmentConditions,
+    });
+    expect(after.activeLocale).toBe("en");
+  });
+
+  test("a language the audience leaves out cannot be put on screen", () => {
+    const spanish = formReducer(initialFormState, {
+      type: "SET_AUDIENCE",
+      patch: { language: "es" },
+    });
+    expect(
+      formReducer(spanish, { type: "SET_LOCALE", locale: "en" }).activeLocale,
+    ).toBe("es");
+  });
+
+  test("widening the audience back keeps the language that was on screen", () => {
+    const english = formReducer(initialFormState, {
+      type: "SET_AUDIENCE",
+      patch: { language: "en" },
+    });
+    const everybody = formReducer(english, {
+      type: "SET_AUDIENCE",
+      patch: { language: "any" },
+    });
+    expect(everybody.activeLocale).toBe("en");
+  });
+
+  test("what was written in a language survives the audience leaving it and coming back", () => {
+    const withEnglish = formReducer(initialFormState, {
+      type: "SET_CONTENT",
+      locale: "en",
+      field: "subject",
+      value: "Hello",
+    });
+    const there = formReducer(withEnglish, {
+      type: "SET_AUDIENCE",
+      patch: { language: "es" },
+    });
+    const back = formReducer(there, {
+      type: "SET_AUDIENCE",
+      patch: { language: "any" },
+    });
+    expect(back.content.en.subject).toBe("Hello");
+  });
+
+  test("a saved English campaign reopens on English, one for everybody on Spanish", () => {
+    const row = whatsappCampaign({ channel: "email" });
+    expect(
+      load({ ...row, audience: { ...EMPTY_AUDIENCE, language: "en" } })
+        .activeLocale,
+    ).toBe("en");
+    expect(load(row).activeLocale).toBe("es");
+  });
+
+  test("a starting point writes both languages at once", () => {
+    const after = formReducer(
+      {
+        ...initialFormState,
+        fieldErrors: {
+          "content.es.subject": "subjectRequired",
+          "content.en.doc": "bodyRequired",
+          name: "nameRequired",
+        },
+      },
+      {
+        type: "SET_CONTENT_BOTH",
+        content: { es: written("Hola"), en: written("Hello") },
+      },
+    );
+    expect(after.content.es.subject).toBe("Hola");
+    expect(after.content.en.subject).toBe("Hello");
+    // The errors about the old words go with them; the others stay.
+    expect(after.fieldErrors).toEqual({ name: "nameRequired" });
+  });
+
+  describe("which versions have something missing", () => {
+    const named = { ...initialFormState, name: "Reapertura" };
+    const fill = (state: FormState, locale: "es" | "en", hello: string) =>
+      formReducer(state, {
+        type: "SET_CONTENT_ALL",
+        locale,
+        content: written(hello),
+      });
+
+    test("a new campaign for everybody lacks both", () => {
+      expect(incompleteLocales(named)).toEqual(["es", "en"]);
+    });
+
+    test("with the Spanish written, only the English", () => {
+      expect(incompleteLocales(fill(named, "es", "Hola"))).toEqual(["en"]);
+    });
+
+    test("with both, none", () => {
+      expect(
+        incompleteLocales(fill(fill(named, "es", "Hola"), "en", "Hello")),
+      ).toEqual([]);
+    });
+
+    test("a Spanish audience is never asked for the English", () => {
+      const spanish = formReducer(named, {
+        type: "SET_AUDIENCE",
+        patch: { language: "es" },
+      });
+      expect(incompleteLocales(spanish)).toEqual(["es"]);
+      expect(incompleteLocales(fill(spanish, "es", "Hola"))).toEqual([]);
+    });
+
+    test("an A/B test lacks a version until it has its second subject", () => {
+      const split = {
+        ...fill(fill(named, "es", "Hola"), "en", "Hello"),
+        kind: "split" as const,
+      };
+      expect(incompleteLocales(split)).toEqual(["es", "en"]);
+    });
+
+    test("an error that is not about a language marks none", () => {
+      // No name: the campaign is invalid, but both versions are whole.
+      expect(
+        incompleteLocales(
+          fill(fill(initialFormState, "es", "Hola"), "en", "Hello"),
+        ),
+      ).toEqual([]);
+    });
+  });
+
+  describe("where a refused validation takes the admin", () => {
+    test("to the language on screen when it has an error of its own", () => {
+      const errors = {
+        "content.es.subject": "subjectRequired",
+        "content.en.subject": "subjectRequired",
+      };
+      expect(firstErroredLocale(errors, "en")).toBe("en");
+      expect(firstErroredLocale(errors, "es")).toBe("es");
+    });
+
+    test("to the other one when the one on screen is whole", () => {
+      expect(
+        firstErroredLocale({ "content.en.doc": "bodyRequired" }, "es"),
+      ).toBe("en");
+    });
+
+    test("nowhere when no language has an error", () => {
+      expect(firstErroredLocale({ name: "nameRequired" }, "es")).toBeNull();
+    });
   });
 });
