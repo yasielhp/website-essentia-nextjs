@@ -111,12 +111,13 @@ export function TermsES() {
         personales e intransferibles y pueden adquirirse en el centro o a través
         del sitio web. Las sesiones no utilizadas al vencer el periodo de
         validez se perderán. Cada sesión reservada con cargo a un bono se
-        descuenta del mismo; una sesión cancelada con menos de 24 horas de
-        antelación o a la que no se asista se considerará consumida, conforme al
-        apartado 3.2. Si adquiere un bono a distancia, dispone de 14 días
-        naturales para desistir de la compra siempre que no haya consumido
-        ninguna sesión; fuera de ese supuesto, los bonos no son reembolsables
-        salvo cuando así lo exija la legislación aplicable.
+        descuenta del mismo. Si la reserva se cancela con al menos 24 horas de
+        antelación, la sesión se devuelve al bono; una sesión cancelada en las
+        24 horas previas o a la que no se asista se pierde y se considera
+        consumida, conforme al apartado 3.2. Si adquiere un bono a distancia,
+        dispone de 14 días naturales para desistir de la compra siempre que no
+        haya consumido ninguna sesión; fuera de ese supuesto, los bonos no son
+        reembolsables salvo cuando así lo exija la legislación aplicable.
       </p>
 
       <h2>4. Salud y seguridad</h2>

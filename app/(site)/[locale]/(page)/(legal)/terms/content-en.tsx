@@ -101,12 +101,13 @@ export function TermsEN() {
         purchase. Vouchers are paid in full in advance, are personal and
         non-transferable, and may be bought at the centre or through the
         website. Sessions not used by the end of the validity period are
-        forfeited. Each session booked against a voucher is deducted from it; a
-        session cancelled with less than 24 hours&apos; notice, or not attended,
-        counts as used, as set out in section 3.2. If you buy a voucher at a
-        distance you have 14 calendar days to withdraw from the purchase
-        provided no session has been used; otherwise vouchers are non-refundable
-        except where required by applicable law.
+        forfeited. Each session booked against a voucher is deducted from it. If
+        the booking is cancelled at least 24 hours in advance, the session goes
+        back to the voucher; a session cancelled within the 24 hours before it,
+        or not attended, is lost and counts as used, as set out in section 3.2.
+        If you buy a voucher at a distance you have 14 calendar days to withdraw
+        from the purchase provided no session has been used; otherwise vouchers
+        are non-refundable except where required by applicable law.
       </p>
 
       <h2>4. Health and Safety</h2>
