@@ -146,7 +146,6 @@ const draft = (details: DetailsState = DETAILS) => ({
   date: null,
   time: null,
   details,
-  paymentMode: "deposit" as const,
 });
 
 const names = () => calls.map((c) => c.name);

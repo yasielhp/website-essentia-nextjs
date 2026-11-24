@@ -8,7 +8,6 @@ import { DurationStep, type TierSelection } from "./steps/duration-step";
 import { DetailsStep, type DetailsErrors } from "./steps/details-step";
 import { DateTimeStep } from "./steps/datetime-step";
 import { ConfirmStep } from "./steps/confirm-step";
-import type { PaymentMode } from "@/lib/payments/amounts";
 import type { BookableService } from "@/data/services-data";
 import type { DetailsState } from "@/types";
 import type { BookingAction } from "./booking-state";
@@ -116,8 +115,6 @@ export type BookingStepRendererProps = {
   dispatch: React.Dispatch<BookingAction>;
   onClearDetailError: (key: keyof DetailsState) => void;
   preselectedLabel?: string | null;
-  paymentMode: PaymentMode;
-  onPaymentModeChange: (method: PaymentMode) => void;
   /** The signed-in client already has news and offers on, by email and WhatsApp. */
   marketingOn: boolean;
 };
@@ -142,8 +139,6 @@ export function BookingStepRenderer({
   dispatch,
   onClearDetailError,
   preselectedLabel,
-  paymentMode,
-  onPaymentModeChange,
   marketingOn,
 }: BookingStepRendererProps) {
   return (
@@ -219,8 +214,6 @@ export function BookingStepRenderer({
           time={selectedTime}
           details={details}
           staffName={staffName}
-          paymentMode={paymentMode}
-          onPaymentModeChange={onPaymentModeChange}
         />
       )}
     </div>

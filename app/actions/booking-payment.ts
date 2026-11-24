@@ -11,8 +11,9 @@ import type { BalanceMethod } from "@/types/booking";
 const METHODS: BalanceMethod[] = ["cash", "card", "transfer", "other"];
 
 /**
- * Money taken at the counter: the balance of a deposit, a cash deposit on a
- * booking made by phone, or the whole price. Adds to `amount_paid_eur` and
+ * Money taken at the counter: the balance of a booking made with a deposit
+ * (before 2026-11-24; online there is none since), part of the price of a
+ * booking paid at the centre, or the whole price. Adds to `amount_paid_eur` and
  * moves `payment_status` forward; it never lowers either.
  */
 export async function recordCounterPayment(

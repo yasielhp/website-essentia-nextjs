@@ -95,6 +95,9 @@ export function useBookingEditData({
   const pendingTierId = useRef<string>("");
   const [origDate, setOrigDate] = useState<string | null>(null);
   const [origTime, setOrigTime] = useState<string>("");
+  // Partly paid when it was loaded: a deposit from before 2026-11-24, which
+  // keeps "partly paid" among the payment choices of this screen.
+  const [origPartlyPaid, setOrigPartlyPaid] = useState(false);
   const [tierStaff, setTierStaff] = useState<TierStaff[]>([]);
 
   // The same list the public booking flow offers.
@@ -159,6 +162,7 @@ export function useBookingEditData({
       };
       setOrigDate(b.date ?? null);
       setOrigTime(b.time ?? "");
+      setOrigPartlyPaid(paymentValueOf(b).status === "deposit_paid");
 
       // Bookings taken before the staff column carry the old free-text
       // prefix; strip it so it does not show up twice.
@@ -249,5 +253,5 @@ export function useBookingEditData({
     };
   }, [serviceId, dispatchAsync, dispatchForm]);
 
-  return { originalRef, tierStaff, origDate, origTime };
+  return { originalRef, tierStaff, origDate, origTime, origPartlyPaid };
 }

@@ -110,13 +110,14 @@ export default function EditBookingPage() {
     payment,
   } = form;
 
-  const { originalRef, tierStaff, origDate, origTime } = useBookingEditData({
-    id,
-    serviceId,
-    tierId,
-    dispatchAsync,
-    dispatchForm,
-  });
+  const { originalRef, tierStaff, origDate, origTime, origPartlyPaid } =
+    useBookingEditData({
+      id,
+      serviceId,
+      tierId,
+      dispatchAsync,
+      dispatchForm,
+    });
 
   const fullNameForCrumb =
     [firstName, lastName].filter(Boolean).join(" ") || null;
@@ -318,6 +319,7 @@ export default function EditBookingPage() {
             }
             onChange={(value) => dispatchForm({ type: "SET_PAYMENT", value })}
             disabled={submitting}
+            keepPartial={origPartlyPaid}
           />
         </div>
 

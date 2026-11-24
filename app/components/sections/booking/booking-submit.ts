@@ -18,7 +18,6 @@ import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import { localDateStr } from "@/utils/format";
 import type { DetailsState } from "@/types";
 import type { BookableService } from "@/data/services-data";
-import type { PaymentMode } from "@/lib/payments/amounts";
 import type { RedsysFormData } from "./steps/payment-overlay";
 
 /**
@@ -26,8 +25,9 @@ import type { RedsysFormData } from "./steps/payment-overlay";
  *
  * Each carries rules learned the hard way — a draft that must be reused rather
  * than duplicated, a contact link whose failure must be loud but must not cost
- * somebody their appointment, a price that depends on when they pay. They are
- * here so those rules are readable without scrolling past a form.
+ * somebody their appointment, a price the server reads from the tier and
+ * never from the form. They are here so those rules are readable without
+ * scrolling past a form.
  */
 
 /** What the form knows by the time it can write anything. */
@@ -42,7 +42,6 @@ type Draft = {
   date: Date | null;
   time: string | null;
   details: DetailsState;
-  paymentMode: PaymentMode;
 };
 
 /** The signed-in caller, with the address of her session as the browser knows it. */
@@ -170,7 +169,6 @@ export async function saveDetailsStep({
       user?.id ? "client" : "anonymous",
       details.notes?.trim() || null,
       draft.staffId,
-      draft.paymentMode,
     );
   }
 
@@ -262,7 +260,7 @@ export async function confirmBooking({
   /** The service name as the card statement should read it. */
   paymentDescription: string;
 }): Promise<ConfirmResult> {
-  const { service, tierId, details, paymentMode } = draft;
+  const { service, tierId, details } = draft;
   if (!service || !tierId) return { kind: "unpaid" };
 
   // The last gate. The details step checks this before letting her through,
@@ -312,10 +310,10 @@ export async function confirmBooking({
           service_title: service.title,
           tier_id: tierId,
           ...(draft.staffId ? { staff_id: draft.staffId } : {}),
-          // The web price; the checkout lowers it when they pay everything now
-          // and the settings give a discount for that.
+          // The web price; the checkout lowers it when the settings give a
+          // discount for paying online. Online, the whole price is paid.
           price_eur: draft.tierPriceOnline ?? draft.tierPrice,
-          payment_mode: paymentMode,
+          payment_mode: "full",
           duration: draft.duration ?? "",
           location: "centro",
           ...(composedNotes ? { notes: composedNotes } : {}),
@@ -365,7 +363,6 @@ export async function confirmBooking({
       date: dateStr ?? undefined,
       time: timeStr ?? undefined,
       phone: details.phone || undefined,
-      paymentMode,
     }),
   });
 

@@ -5,45 +5,49 @@
  * agree on the number. The server remains the authority: the route reads the
  * list price from `service_tiers` and the settings from `app_settings`, never
  * from the request.
+ *
+ * Since 2026-11-24 the only way to pay online is the whole price at booking:
+ * there is no deposit for a new booking, and nothing here computes one. The
+ * readers below still understand the bookings made with a deposit before then
+ * (`payment_mode = 'deposit'`, `payment_status = 'deposit_paid'`).
  */
 
-export type PaymentMode = "deposit" | "full";
-
 export type PaymentSettings = {
-  /** Share of the list price taken at booking when the client picks "deposit". */
-  depositPercent: number;
-  /** Discount on the list price when the client pays everything at booking. 0 disables it. */
+  /**
+   * Discount on the online price of a booking paid on the website (always the
+   * whole price). 0 disables it. The `payments` row may still carry the
+   * `depositPercent` of the deposit days: it is read past and never used.
+   */
   fullPaymentDiscountPercent: number;
 };
 
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
-  depositPercent: 50,
   fullPaymentDiscountPercent: 5,
 };
 
 const toCents = (eur: number) => Math.round(eur * 100);
 const fromCents = (cents: number) => cents / 100;
 
-export function chargeForMode(
+/**
+ * What a booking made on the website charges: the whole price, less the
+ * discount the settings give for paying online. The charge and the price the
+ * booking is worth are the same number, so nothing is ever left to pay at the
+ * centre.
+ */
+export function fullPaymentCharge(
   listPriceEur: number,
-  mode: PaymentMode,
   settings: PaymentSettings,
 ): { chargeEur: number; finalPriceEur: number } {
   if (!Number.isFinite(listPriceEur) || listPriceEur <= 0) {
     throw new Error("listPriceEur must be positive");
   }
-  const list = toCents(listPriceEur);
-  if (mode === "full") {
-    const discounted = Math.round(
-      list * (1 - settings.fullPaymentDiscountPercent / 100),
-    );
-    return {
-      chargeEur: fromCents(discounted),
-      finalPriceEur: fromCents(discounted),
-    };
-  }
-  const deposit = Math.round(list * (settings.depositPercent / 100));
-  return { chargeEur: fromCents(deposit), finalPriceEur: fromCents(list) };
+  const discounted = Math.round(
+    toCents(listPriceEur) * (1 - settings.fullPaymentDiscountPercent / 100),
+  );
+  return {
+    chargeEur: fromCents(discounted),
+    finalPriceEur: fromCents(discounted),
+  };
 }
 
 export function paymentStatusAfter(

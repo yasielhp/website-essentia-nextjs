@@ -157,3 +157,55 @@ describe("booking.confirmStep messages", () => {
     );
   });
 });
+
+/**
+ * The confirmation step. Since 2026-11-24 the only way to pay online is the
+ * whole price: no key may offer a deposit or a part paid later, and the
+ * cancellation line says the 24-hour rule and the refund.
+ */
+const CONFIRM = [
+  readFileSync(join(import.meta.dir, "steps", "confirm-step.tsx"), "utf8"),
+  readFileSync(join(import.meta.dir, "booking-content.tsx"), "utf8"),
+].join("\n");
+const confirmUsed = new Set(
+  [...CONFIRM.matchAll(/\bt(?:ConfirmStep)?\(\s*"([A-Za-z0-9_]+)"/g)].map(
+    (m) => m[1],
+  ),
+);
+const confirmKeys = (messages: typeof es) =>
+  Object.keys(messages.confirmStep).sort();
+
+describe("booking.confirmStep messages", () => {
+  test("Spanish and English have exactly the same keys", () => {
+    expect(confirmKeys(es)).toEqual(confirmKeys(en));
+  });
+
+  test("every key is read by the confirmation step", () => {
+    expect(confirmKeys(es).filter((k) => !confirmUsed.has(k))).toEqual([]);
+  });
+
+  test("nothing offers a deposit, a percentage now or a balance at the centre", () => {
+    for (const messages of [es, en]) {
+      const text = JSON.stringify(messages);
+      expect(text).not.toMatch(
+        /dep[oó]sit|señal|\b\d+\s?%|el resto se|\bbalance\b/i,
+      );
+      expect(text).not.toMatch(
+        /en el centro el día|at the cent(er|re) on the day/i,
+      );
+    }
+  });
+
+  test("the cancellation line says up to 24 hours before, and the refund", () => {
+    expect(es.confirmStep.cancellationNote).toContain(
+      "hasta 24 horas antes de la sesión",
+    );
+    expect(es.confirmStep.cancellationNote).toMatch(/te devolvemos/);
+    expect(es.confirmStep.cancellationNote).toMatch(/no hay reembolso/);
+    expect(en.confirmStep.cancellationNote).toContain(
+      "up to 24 hours before the session",
+    );
+    expect(en.confirmStep.cancellationNote).toMatch(/we refund/);
+    expect(en.confirmStep.cancellationNote).toMatch(/there is no refund/);
+  });
+});

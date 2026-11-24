@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { BadgePercent, CreditCard } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { BookableService } from "@/data/services-data";
 import {
@@ -15,9 +15,7 @@ import { treatmentForTier } from "@/lib/treatments/match";
 import { getPublicPaymentSettings } from "@/actions/payment-settings";
 import {
   DEFAULT_PAYMENT_SETTINGS,
-  amountOwed,
-  chargeForMode,
-  type PaymentMode,
+  fullPaymentCharge,
   type PaymentSettings,
 } from "@/lib/payments/amounts";
 import {
@@ -51,8 +49,6 @@ export function ConfirmStep({
   time,
   details,
   staffName,
-  paymentMode,
-  onPaymentModeChange,
 }: {
   service: BookableService;
   tierLabel: string | null;
@@ -66,8 +62,6 @@ export function ConfirmStep({
   time: string | null;
   details: DetailsState;
   staffName?: string | null;
-  paymentMode: PaymentMode;
-  onPaymentModeChange: (mode: PaymentMode) => void;
 }) {
   const t = useTranslations("booking.confirmStep");
   const tt = useTranslations("booking.durationStep");
@@ -123,7 +117,7 @@ export function ConfirmStep({
     };
   }, [tierId]);
 
-  // The percentages are the centre's to change, so they are read, not baked in.
+  // The online discount is the centre's to change, so it is read, not baked in.
   const [settings, setSettings] = useState<PaymentSettings>(
     DEFAULT_PAYMENT_SETTINGS,
   );
@@ -134,56 +128,16 @@ export function ConfirmStep({
   }, []);
 
   const listPrice = livePrices?.online ?? priceOnline ?? price;
-  const deposit =
-    listPrice != null && listPrice > 0
-      ? chargeForMode(listPrice, "deposit", settings)
-      : null;
+  // The only way to pay online: the whole price, now. The server charges the
+  // same number from the same tier and settings.
   const full =
     listPrice != null && listPrice > 0
-      ? chargeForMode(listPrice, "full", settings)
+      ? fullPaymentCharge(listPrice, settings)
       : null;
-  const chosen = paymentMode === "full" ? full : deposit;
   const fullDiscount =
     full && listPrice != null
       ? Math.round((listPrice - full.chargeEur) * 100) / 100
       : 0;
-
-  const methods: {
-    id: PaymentMode;
-    icon: typeof CreditCard;
-    title: string;
-    note: string;
-  }[] = [
-    {
-      id: "deposit",
-      icon: CreditCard,
-      title: t("payDeposit", { percent: settings.depositPercent }),
-      note: deposit
-        ? t("payDepositNote", {
-            now: formatPrice(deposit.chargeEur, locale as SupportedLocale),
-            later: formatPrice(
-              amountOwed(deposit.finalPriceEur, deposit.chargeEur),
-              locale as SupportedLocale,
-            ),
-          })
-        : "",
-    },
-    {
-      id: "full",
-      icon: BadgePercent,
-      title:
-        settings.fullPaymentDiscountPercent > 0
-          ? t("payFullDiscount", {
-              percent: settings.fullPaymentDiscountPercent,
-            })
-          : t("payFull"),
-      note: full
-        ? t("payFullNote", {
-            now: formatPrice(full.chargeEur, locale as SupportedLocale),
-          })
-        : "",
-    },
-  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -254,7 +208,7 @@ export function ConfirmStep({
               <span className="text-petroleum-700">{duration}</span>
             </div>
           )}
-          {listPrice != null && chosen && (
+          {listPrice != null && full && (
             <>
               <div className="flex items-baseline justify-between text-sm">
                 <span className="text-petroleum-400">{t("priceLabel")}</span>
@@ -262,8 +216,8 @@ export function ConfirmStep({
                   {formatPrice(listPrice, locale as SupportedLocale)}
                 </span>
               </div>
-              {/* Only when paying everything earns a discount */}
-              {paymentMode === "full" && fullDiscount > 0 && (
+              {/* Only when the settings give a discount for paying online */}
+              {fullDiscount > 0 && (
                 <div className="flex items-baseline justify-between text-sm">
                   <span className="text-petroleum-400">
                     {t("discountLabel")}
@@ -279,62 +233,41 @@ export function ConfirmStep({
                   {t("payNowLabel")}
                 </span>
                 <span className="font-display text-petroleum-700 text-xl">
-                  {formatPrice(chosen.chargeEur, locale as SupportedLocale)}
+                  {formatPrice(full.chargeEur, locale as SupportedLocale)}
                 </span>
               </div>
-              {paymentMode === "deposit" && (
-                <div className="flex items-baseline justify-between text-sm">
-                  <span className="text-petroleum-400">
-                    {t("payLaterLabel")}
-                  </span>
-                  <span className="text-petroleum-700">
-                    {formatPrice(
-                      amountOwed(chosen.finalPriceEur, chosen.chargeEur),
-                      locale as SupportedLocale,
-                    )}
-                  </span>
-                </div>
-              )}
             </>
           )}
         </div>
       </div>
 
-      {/* How they want to pay */}
+      {/* How she pays: one way, the whole price now. */}
       <div className="flex flex-col gap-3 rounded-2xl bg-white p-6">
         <p className="text-petroleum-700 text-sm font-medium">
           {t("paymentHeading")}
         </p>
-        <div className="flex flex-col gap-3">
-          {methods.map(({ id, icon: Icon, title, note }) => {
-            const selected = paymentMode === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => onPaymentModeChange(id)}
-                aria-pressed={selected}
-                className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors ${
-                  selected
-                    ? "border-petroleum-700 bg-sand-50"
-                    : "border-sand-200 hover:border-sand-500"
-                }`}
-              >
-                <Icon
-                  size={16}
-                  className="text-petroleum-400 mt-0.5 shrink-0"
-                />
-                <span>
-                  <span className="text-petroleum-700 block text-sm font-medium">
-                    {title}
-                  </span>
-                  <span className="text-petroleum-500 mt-0.5 block text-sm leading-relaxed">
-                    {note}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
+        <div className="border-sand-200 flex items-start gap-3 rounded-2xl border p-4">
+          <CreditCard
+            size={16}
+            className="text-petroleum-400 mt-0.5 shrink-0"
+            aria-hidden
+          />
+          <span>
+            <span className="text-petroleum-700 block text-sm font-medium">
+              {settings.fullPaymentDiscountPercent > 0
+                ? t("payFullDiscount", {
+                    percent: settings.fullPaymentDiscountPercent,
+                  })
+                : t("payFull")}
+            </span>
+            {full && (
+              <span className="text-petroleum-500 mt-0.5 block text-sm leading-relaxed">
+                {t("payFullNote", {
+                  now: formatPrice(full.chargeEur, locale as SupportedLocale),
+                })}
+              </span>
+            )}
+          </span>
         </div>
 
         <p className="text-petroleum-400 text-xs leading-relaxed">

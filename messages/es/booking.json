@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Reservar Sesión | Essentia",
-    "description": "Reserva tu sesión en Essentia, Santa Cruz de Tenerife: terapias manuales y faciales, luz roja e intravenosa. Confirma con un depósito."
+    "description": "Reserva tu sesión en Essentia, Santa Cruz de Tenerife: terapias manuales y faciales, luz roja e intravenosa. Pagas online al reservar."
   },
   "heading": "Reserva una sesión.",
   "subheading": "Elige tu servicio, selecciona un horario y nosotros nos encargamos del resto.",
@@ -151,25 +151,16 @@
     "location": "Ubicación",
     "atTheCenter": "En el centro",
     "toBeConfirmed": "Por confirmar",
-    "channel": "teléfono o WhatsApp",
-    "paymentNotice": "Serás redirigido a la pasarela de pago seguro de Redsys para completar tu reserva. Una vez confirmado el pago, nuestro equipo coordinará tu cita.",
-    "paymentNoticePrefix": "Una vez enviada tu solicitud, nos pondremos en contacto contigo por",
-    "paymentNoticeAt": "al",
-    "paymentNoticeSuffix": "para confirmar tu cita. El pago se realizará en el centro el día de tu sesión.",
-    "paymentHeading": "¿Cómo quieres reservar?",
+    "paymentHeading": "Pago",
     "durationLabel": "Duración",
     "priceLabel": "Precio",
     "discountLabel": "Descuento",
-    "totalLabel": "Total",
-    "cancellationNote": "La reserva se confirma con el pago. Si necesitas cambiarla, escríbenos con 24 h de antelación.",
+    "cancellationNote": "La reserva se confirma con el pago. Puedes cambiarla o cancelarla hasta 24 horas antes de la sesión; si la cancelas, te devolvemos el importe pagado. Dentro de las 24 horas previas, o si no acudes, no hay reembolso.",
     "alreadyConfirmed": "Esta reserva ya estaba confirmada. Si necesitas cambiarla, escríbenos.",
-    "payDeposit": "Pagar el {percent}% ahora",
-    "payDepositNote": "Pagas {now} hoy y {later} el día de la sesión.",
-    "payFull": "Pagar todo ahora",
-    "payFullDiscount": "Pagar todo ahora (−{percent}%)",
+    "payFull": "Pago completo al reservar",
+    "payFullDiscount": "Pago completo al reservar (−{percent}%)",
     "payFullNote": "Pagas {now} hoy y no tienes nada pendiente.",
-    "payNowLabel": "Pagas ahora",
-    "payLaterLabel": "En el centro"
+    "payNowLabel": "Pagas ahora"
   },
   "paymentOverlay": {
     "redirecting": "Redirigiendo al pago seguro…",

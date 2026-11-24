@@ -28,7 +28,6 @@ import { StepIndicator } from "./steps/step-indicator";
 import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
 import type { DetailsErrors } from "./steps/details-step";
 import { firstInvalidFieldId } from "./steps/details-fields";
-import type { PaymentMode } from "@/lib/payments/amounts";
 import { PaymentOverlay, type RedsysFormData } from "./steps/payment-overlay";
 import { useAuth } from "@/components/auth-provider";
 import { fetchOwnMarketingOn } from "@/actions/whatsapp-consent";
@@ -119,8 +118,6 @@ function BookingContentInner() {
   const [local, setLocal] = useState<BookingLocalState>(initLocalState);
   const [detailErrors, setDetailErrors] = useState<DetailsErrors>({});
   const [redsysForm, setRedsysForm] = useState<RedsysFormData | null>(null);
-  // Everything is paid at booking: a deposit, or the whole price at a discount.
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>("deposit");
   // A session type with nobody assigned cannot be performed, so the form stops
   // at the session-type step instead of walking the visitor to an empty
   // calendar and a booking nobody can honour.
@@ -261,7 +258,6 @@ function BookingContentInner() {
     date: selectedDate,
     time: selectedTime,
     details,
-    paymentMode,
   };
 
   // The field the focus is owed to. It is paid after the render, once the
@@ -424,8 +420,6 @@ function BookingContentInner() {
         }
         preselectedLabel={preselectedLabel}
         selectedTierLabel={selectedTierLabel}
-        paymentMode={paymentMode}
-        onPaymentModeChange={setPaymentMode}
         marketingOn={Boolean(user) && marketingOn}
       />
 

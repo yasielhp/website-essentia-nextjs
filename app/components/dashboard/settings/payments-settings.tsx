@@ -16,19 +16,16 @@ import {
 } from "@/lib/payments/amounts";
 
 /**
- * What the public booking form asks for: how much to pay now and what paying
- * everything saves. Paying is always required to book from the website; there
- * is no switch for it.
+ * What the public booking form charges. Paying is always required to book from
+ * the website, and since 2026-11-24 it is always the whole price: there is no
+ * deposit to set, only the discount for paying online.
  *
- * Percentages are held as typed and only parsed on save, so clearing a field
- * to type another number does not snap back to zero in between.
+ * The percentage is held as typed and only parsed on save, so clearing the
+ * field to type another number does not snap back to zero in between.
  */
 export function PaymentsSettings() {
   const t = useTranslations("dashboard.settings.payments");
   const [loaded, setLoaded] = useState(false);
-  const [deposit, setDeposit] = useState(
-    String(DEFAULT_PAYMENT_SETTINGS.depositPercent),
-  );
   const [discount, setDiscount] = useState(
     String(DEFAULT_PAYMENT_SETTINGS.fullPaymentDiscountPercent),
   );
@@ -39,7 +36,6 @@ export function PaymentsSettings() {
     let cancelled = false;
     void getPublicPaymentSettings().then((s) => {
       if (cancelled) return;
-      setDeposit(String(s.depositPercent));
       setDiscount(String(s.fullPaymentDiscountPercent));
       setLoaded(true);
     });
@@ -50,7 +46,6 @@ export function PaymentsSettings() {
 
   async function handleSave() {
     const value: PaymentSettings = {
-      depositPercent: Number(deposit),
       fullPaymentDiscountPercent: Number(discount),
     };
     setSaving(true);
@@ -75,27 +70,6 @@ export function PaymentsSettings() {
       </div>
 
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="deposit-percent"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {t("depositPercent")}
-          </label>
-          <input
-            id="deposit-percent"
-            type="number"
-            min={10}
-            max={100}
-            step={1}
-            value={deposit}
-            onChange={(e) => setDeposit(e.target.value)}
-            disabled={!loaded || saving}
-            className={INPUT_CLASS}
-          />
-          <p className="text-petroleum-400 text-xs">{t("depositHint")}</p>
-        </div>
-
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="full-discount"

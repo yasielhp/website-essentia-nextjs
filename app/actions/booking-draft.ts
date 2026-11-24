@@ -117,7 +117,8 @@ export async function updateDraftBookingMeta(
   createdByRole: string,
   notes: string | null,
   staffId: string | null = null,
-  paymentMode: "deposit" | "full" = "deposit",
+  // A form built before 2026-11-24 also sends how it meant to pay ("deposit"
+  // or "full"). Not a parameter any more: online, the whole price is paid.
 ): Promise<void> {
   if (!bookingId) return;
 
@@ -141,16 +142,13 @@ export async function updateDraftBookingMeta(
     onlinePriceEur = tier?.price_eur ?? centrePrice;
   }
 
-  // Whatever the client picks, the booking is worth the web price; the
-  // checkout lowers it if they pay everything now and the settings give a
-  // discount for that.
+  // The booking is worth the web price; the checkout lowers it when the
+  // settings give a discount for paying online.
   const amountEur = onlinePriceEur;
 
   // Staff need to know at a glance whether the money is still to be collected.
-  const paymentNote =
-    paymentMode === "full"
-      ? "Pago: 100% online al reservar"
-      : "Pago: depósito online al reservar";
+  // Online there is one way to pay, the whole price at booking.
+  const paymentNote = "Pago: 100% online al reservar";
   const composedNotes =
     [paymentNote, notes].filter(Boolean).join("\n\n") || null;
 
@@ -160,7 +158,7 @@ export async function updateDraftBookingMeta(
       tier_id: tierId,
       ...(staffId ? { staff_id: staffId } : {}),
       price_eur: amountEur,
-      payment_mode: paymentMode,
+      payment_mode: "full",
       location: "centro",
       ...(composedNotes ? { notes: composedNotes } : {}),
       ...(createdByUserId ? { created_by_user_id: createdByUserId } : {}),

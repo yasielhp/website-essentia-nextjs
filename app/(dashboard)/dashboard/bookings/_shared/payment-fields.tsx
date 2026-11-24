@@ -21,7 +21,17 @@ export const EMPTY_PAYMENT: PaymentValue = {
   method: "",
 };
 
-const STATUSES: PaymentFormStatus[] = ["pending", "deposit_paid", "paid"];
+/**
+ * Since 2026-11-24 there is no deposit: a booking is paid in full or not yet.
+ * "Partly paid" (`deposit_paid`) is offered only to a booking that already is,
+ * one made with a deposit before then, so it can be shown and saved as it is.
+ */
+const STATUSES: PaymentFormStatus[] = ["pending", "paid"];
+const STATUSES_WITH_PARTIAL: PaymentFormStatus[] = [
+  "pending",
+  "deposit_paid",
+  "paid",
+];
 const METHODS: BalanceMethod[] = ["cash", "card", "transfer", "other"];
 
 /**
@@ -46,11 +56,13 @@ export function paymentValueOf(row: {
   };
 }
 
-/** The mode a booking written at the desk gets from its payment state. */
-export function paymentModeFor(
-  status: PaymentFormStatus,
-): "none" | "full" | "deposit" {
-  return status === "pending" ? "none" : status === "paid" ? "full" : "deposit";
+/**
+ * The mode a booking written at the desk gets from its payment state. Never
+ * `deposit`: there are no new deposits. Money taken in part at the counter is a
+ * booking paid at the centre (`none`) with something still owed.
+ */
+export function paymentModeFor(status: PaymentFormStatus): "none" | "full" {
+  return status === "paid" ? "full" : "none";
 }
 
 /** The euros typed, 0 when empty or unreadable. */
@@ -65,12 +77,19 @@ export function PaymentFields({
   priceEur,
   onChange,
   disabled = false,
+  keepPartial = false,
 }: {
   value: PaymentValue;
   /** The price of the booking, used to prefill "paid in full". */
   priceEur: number | null;
   onChange: (next: PaymentValue) => void;
   disabled?: boolean;
+  /**
+   * The booking was already partly paid when the screen opened (a deposit from
+   * before 2026-11-24): "partly paid" stays among the choices so it can be
+   * kept. A new booking never gets it.
+   */
+  keepPartial?: boolean;
 }) {
   const t = useTranslations("dashboard.bookings.form.payment");
   const tStatus = useTranslations("dashboard.bookings.paymentStatus");
@@ -109,7 +128,9 @@ export function PaymentFields({
           <OptionSelect
             id="payment-status"
             value={value.status}
-            options={STATUSES.map((s) => ({ value: s, label: tStatus(s) }))}
+            options={(keepPartial ? STATUSES_WITH_PARTIAL : STATUSES).map(
+              (s) => ({ value: s, label: tStatus(s) }),
+            )}
             onChange={setStatus}
             disabled={disabled}
             ariaLabel={t("status")}

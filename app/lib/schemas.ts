@@ -880,8 +880,12 @@ export function validateWhatsAppTemplate(
   return { ok: false, fieldErrors };
 }
 
+/**
+ * The `payments` settings. The stored row may still hold the `depositPercent`
+ * of the deposit days (until 2026-11-24): it is dropped on reading, so that row
+ * still parses, and saving writes the discount alone.
+ */
 export const paymentSettingsSchema = z.object({
-  depositPercent: z.number().int().min(10).max(100),
   fullPaymentDiscountPercent: z.number().int().min(0).max(50),
 });
 

@@ -1490,10 +1490,8 @@
       "production": "Producción",
       "connected": "Conectado",
       "notConfigured": "No configurado",
-      "depositPercent": "Depósito al reservar (%)",
-      "depositHint": "Lo que se cobra online al reservar; el resto se paga en el centro.",
-      "fullDiscount": "Descuento por pagar el 100% (%)",
-      "fullDiscountHint": "Pon 0 para no ofrecer descuento.",
+      "fullDiscount": "Descuento por pagar online (%)",
+      "fullDiscountHint": "Se aplica a cada reserva hecha en la web, que se paga completa al reservar. Pon 0 para no ofrecer descuento.",
       "save": "Guardar",
       "saved": "Ajustes de pago guardados",
       "error": "No se han podido guardar los ajustes."

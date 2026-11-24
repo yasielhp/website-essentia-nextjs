@@ -1490,10 +1490,8 @@
       "production": "Production",
       "connected": "Connected",
       "notConfigured": "Not configured",
-      "depositPercent": "Deposit when booking (%)",
-      "depositHint": "What is charged online when booking; the rest is paid at the centre.",
-      "fullDiscount": "Discount for paying 100% (%)",
-      "fullDiscountHint": "Set 0 to offer no discount.",
+      "fullDiscount": "Discount for paying online (%)",
+      "fullDiscountHint": "Applies to every booking made on the website, which is paid in full when booking. Set 0 to offer no discount.",
       "save": "Save",
       "saved": "Payment settings saved",
       "error": "The settings could not be saved."

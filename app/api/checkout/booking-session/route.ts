@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { getRedsysProvider } from "@/lib/payments";
 import { getAppUrl } from "@/lib/env";
-import { chargeForMode, type PaymentMode } from "@/lib/payments/amounts";
+import { fullPaymentCharge } from "@/lib/payments/amounts";
 import { readPaymentSettings } from "@/lib/settings/app-settings";
 
 type CheckoutBody = {
@@ -14,16 +14,25 @@ type CheckoutBody = {
   date?: string;
   time?: string;
   phone?: string;
-  paymentMode?: PaymentMode;
+  /**
+   * Sent by forms built before 2026-11-24, which offered a deposit. Never read
+   * for the amount: whatever it says, the whole price is charged.
+   */
+  paymentMode?: unknown;
 };
 
 /**
  * Creates a Redsys checkout for a booking.
  *
  * The amount is resolved from `service_tiers` and `app_settings.payments` on
- * the server and never from the request body; the body only says whether the
- * client wants to pay the deposit or everything. Trusting a client-supplied
+ * the server and never from the request body. Trusting a client-supplied
  * `amountEur` allowed paying an arbitrary amount — one cent — for any service.
+ *
+ * Only the whole price is charged (since 2026-11-24 there is no deposit). A
+ * page still open on the old form may ask for `paymentMode: "deposit"`: it is
+ * not refused, it is charged the whole price like everybody else, and the bank
+ * page shows that amount before the client pays anything. No request can open
+ * a partial charge.
  */
 export async function POST(req: NextRequest) {
   const provider = getRedsysProvider();
@@ -41,17 +50,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const {
-    bookingId,
-    tierId,
-    email,
-    name,
-    description,
-    date,
-    time,
-    phone,
-    paymentMode,
-  } = body;
+  const { bookingId, tierId, email, name, description, date, time, phone } =
+    body;
 
   if (!bookingId || !tierId) {
     return NextResponse.json(
@@ -124,11 +124,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const mode: PaymentMode = paymentMode === "full" ? "full" : "deposit";
   const settings = await readPaymentSettings();
-  const { chargeEur, finalPriceEur } = chargeForMode(
+  const { chargeEur, finalPriceEur } = fullPaymentCharge(
     listPriceEur,
-    mode,
     settings,
   );
 
@@ -156,7 +154,9 @@ export async function POST(req: NextRequest) {
     .from("bookings")
     .update({
       stripe_session_id: formData.orderId,
-      payment_mode: mode,
+      // Always "full": a draft written by an old form may say "deposit", and
+      // this is the write that decides what the booking is.
+      payment_mode: "full",
       price_eur: finalPriceEur,
     })
     .eq("id", bookingId);

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Book a Session | Essentia",
-    "description": "Book your session at Essentia, Santa Cruz de Tenerife: manual and facial therapies, red light and IV therapy. Pay a deposit to confirm."
+    "description": "Book your session at Essentia, Santa Cruz de Tenerife: manual and facial therapies, red light and IV therapy. Pay online when you book."
   },
   "heading": "Book a session.",
   "subheading": "Choose your service, pick a time, and we will take care of the rest.",
@@ -151,25 +151,16 @@
     "location": "Location",
     "atTheCenter": "At the center",
     "toBeConfirmed": "To be confirmed",
-    "channel": "phone or WhatsApp",
-    "paymentNotice": "You will be redirected to the Redsys secure payment gateway to complete your booking. Once payment is confirmed, our team will coordinate your appointment.",
-    "paymentNoticePrefix": "Once you submit your request, we will contact you by",
-    "paymentNoticeAt": "at",
-    "paymentNoticeSuffix": "to confirm your appointment. Payment will be collected at the center on the day of your session.",
-    "paymentHeading": "How would you like to book?",
+    "paymentHeading": "Payment",
     "durationLabel": "Duration",
     "priceLabel": "Price",
     "discountLabel": "Discount",
-    "totalLabel": "Total",
-    "cancellationNote": "Your booking is confirmed by the payment. To change it, write to us 24 h ahead.",
+    "cancellationNote": "Your booking is confirmed by the payment. You can change or cancel it up to 24 hours before the session; if you cancel, we refund what you paid. Within the last 24 hours, or if you do not turn up, there is no refund.",
     "alreadyConfirmed": "This booking was already confirmed. If you need to change it, please contact us.",
-    "payDeposit": "Pay {percent}% now",
-    "payDepositNote": "You pay {now} today and {later} on the day.",
-    "payFull": "Pay in full now",
-    "payFullDiscount": "Pay in full now (−{percent}%)",
+    "payFull": "Full payment when you book",
+    "payFullDiscount": "Full payment when you book (−{percent}%)",
     "payFullNote": "You pay {now} today and nothing later.",
-    "payNowLabel": "You pay now",
-    "payLaterLabel": "At the centre"
+    "payNowLabel": "You pay now"
   },
   "paymentOverlay": {
     "redirecting": "Redirecting to secure payment…",
