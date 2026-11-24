@@ -6,7 +6,9 @@ import {
   requireRole,
   type AuthContext,
 } from "@/lib/auth-guard";
+import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { bookingAccess } from "@/lib/bookings/booking-access";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import {
@@ -258,6 +260,9 @@ type BookingForBonus = {
   amount_paid_eur: number | string | null;
 };
 
+/** What drawing a session takes from the screen: the two ids. */
+const assignInput = z.strictObject({ bookingId: z.guid(), bonusId: z.guid() });
+
 /**
  * Draws one session of a bonus for an existing booking.
  *
@@ -271,6 +276,13 @@ export async function assignBookingBonus(
 ): Promise<{ error: string | null }> {
   const actor = await authorize(accessToken);
   if (!actor) return { error: "forbidden" };
+
+  // A booking id and a bonus id, nothing else; and a booking this member of
+  // the team may act on: admin and staff any, a partner only her own.
+  const parsed = assignInput.safeParse(input);
+  if (!parsed.success) return { error: "invalid" };
+  const access = await bookingAccess(actor, parsed.data.bookingId);
+  if (!access.ok) return { error: access.error };
 
   const db = getAdminClient().database;
   const { data } = await db
@@ -354,6 +366,10 @@ export async function clearBookingBonus(
 ): Promise<{ error: string | null }> {
   const actor = await authorize(accessToken);
   if (!actor) return { error: "forbidden" };
+
+  // The same rule as drawing one: a partner gives back only on her own.
+  const access = await bookingAccess(actor, bookingId);
+  if (!access.ok) return { error: access.error };
 
   const db = getAdminClient().database;
   const { data } = await db

@@ -3,6 +3,7 @@
 import { AuthError, requireRole } from "@/lib/auth-guard";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { recordBookingEvent } from "@/lib/booking-events/record";
+import { bookingAccess } from "@/lib/bookings/booking-access";
 import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import { amountOwed, paymentStatusAfter } from "@/lib/payments/amounts";
 import { formatPrice } from "@/utils/format";
@@ -28,19 +29,27 @@ export async function recordCounterPayment(
     throw err;
   }
 
+  if (!input || typeof input !== "object") return { error: "invalid" };
   if (!METHODS.includes(input.method)) return { error: "invalid_method" };
   if (!Number.isFinite(input.amountEur) || input.amountEur <= 0) {
     return { error: "invalid_amount" };
   }
 
+  // A partner takes money only on her own bookings, the ones her screens
+  // show; somebody else's reads as not there.
+  const access = await bookingAccess(actor, input.bookingId);
+  if (!access.ok) {
+    return {
+      error: access.error === "forbidden" ? "not_found" : access.error,
+    };
+  }
+
   const db = getAdminClient().database;
-  let read = db
+  const { data } = await db
     .from("bookings")
     .select("price_eur, amount_paid_eur, payment_status, payment_mode, status")
-    .eq("id", input.bookingId);
-  // A partner takes money only on her own bookings, the ones her screens show.
-  if (actor.role === "partner") read = read.eq("partner_id", actor.userId);
-  const { data } = await read.maybeSingle();
+    .eq("id", input.bookingId)
+    .maybeSingle();
   const row = data as {
     price_eur: number | string | null;
     amount_paid_eur: number | string | null;

@@ -27,6 +27,8 @@ export type FakeTables = {
   staff_tiers: Row[];
   contacts: Row[];
   service_settings: Row[];
+  /** Only for the tests that read who is of the team. */
+  profiles?: Row[];
 };
 
 export type Failure = { table: string; kind: "select" | "insert" | "update" };

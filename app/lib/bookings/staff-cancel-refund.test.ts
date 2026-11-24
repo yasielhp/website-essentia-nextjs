@@ -26,6 +26,8 @@ type BonusSettle = Parameters<
 >[0];
 let bonusSettled: BonusSettle[] = [];
 let withdrawn: string[] = [];
+/** A booking id, as the dashboard's save checks it is one. */
+const BOOKING = "bbbbbbbb-0000-4000-8000-000000000001";
 let rpcCalls = 0;
 /** What `readRefundContext` answers before a save that cancels. */
 let refundContext: unknown = null;
@@ -38,7 +40,7 @@ function chain(table: string): unknown {
   const result = () => {
     if (table === "bookings") {
       return updating
-        ? { data: [{ id: "b-1" }], error: null }
+        ? { data: [{ id: BOOKING }], error: null }
         : { data: bookingRow, error: null };
     }
     return { data: null, error: null };
@@ -173,7 +175,7 @@ beforeEach(() => {
     email: "ana@example.test",
   };
   bookingRow = {
-    id: "b-1",
+    id: BOOKING,
     status: "confirmed",
     service_id: "svc",
     service_title: "Manual Therapies",
@@ -198,7 +200,7 @@ const save = (
 ) =>
   updateBookingByAdmin(
     "token",
-    "b-1",
+    BOOKING,
     {
       ...before,
       status: "confirmed",
@@ -213,7 +215,7 @@ describe("the dashboard's save", () => {
     await save({ status: "cancelled", date: "2026-08-01", time: "12:00" });
     expect(settled).toHaveLength(1);
     expect(settled[0]).toMatchObject({
-      bookingId: "b-1",
+      bookingId: BOOKING,
       source: "dashboard",
       actorId: "u-1",
       actorRole: "admin",
@@ -233,7 +235,10 @@ describe("the dashboard's save", () => {
     await save({ status: "cancelled" }, { refundLate: true });
     expect(settled[0]?.teamRefundsLate).toBe(true);
 
+    // A partner saves only her own booking, and only more than 24 hours
+    // before it (Canary time): the server refuses anything else.
     actor = { userId: "u-3", role: "partner" };
+    bookingRow = { ...bookingRow, partner_id: "u-3", date: "2099-07-15" };
     await save({ status: "cancelled" }, { refundLate: true });
     expect(settled[1]?.teamRefundsLate).toBe(false);
   });
@@ -257,7 +262,7 @@ describe("a save that cancels and also undoes the online payment", () => {
   const paidOnline = () => {
     refundContext = {
       booking: {
-        id: "b-1",
+        id: BOOKING,
         status: "confirmed",
         payment_status: "paid",
         payment_mode: "full",
@@ -300,7 +305,7 @@ describe("a save that cancels and also undoes the online payment", () => {
   test("a booking with no online payment may be cancelled and set to unpaid", async () => {
     refundContext = {
       booking: {
-        id: "b-1",
+        id: BOOKING,
         status: "confirmed",
         payment_status: "paid",
         payment_mode: "none",
@@ -323,7 +328,7 @@ describe("a bonus session cancelled by the team", () => {
   test("the dashboard's save settles it on the session as it was, lost unless ticked", async () => {
     await save({ status: "cancelled" });
     expect(bonusSettled[0]).toMatchObject({
-      bookingId: "b-1",
+      bookingId: BOOKING,
       source: "dashboard",
       actorRole: "admin",
       date: "2026-07-15",
@@ -336,6 +341,7 @@ describe("a bonus session cancelled by the team", () => {
     await save({ status: "cancelled" }, { bonusReturnLate: true });
     expect(bonusSettled[0]?.teamReturnsLate).toBe(true);
     actor = { userId: "u-3", role: "partner" };
+    bookingRow = { ...bookingRow, partner_id: "u-3", date: "2099-07-15" };
     await save({ status: "cancelled" }, { bonusReturnLate: true });
     expect(bonusSettled[1]?.teamReturnsLate).toBe(false);
   });
@@ -348,7 +354,7 @@ describe("a bonus session cancelled by the team", () => {
   test("the assistants' tool settles it too, and answers with it", async () => {
     const quiet = spyOn(console, "error").mockImplementation(() => {});
     const res = await cancelBookingForStaff(
-      "b-1",
+      BOOKING,
       undefined,
       { userId: "u-1", role: "staff" },
       { bonusReturnLate: true },
@@ -366,7 +372,7 @@ describe("a save that brings a cancelled booking back", () => {
   test("withdraws a pending refund and settles nothing", async () => {
     before = { ...before, status: "cancelled" };
     await save({ status: "confirmed" });
-    expect(withdrawn).toEqual(["b-1"]);
+    expect(withdrawn).toEqual([BOOKING]);
     expect(settled).toEqual([]);
   });
 
@@ -380,14 +386,14 @@ describe("a save that brings a cancelled booking back", () => {
 describe("the assistants' tool", () => {
   test("cancels and settles the refund, and answers with it", async () => {
     const quiet = spyOn(console, "error").mockImplementation(() => {});
-    const res = await cancelBookingForStaff("b-1", "client asked", {
+    const res = await cancelBookingForStaff(BOOKING, "client asked", {
       userId: "u-1",
       role: "staff",
     });
     quiet.mockRestore();
     expect(res.ok).toBe(true);
     expect(settled[0]).toMatchObject({
-      bookingId: "b-1",
+      bookingId: BOOKING,
       source: "assistant",
       actorRole: "staff",
       date: "2026-07-15",
@@ -402,7 +408,7 @@ describe("the assistants' tool", () => {
   test("passes the late refund only when asked for", async () => {
     const quiet = spyOn(console, "error").mockImplementation(() => {});
     await cancelBookingForStaff(
-      "b-1",
+      BOOKING,
       undefined,
       { userId: "u-1", role: "admin" },
       { refundLate: true },
@@ -413,7 +419,7 @@ describe("the assistants' tool", () => {
 
   test("a booking already cancelled settles nothing", async () => {
     bookingRow = { ...bookingRow, status: "cancelled" };
-    const res = await cancelBookingForStaff("b-1", undefined, {
+    const res = await cancelBookingForStaff(BOOKING, undefined, {
       userId: "u-1",
       role: "admin",
     });

@@ -1,6 +1,7 @@
 "use server";
 
 import { AuthError, requireRole } from "@/lib/auth-guard";
+import { bookingAccess } from "@/lib/bookings/booking-access";
 import { actorFromToken } from "@/lib/booking-events/record";
 import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import {
@@ -38,7 +39,12 @@ export async function notifyBooking(
 
   if (payload.event !== "received") {
     try {
-      await requireRole(accessToken);
+      const actor = await requireRole(accessToken);
+      // The team's events go out only for a booking this member may act on:
+      // admin and staff any, a partner only her own.
+      if (!(await bookingAccess(actor, payload.bookingId)).ok) {
+        return { ok: false, error: "unauthorized" };
+      }
     } catch (err) {
       if (err instanceof AuthError) return { ok: false, error: "unauthorized" };
       throw err;

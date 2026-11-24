@@ -11,6 +11,7 @@ import {
   recordBookingEvent,
 } from "@/lib/booking-events/record";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { bookingAccess } from "@/lib/bookings/booking-access";
 
 /**
  * Whose agenda this booking belongs to, for the line the history shows.
@@ -63,8 +64,12 @@ export async function syncBookingToCalendars(
   bookingId: string,
   action: "updated" | "removed",
 ): Promise<void> {
+  if (action !== "updated" && action !== "removed") return;
   try {
-    await requireRole(accessToken);
+    const actor = await requireRole(accessToken);
+    // Only a booking this member may act on: admin and staff any, a partner
+    // only her own. Anything else (not a uuid, not there) changes nothing.
+    if (!(await bookingAccess(actor, bookingId)).ok) return;
   } catch (err) {
     if (err instanceof AuthError) return;
     throw err;
@@ -124,7 +129,9 @@ export async function pushBookingToCalendarsAction(
   bookingId: string,
 ): Promise<void> {
   try {
-    await requireRole(accessToken);
+    const actor = await requireRole(accessToken);
+    // The same rule as its twin above.
+    if (!(await bookingAccess(actor, bookingId)).ok) return;
   } catch (err) {
     if (err instanceof AuthError) return;
     throw err;

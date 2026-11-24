@@ -236,26 +236,27 @@ describe("the doors that write instead of the browser", () => {
     }).toEqual({ draft: true, hour: true, confirm: true, desk: true });
   });
 
-  test("a partner reaches only her own bookings through the dashboard's other writes", () => {
+  test("every dashboard action on one booking checks whose it is (a partner, only hers) on the server", () => {
+    // `bookingAccess` (app/lib/bookings/booking-access.ts): admin and staff
+    // any booking, a partner only her own, anybody else none; run for real in
+    // app/actions/booking-partner-scope.test.ts.
+    for (const [path, calls] of [
+      ["app/actions/booking-draft.ts", 4],
+      ["app/actions/booking-payment.ts", 1],
+      ["app/actions/bonuses.ts", 2],
+      ["app/actions/booking-notifications.ts", 1],
+      ["app/actions/staff-whatsapp.ts", 1],
+      ["app/actions/calendar-propagate.ts", 2],
+    ] as const) {
+      const found = (read(path).match(/bookingAccess\(/g) ?? []).length;
+      expect({ path, calls: found }).toEqual({ path, calls });
+    }
     const edit = read("app/actions/booking-draft.ts");
-    const counter = read("app/actions/booking-payment.ts");
-    expect({
-      editChecksOwner:
-        /actor\.role === "partner"[\s\S]{0,400}\.eq\("partner_id", actor\.userId\)/.test(
-          edit,
-        ),
-      deleteIsNotHers: edit.includes(
+    expect(
+      read("app/actions/booking-draft.ts").includes(
         'requireRole(accessToken, ["admin", "staff"])',
       ),
-      counterChecksOwner:
-        /actor\.role === "partner"\) read = read\.eq\("partner_id", actor\.userId\)/.test(
-          counter,
-        ),
-    }).toEqual({
-      editChecksOwner: true,
-      deleteIsNotHers: true,
-      counterChecksOwner: true,
-    });
+    ).toBe(true);
   });
 
   test("every write that can put a booking on a professional's hour says 'taken' in words", () => {

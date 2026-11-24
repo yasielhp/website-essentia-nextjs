@@ -33,6 +33,9 @@ import type { UpdateBookingPayload } from "@/types/booking";
 const STAFF = "33333333-3333-4333-8333-333333333333";
 const ME = "77777777-7777-4777-8777-777777777777";
 const SOMEONE = "44444444-4444-4444-8444-444444444444";
+const MINE = "aaaaaaaa-0000-4000-8000-000000000001";
+const THEIRS = "aaaaaaaa-0000-4000-8000-000000000002";
+const GONE = "aaaaaaaa-0000-4000-8000-000000000003";
 
 let role = "partner";
 let tables: FakeTables;
@@ -116,7 +119,7 @@ afterAll(() => {
 });
 
 const booking = (over: Row = {}): Row => ({
-  id: "mine",
+  id: MINE,
   status: "confirmed",
   partner_id: ME,
   staff_id: STAFF,
@@ -141,7 +144,7 @@ beforeEach(() => {
   tables = {
     bookings: [
       booking(),
-      booking({ id: "theirs", partner_id: SOMEONE, time: "16:00" }),
+      booking({ id: THEIRS, partner_id: SOMEONE, time: "16:00" }),
     ],
     service_tiers: [],
     staff_tiers: [],
@@ -173,19 +176,19 @@ const row = (id: string) => tables.bookings.find((r) => r.id === id)!;
 
 describe("a partner, through the service key, reaches only her own bookings", () => {
   test("she edits hers", async () => {
-    expect(await edit("mine")).toEqual({ error: null });
-    expect(row("mine").time).toBe("11:00");
+    expect(await edit(MINE)).toEqual({ error: null });
+    expect(row(MINE).time).toBe("11:00");
   });
 
   test("somebody else's is refused, and left as it was", async () => {
-    expect(await edit("theirs")).toEqual({
+    expect(await edit(THEIRS)).toEqual({
       error: "Insufficient permissions for this operation",
     });
-    expect(row("theirs").time).toBe("16:00");
+    expect(row(THEIRS).time).toBe("16:00");
   });
 
   test("she deletes none, not even hers", async () => {
-    expect(await draftActions.deleteBooking("token", "mine")).toEqual({
+    expect(await draftActions.deleteBooking("token", MINE)).toEqual({
       error: "Insufficient permissions for this operation",
     });
     expect(tables.bookings).toHaveLength(2);
@@ -195,50 +198,50 @@ describe("a partner, through the service key, reaches only her own bookings", ()
   test("she takes money on hers, and on nobody else's", async () => {
     expect(
       await recordCounterPayment("token", {
-        bookingId: "mine",
+        bookingId: MINE,
         amountEur: 90,
         method: "cash",
       }),
     ).toEqual({ error: null });
-    expect(row("mine").amount_paid_eur).toBe(90);
+    expect(row(MINE).amount_paid_eur).toBe(90);
     expect(
       await recordCounterPayment("token", {
-        bookingId: "theirs",
+        bookingId: THEIRS,
         amountEur: 90,
         method: "cash",
       }),
     ).toEqual({ error: "not_found" });
-    expect(row("theirs").amount_paid_eur).toBe(0);
+    expect(row(THEIRS).amount_paid_eur).toBe(0);
   });
 
   test("staff still reach every booking, and may delete", async () => {
     role = "staff";
-    expect(await edit("theirs")).toEqual({ error: null });
-    expect(await draftActions.deleteBooking("token", "theirs")).toEqual({
+    expect(await edit(THEIRS)).toEqual({ error: null });
+    expect(await draftActions.deleteBooking("token", THEIRS)).toEqual({
       error: null,
     });
-    expect(calendarsCleared).toEqual(["theirs"]);
+    expect(calendarsCleared).toEqual([THEIRS]);
   });
 });
 
 describe("the edit and the professional's hour", () => {
   test("moving a booking onto an hour she already has is 'slot_taken', and nothing moves", async () => {
     role = "admin";
-    // "theirs" holds 16:00 for the same professional.
-    expect(await edit("mine", { time: "16:30" })).toEqual({
+    // THEIRS holds 16:00 for the same professional.
+    expect(await edit(MINE, { time: "16:30" })).toEqual({
       error: "slot_taken",
     });
-    expect(row("mine").time).toBe("10:00");
+    expect(row(MINE).time).toBe("10:00");
   });
 
   test("bringing a cancelled booking back onto a taken hour is refused the same way", async () => {
     role = "admin";
     tables.bookings.push(
-      booking({ id: "gone", status: "cancelled", time: "16:20" }),
+      booking({ id: GONE, status: "cancelled", time: "16:20" }),
     );
-    expect(await edit("gone", { time: "16:20", status: "confirmed" })).toEqual({
+    expect(await edit(GONE, { time: "16:20", status: "confirmed" })).toEqual({
       error: "slot_taken",
     });
-    expect(row("gone").status).toBe("cancelled");
+    expect(row(GONE).status).toBe("cancelled");
   });
 });

@@ -21,6 +21,7 @@ import {
 import { cancelErasesOnlinePayment } from "@/lib/bookings/refund-rules";
 import { settleBonusOnCancel } from "@/lib/bonuses/settle";
 import { isSlotTaken, SLOT_TAKEN } from "@/lib/bookings/slot-taken";
+import { bookingAccess } from "@/lib/bookings/booking-access";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -134,7 +135,9 @@ export async function recordBookingCreated(
     throw err;
   }
 
-  if (!bookingId) return;
+  // A uuid, and a booking this member of the team may act on (a partner's
+  // own): an entry is never invented on somebody else's booking.
+  if (!(await bookingAccess(actor, bookingId)).ok) return;
 
   const { data } = await getAdminClient()
     .database.from("bookings")
@@ -182,7 +185,7 @@ export async function recordBookingPaymentNote(
     if (err instanceof AuthError) return;
     throw err;
   }
-  if (!bookingId) return;
+  if (!(await bookingAccess(actor, bookingId)).ok) return;
 
   const { data } = await getAdminClient()
     .database.from("bookings")
@@ -231,6 +234,8 @@ export async function deleteBooking(
   }
 
   if (!bookingId) return { error: "Falta el identificador de la reserva." };
+  const access = await bookingAccess(actor, bookingId);
+  if (!access.ok) return { error: access.error };
 
   // Before the row goes: the event ids live on it and on its mirror rows, and
   // once they are deleted there is nothing left to find the events by.
@@ -475,15 +480,20 @@ export async function updateBookingByAdmin(
 
   // A partner edits her own bookings and nobody else's, as her screens show
   // her only those. With the browser's key that was the database's rule
-  // (`partner_id = auth.uid()`); through the service key it has to be this one.
-  if (actor.role === "partner") {
-    const { data: own } = await getAdminClient()
-      .database.from("bookings")
-      .select("id")
-      .eq("id", bookingId)
-      .eq("partner_id", actor.userId)
-      .maybeSingle();
-    if (!own) return { error: PARTNER_NOT_OWN };
+  // (`partner_id = auth.uid()`); through the service key it has to be this one
+  // (`bookingAccess`).
+  const access = await bookingAccess(actor, bookingId);
+  if (!access.ok) {
+    return {
+      error:
+        access.error === "forbidden"
+          ? PARTNER_NOT_OWN
+          : access.error === "not_found"
+            ? "not_found"
+            : access.error === "invalid"
+              ? "invalid"
+              : "failed",
+    };
   }
 
   // A save that cancels AND sets the payment back (to "Pendiente", or a lower
