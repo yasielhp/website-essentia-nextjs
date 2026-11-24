@@ -503,39 +503,114 @@ describe("it always answers", () => {
 });
 
 describe("nothing else writes a session type", () => {
-  const APP = join(import.meta.dir, "..");
-  const sources = (dir: string): string[] =>
+  /**
+   * Read from the SOURCE: the app, the scripts, `i18n/` and the files at the
+   * root of the repository (`proxy.ts`, the instrumentation, the configs).
+   *
+   * Three tables are watched, because they stand or fall together:
+   * `service_tiers` (the prices), `staff_tiers` (who performs each one, saved
+   * in the same call) and `service_settings` (the services: deleting one takes
+   * its session types with it, through the foreign key, whatever the session
+   * types' own protection says).
+   *
+   * THIS IS A REMINDER, NOT THE BARRIER. Being text, it cannot see a table
+   * name put together at run time (a template literal, a value that arrives
+   * from somewhere else), nor what a function of the database does once it is
+   * called with `.rpc(`: it only holds those functions to a list somebody has
+   * read (below). The barrier is the row level security of
+   * `insforge/migrations/20261124_service_tiers_and_settings_rls.sql`, which
+   * leaves the browser roles nothing but reads whatever the code says.
+   */
+  const ROOT = join(import.meta.dir, "..", "..");
+  const isSource = (name: string) =>
+    /\.tsx?$/.test(name) &&
+    !/\.test\.tsx?$/.test(name) &&
+    !/\.d\.ts$/.test(name) &&
+    // Somebody's scratch file (`.wa-*.tmp.ts`) is not the app.
+    !name.startsWith(".");
+  const under = (dir: string): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
       const path = join(dir, entry.name);
-      if (entry.isDirectory()) return sources(path);
-      return /\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)
-        ? [path]
-        : [];
+      if (entry.isDirectory()) return under(path);
+      return isSource(entry.name) ? [path] : [];
     });
-  const read = (path: string) => readFileSync(join(APP, path), "utf8");
+  const all = [
+    ...under(join(ROOT, "app")),
+    ...under(join(ROOT, "scripts")),
+    ...under(join(ROOT, "i18n")),
+    ...readdirSync(ROOT, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && isSource(entry.name))
+      .map((entry) => join(ROOT, entry.name)),
+  ]
+    .map((path) => relative(ROOT, path))
+    .sort();
+  const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 
-  /** A write to the table: `from("service_tiers")` followed by a mutation. */
-  const WRITES =
-    /from\(\s*["'`]service_tiers["'`]\s*\)\s*\.(update|insert|upsert|delete)\(/;
+  const SAVE = "app/lib/session-types/save.ts";
+  /** Each table and the only modules that may write it. */
+  const WRITERS: Record<string, string[]> = {
+    service_tiers: [SAVE],
+    staff_tiers: [SAVE],
+    // Nothing writes a service: its name and whether it is offered are set in
+    // the database. A screen for it needs its own server action first.
+    service_settings: [],
+  };
+  const TABLES = Object.keys(WRITERS);
+  const named = (table: string) => `["'\`]${table}["'\`]`;
+  /**
+   * `from(table)` that does not go straight on to `.select(`: an update, an
+   * insert, an upsert, a delete, or a builder kept in a variable, which could
+   * be any of them a line later. Stricter than looking for the four verbs.
+   */
+  const notARead = (table: string) =>
+    new RegExp(`from\\(\\s*${named(table)}\\s*\\)(?!\\s*\\.select\\()`);
+  /**
+   * The table's name given to a variable, a property or a default, to be
+   * handed to `from(` under another name (`const T = "service_tiers"`).
+   */
+  const aliased = (table: string) =>
+    new RegExp(
+      `(?<![=!<>])=\\s*${named(table)}|[\\w$\\]?]\\s*:\\s*${named(table)}`,
+    );
   /** The client the browser holds (the public key, or a user's session). */
   const BROWSER_CLIENT = /from\s+["']@\/?lib\/insforge(-public)?["']/;
 
-  const all = sources(APP).map((path) => relative(APP, path));
-  const writers = all.filter((path) => WRITES.test(read(path)));
-
-  test("one module writes the table, and it is the server's", () => {
-    // If this list grows (a way to create or delete one, a tool that edits
-    // prices), the new writer has to be on the server, check who is asking,
-    // and tell the site afterwards, as this one does.
-    expect(writers).toEqual(["lib/session-types/save.ts"]);
-    const source = read(writers[0]!);
-    expect(source).not.toMatch(/^\s*["']use client["']/m);
-    expect(source).not.toMatch(BROWSER_CLIENT);
-    expect(source).toContain("getAdminClient()");
-    expect(source).toContain("ADMIN_ROLES");
+  test("it reads the app, the scripts and the root, tests and scratch files aside", () => {
+    expect(all).toContain("proxy.ts");
+    expect(all).toContain("scripts/build-llms.ts");
+    expect(all).toContain("i18n/request.ts");
+    expect(all).toContain(SAVE);
+    expect(all.some((path) => path.includes(".test."))).toBe(false);
+    expect(all.length).toBeGreaterThan(500);
   });
 
-  test("nothing that runs in the browser, or holds its client, writes it", () => {
+  test.each(TABLES)(
+    "%s is written by the server's own module and by nothing else",
+    (table) => {
+      // If a list grows (a way to create or delete one, a tool that edits
+      // prices), the new writer has to be on the server, check who is asking,
+      // and tell the site afterwards, as this one does.
+      const writers = all.filter((path) => notARead(table).test(read(path)));
+      expect(writers).toEqual(WRITERS[table]!);
+    },
+  );
+
+  test("the module that writes them is the server's: service key, administrators, no browser client", () => {
+    const source = read(SAVE);
+    expect({
+      client: /^\s*["']use client["']/m.test(source),
+      browserClient: BROWSER_CLIENT.test(source),
+      serviceKey: source.includes("getAdminClient()"),
+      administrators: source.includes("requireRole(accessToken, ADMIN_ROLES)"),
+    }).toEqual({
+      client: false,
+      browserClient: false,
+      serviceKey: true,
+      administrators: true,
+    });
+  });
+
+  test("nothing that runs in the browser, or holds its client, writes any of them", () => {
     const browser = all.filter((path) => {
       const source = read(path);
       return (
@@ -543,11 +618,97 @@ describe("nothing else writes a session type", () => {
       );
     });
     expect(browser.length).toBeGreaterThan(50);
-    expect(browser.filter((path) => WRITES.test(read(path)))).toEqual([]);
+    expect(
+      browser.filter((path) =>
+        TABLES.some((table) => notARead(table).test(read(path))),
+      ),
+    ).toEqual([]);
+  });
+
+  test("none of them goes under another name", () => {
+    expect(
+      all.filter((path) =>
+        TABLES.some((table) => aliased(table).test(read(path))),
+      ),
+    ).toEqual([]);
+    // The check itself: what it is there to catch, and what it must let be.
+    expect(aliased("service_tiers").test('const T = "service_tiers";')).toBe(
+      true,
+    );
+    expect(aliased("service_tiers").test("{ table: 'service_tiers' }")).toBe(
+      true,
+    );
+    expect(
+      aliased("service_tiers").test('db.from("service_tiers").select("id")'),
+    ).toBe(false);
+    expect(aliased("service_tiers").test('Pick<Row, "service_tiers">')).toBe(
+      false,
+    );
+    expect(
+      notARead("service_tiers").test('const q = db.from("service_tiers");'),
+    ).toBe(true);
+    expect(
+      notARead("service_tiers").test(
+        'db\n  .from("service_tiers")\n  .select("id")',
+      ),
+    ).toBe(false);
+  });
+
+  /**
+   * The functions of the database the code calls, by name. Each was read in
+   * `pg_proc` on 2026-11-24: no function of the database (these, or any they
+   * call) mentions `service_tiers`, `staff_tiers` or `service_settings`. Their
+   * SQL is not in this repository, so a function NEW to the code fails here
+   * until somebody has read its body in the database and added it to this
+   * list:
+   *
+   *   SELECT proname, prosecdef, prosrc FROM pg_proc WHERE proname = '<name>';
+   *
+   * A `SECURITY DEFINER` function is not held back by row level security:
+   * one that writes these tables is a writer like any other, and has to check
+   * who is calling.
+   */
+  const READ_FUNCTIONS = [
+    "admin_set_user_password",
+    "check_email_role",
+    "create_draft_booking",
+    "promote_contact_to_client",
+    "record_campaign_event",
+    "register_for_education",
+    "register_for_race",
+    "update_booking_datetime",
+    "update_booking_returning_previous",
+    "upsert_contact",
+  ];
+  /** `.rpc(` and its first argument when it is a plain name in quotes. */
+  const RPC = /\.rpc\(\s*(?:["'`](\w+)["'`](?=\s*[,)]))?/g;
+
+  test("every function of the database it calls has been read, and is named in the call", () => {
+    const unread = new Set<string>();
+    const unnamed = new Set<string>();
+    for (const path of all) {
+      for (const [, name] of read(path).matchAll(RPC)) {
+        if (!name) unnamed.add(path);
+        else if (!READ_FUNCTIONS.includes(name)) unread.add(`${path}: ${name}`);
+      }
+    }
+    // A name kept in a variable, or put together, cannot be held to the list.
+    expect({ unread: [...unread], unnamed: [...unnamed] }).toEqual({
+      unread: [],
+      unnamed: [],
+    });
+    // The check itself.
+    const names = (code: string) =>
+      [...code.matchAll(RPC)].map((m): string | null => m[1] ?? null);
+    expect(names('db.rpc(\n  "upsert_contact",\n  { p: 1 },\n)')).toEqual([
+      "upsert_contact",
+    ]);
+    expect(names("db.rpc(FN, {})")).toEqual([null]);
+    expect(names("db.rpc(`fn_${kind}`, {})")).toEqual([null]);
   });
 
   test("the action tells the site after the write, in the same call", () => {
-    const source = read("actions/session-types.ts");
+    const source = read("app/actions/session-types.ts");
     const write = source.indexOf("saveSessionTypeCore(");
     const refresh = source.indexOf("refreshTierPrices(", write);
     expect(write).toBeGreaterThan(-1);
@@ -555,23 +716,83 @@ describe("nothing else writes a session type", () => {
   });
 
   test("the form of Settings saves through the action", () => {
-    const source = read("components/dashboard/settings/tier-modal.tsx");
-    const STAFF_WRITES =
-      /from\(\s*["'`]staff_tiers["'`]\s*\)\s*\.(update|insert|upsert|delete)\(/;
+    const source = read("app/components/dashboard/settings/tier-modal.tsx");
     expect({
       callsTheAction: source.includes("saveSessionType("),
       // With a wait that always ends, so it cannot stay on "Saving…".
       waitsWithALimit: /saveWithin\(\s*\(\)\s*=>\s*saveSessionType\(/.test(
         source,
       ),
-      writesTheTable: WRITES.test(source),
-      // Nor the assignments: they are part of the same save.
-      writesTheStaff: STAFF_WRITES.test(source),
+      // A save that landed, or may have, shows in the list behind the modal
+      // even when the modal stays open with its notice.
+      refreshesAfterAPartialSave:
+        /mayHaveSaved\(result\.error\)[\s\S]{0,120}onRefresh\(/.test(source),
     }).toEqual({
       callsTheAction: true,
       waitsWithALimit: true,
-      writesTheTable: false,
-      writesTheStaff: false,
+      refreshesAfterAPartialSave: true,
     });
+  });
+});
+
+describe("the migration that closes the tables", () => {
+  const FILE = join(
+    import.meta.dir,
+    "..",
+    "..",
+    "insforge",
+    "migrations",
+    "20261124_service_tiers_and_settings_rls.sql",
+  );
+  const file = readFileSync(FILE, "utf8");
+  /** What the CLI is sent: no comment lines, no BEGIN or COMMIT. */
+  const sql = file
+    .split("\n")
+    .filter((line) => !line.startsWith("--") && !/^(BEGIN|COMMIT);$/.test(line))
+    .join("\n")
+    .trim();
+
+  test("it says it is not applied, and what is sent does not open with a comment", () => {
+    expect(file.startsWith("-- NOT APPLIED")).toBe(true);
+    expect(sql.startsWith("--")).toBe(false);
+    expect(sql.startsWith("ALTER TABLE")).toBe(true);
+  });
+
+  // In ONE file, so the two cannot be applied apart: with the session types
+  // closed and the services open, deleting a service still deletes its
+  // session types (ON DELETE CASCADE), whoever holds the public key.
+  test.each(["service_tiers", "service_settings"])(
+    "%s: row level security on, and the browser roles lose their writes",
+    (table) => {
+      expect(sql).toContain(`ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;`);
+      expect(sql).toContain(
+        `REVOKE INSERT, UPDATE, DELETE ON ${table} FROM anon, authenticated;`,
+      );
+    },
+  );
+
+  test("every policy is a read: four of them, and none for a write", () => {
+    const policies = [...sql.matchAll(/CREATE POLICY[^;]+;/g)].map(
+      (match) => match[0],
+    );
+    expect(policies).toHaveLength(4);
+    for (const policy of policies) {
+      expect(/\bFOR SELECT\b/.test(policy)).toBe(true);
+      expect(/\bFOR (ALL|INSERT|UPDATE|DELETE)\b/.test(policy)).toBe(false);
+    }
+    // The public reads what is on offer; the team reads everything.
+    expect(policies.filter((p) => /USING \(active\)/.test(p))).toHaveLength(2);
+    expect(
+      policies.filter((p) => p.includes("'admin', 'staff', 'partner'")),
+    ).toHaveLength(2);
+  });
+
+  test("it can be run again: every policy is dropped before it is made", () => {
+    const made = [...sql.matchAll(/CREATE POLICY ("[^"]+") ON (\w+)/g)];
+    for (const [, name, table] of made) {
+      const drop = sql.indexOf(`DROP POLICY IF EXISTS ${name} ON ${table};`);
+      expect(drop).toBeGreaterThan(-1);
+      expect(drop).toBeLessThan(sql.indexOf(`CREATE POLICY ${name}`));
+    }
   });
 });
