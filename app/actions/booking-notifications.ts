@@ -2,6 +2,9 @@
 
 import { AuthError, requireRole } from "@/lib/auth-guard";
 import { bookingAccess } from "@/lib/bookings/booking-access";
+import { receivedFromBooking } from "@/lib/bookings/received-notice";
+import { readVisitor } from "@/lib/bookings/visitor";
+import { createRateLimiter } from "@/lib/campaigns/rate-limit";
 import { actorFromToken } from "@/lib/booking-events/record";
 import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import {
@@ -24,18 +27,47 @@ import {
  * goes); what cannot is answered `invalidInput`, with nothing read, nothing
  * sent and nothing thrown.
  */
+/**
+ * How often the public "received" may be asked for: per address and per
+ * booking, in ten minutes (a brake in the memory of the instance).
+ */
+const receivedPerAddress = createRateLimiter({ max: 10, windowMs: 600_000 });
+const receivedPerBooking = createRateLimiter({ max: 3, windowMs: 600_000 });
+
 // Only `received` is anonymous — it is the one the public booking flow
-// sends — and even then the recipient is read from the booking row rather
-// than the payload. Every other event calls `requireRole` a few lines down.
+// sends — and then nothing but the booking's id and the language is taken
+// from the caller: the content is the booking's own, it goes out once, only
+// for a booking being made right now, and never touches the contact
+// (`receivedFromBooking`). Every other event calls `requireRole` below.
 // react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function notifyBooking(
   accessToken: string | null,
   input: BookingNotificationPayload,
 ): Promise<
-  { ok: true } | { ok: false; error: "invalidInput" | "unauthorized" }
+  | { ok: true }
+  | { ok: false; error: "invalidInput" | "unauthorized" | "refused" }
 > {
-  const payload = readBookingNotification(input);
+  let payload = readBookingNotification(input);
   if (!payload) return { ok: false, error: "invalidInput" };
+
+  if (payload.event === "received") {
+    // Counted per address and per booking wherever the address is known
+    // (always behind the proxy; not in a test or a script).
+    const { ip } = await readVisitor();
+    if (
+      ip &&
+      (!receivedPerAddress.take(ip) ||
+        !receivedPerBooking.take(payload.bookingId.toLowerCase()))
+    ) {
+      return { ok: false, error: "refused" };
+    }
+    const fromRow = await receivedFromBooking(
+      payload.bookingId,
+      payload.locale,
+    );
+    if (!fromRow.ok) return { ok: false, error: "refused" };
+    payload = fromRow.payload;
+  }
 
   if (payload.event !== "received") {
     try {

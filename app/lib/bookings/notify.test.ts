@@ -49,6 +49,14 @@ let sent: Sent[] = [];
 let recorded: Recorded[] = [];
 // The provider refuses every send.
 let failSend = false;
+/** The booking's row, as the "received" of the public form reads it. */
+let bookingRow: Record<string, unknown> = {};
+/** How many times the booking was read. */
+let bookingReads = 0;
+/** The booking's history (`booking_events`). */
+let historyRows: Record<string, unknown>[] = [];
+/** The caller's address, as the action reads it (none outside a request). */
+let visitorIp: string | null = null;
 // What the fake `message_templates` answers with.
 let templates: () => { data: unknown; error: unknown } = () => ({
   data: null,
@@ -82,14 +90,11 @@ const fakeAdmin = {
         chain(() => {
           if (table === "message_templates") return templates();
           if (table === "bookings") {
-            return {
-              data: {
-                email: "ana@example.test",
-                service_id: "svc-1",
-                cancel_token: TOKEN,
-              },
-              error: null,
-            };
+            bookingReads += 1;
+            return { data: bookingRow, error: null };
+          }
+          if (table === "booking_events") {
+            return { data: historyRows, error: null };
           }
           return { data: null, error: null };
         }),
@@ -102,6 +107,7 @@ const real = {
   send: { ...(await import("@/emails/send")) },
   record: { ...(await import("@/lib/booking-events/record")) },
   consent: { ...(await import("@/lib/consent/server")) },
+  visitor: { ...(await import("@/lib/bookings/visitor")) },
 };
 
 let notifyBookingCore: typeof NotifyCore;
@@ -130,6 +136,10 @@ beforeAll(async () => {
     ...real.consent,
     pendingConsentUrl: async () => CONSENT,
   }));
+  mock.module("@/lib/bookings/visitor", () => ({
+    ...real.visitor,
+    readVisitor: async () => ({ claims: null, ip: visitorIp }),
+  }));
   ({ notifyBookingCore, readBookingNotification } = await import("./notify"));
   ({ notifyBooking } = await import("@/actions/booking-notifications"));
 });
@@ -139,6 +149,7 @@ afterAll(() => {
   mock.module("@/emails/send", () => real.send);
   mock.module("@/lib/booking-events/record", () => real.record);
   mock.module("@/lib/consent/server", () => real.consent);
+  mock.module("@/lib/bookings/visitor", () => real.visitor);
 });
 
 beforeEach(() => {
@@ -146,6 +157,26 @@ beforeEach(() => {
   recorded = [];
   failSend = false;
   templates = () => ({ data: null, error: null });
+  // A booking of the public form being made right now: what the form shows
+  // is what the row holds.
+  bookingRow = {
+    id: "3b7c1f6e-0d9a-4b52-8c1e-5a2f9d4e7b10",
+    email: "ana@example.test",
+    service_id: "svc-1",
+    cancel_token: TOKEN,
+    status: "pending",
+    created_at: new Date().toISOString(),
+    first_name: "Ana",
+    last_name: "García",
+    phone: null,
+    service_title: "Drenaje linfático",
+    date: "2026-08-20",
+    time: "10:30",
+    duration: "60 min",
+    service_tiers: { label: "Sesión individual" },
+  };
+  historyRows = [];
+  visitorIp = null;
 });
 
 const EVENTS: BookingNotificationEvent[] = [
@@ -539,9 +570,9 @@ describe("the Server Action checks what it is handed before anything is sent", (
     });
   }
 
-  test("an amount that is a number goes through", async () => {
+  test("an amount sent along is not read: a web booking owes nothing at the centre", async () => {
     await notifyBooking(null, { ...fromTheForm(), amountDueEur: 45 });
-    expect(clientEmail().html).toBe(legacyReceived("es", 45));
+    expect(clientEmail().html).toBe(legacyReceived("es"));
   });
 
   test("the fields the form leaves empty are fine: no phone, no tier, no duration, no time", async () => {
@@ -636,8 +667,8 @@ describe("the Server Action checks what it is handed before anything is sent", (
     ["an address that is not text", { clientEmail: null }, null],
     ["an address far too long", { clientEmail: "a".repeat(999) }, null],
   ];
-  for (const [label, over, amount] of REPAIRED) {
-    test(`${label}: repaired, and the email goes out`, async () => {
+  for (const [label, over] of REPAIRED) {
+    test(`${label}: repaired, and the email goes out with the booking's own content`, async () => {
       const logged = spyOn(console, "error").mockImplementation(() => {});
       const out = await notifyBooking(null, {
         ...fromTheForm(),
@@ -648,11 +679,11 @@ describe("the Server Action checks what it is handed before anything is sent", (
       expect(out).toEqual({ ok: true });
       expect(sent).toHaveLength(1);
       expect(clientEmail().subject).toBe(SUBJECTS.es.received);
-      expect(clientEmail().html).toBe(legacyReceived("es", amount));
+      expect(clientEmail().html).toBe(legacyReceived("es"));
     });
   }
 
-  test("a time or a date that is null, or missing, is an empty one", async () => {
+  test("a time or a date that is null, or missing, is not read: the booking's own go out", async () => {
     for (const over of [
       { time: null },
       { time: undefined },
@@ -666,12 +697,7 @@ describe("the Server Action checks what it is handed before anything is sent", (
       } as never);
       expect(out).toEqual({ ok: true });
       expect(sent).toHaveLength(1);
-      expect(clientEmail().html).toBe(
-        received({
-          ...("time" in over ? { time: "" } : {}),
-          ...("date" in over ? { date: "" } : {}),
-        }),
-      );
+      expect(clientEmail().html).toBe(received({}));
     }
   });
 
@@ -765,30 +791,28 @@ describe("the Server Action checks what it is handed before anything is sent", (
     ],
     ["a name that is empty", { clientName: "" }, { name: "" }],
   ];
-  for (const [label, over, expected] of CLEANED) {
-    test(`${label}: cleaned if it needs it, and the email goes out`, async () => {
+  for (const [label, over] of CLEANED) {
+    test(`${label}: a stranger's text never reaches the email, the booking's does`, async () => {
       const out = await notifyBooking(null, {
         ...fromTheForm(),
         ...over,
       } as never);
       expect(out).toEqual({ ok: true });
       expect(sent).toHaveLength(1);
-      expect(clientEmail().html).toBe(received(expected));
+      expect(clientEmail().html).toBe(received({}));
       expect(clientEmail().html).not.toContain("<img src=x");
     });
   }
 
-  test("a line break in the service never reaches the subject", async () => {
+  test("a line break in the service sent along never reaches the subject: the booking's service does", async () => {
     await notifyBooking(null, {
       ...fromTheForm(),
       service: "Drenaje\r\nBcc: x@evil.test",
     });
     expect(clientEmail().subject).toBe(
-      "Solicitud de reserva recibida — Drenaje Bcc: x@evil.test",
+      "Solicitud de reserva recibida — Drenaje linfático",
     );
-    expect(clientEmail().html).toBe(
-      received({ service: "Drenaje Bcc: x@evil.test" }),
-    );
+    expect(clientEmail().html).toBe(received({}));
   });
 
   test("the address in the payload is never the recipient, so an odd one costs nobody her email", async () => {
@@ -887,5 +911,109 @@ describe("what notifyBookingCore reports about the client's email", () => {
       "failed",
     );
     expect(recorded.some((e) => e.status === "failed")).toBe(true);
+  });
+});
+
+describe("the public 'received': once, for a booking being made now, from its own row", () => {
+  const ID = "3b7c1f6e-0d9a-4b52-8c1e-5a2f9d4e7b10";
+  const ask = () =>
+    notifyBooking(null, {
+      bookingId: ID,
+      event: "received",
+      clientName: "Someone Else",
+      clientEmail: "x@evil.test",
+      clientPhone: "+34 611 111 111",
+      service: "Anything",
+      date: "2030-01-01",
+      time: "09:00",
+      locale: "es",
+    });
+  const hoursAgo = (h: number) =>
+    new Date(Date.now() - h * 3_600_000).toISOString();
+
+  test("the content is the booking's, the recipient the booking's, whatever the caller sends", async () => {
+    expect(await ask()).toEqual({ ok: true });
+    expect(clientEmail().to).toBe("ana@example.test");
+    expect(clientEmail().html).toContain("Ana García");
+    expect(clientEmail().html).toContain("Drenaje linfático");
+    expect(clientEmail().html).not.toContain("Someone Else");
+    expect(clientEmail().html).not.toContain("Anything");
+  });
+
+  test("once: a 'received' already in its history is not sent again", async () => {
+    historyRows = [
+      { channel: "email", event: "received", created_at: hoursAgo(0) },
+    ];
+    expect(await ask()).toEqual({ ok: false, error: "refused" });
+    expect(sent).toEqual([]);
+  });
+
+  test("only for a draft or a booking waiting for its payment", async () => {
+    for (const status of ["confirmed", "cancelled", "completed"]) {
+      bookingRow = { ...bookingRow, status };
+      expect(await ask()).toEqual({ ok: false, error: "refused" });
+    }
+    expect(sent).toEqual([]);
+  });
+
+  test("only within half an hour of it being started, or of its payment being opened", async () => {
+    bookingRow = { ...bookingRow, created_at: hoursAgo(2) };
+    expect(await ask()).toEqual({ ok: false, error: "refused" });
+    historyRows = [
+      { channel: "payment", event: "checkout", created_at: hoursAgo(0.1) },
+    ];
+    expect(await ask()).toEqual({ ok: true });
+  });
+
+  test("a booking that is not there is refused", async () => {
+    bookingRow = null as unknown as Record<string, unknown>;
+    expect(await ask()).toEqual({ ok: false, error: "refused" });
+  });
+
+  test("it never writes the contact: only the team's confirmation syncs it", async () => {
+    const tables: string[] = [];
+    const spied = spyOn(fakeAdmin, "getAdminClient").mockImplementation(() => ({
+      database: {
+        from: (table: string) => {
+          tables.push(table);
+          return chain(() =>
+            table === "bookings"
+              ? { data: bookingRow, error: null }
+              : table === "booking_events"
+                ? { data: historyRows, error: null }
+                : { data: null, error: null },
+          );
+        },
+      },
+    }));
+    await ask();
+    spied.mockRestore();
+    expect(tables).not.toContain("contacts");
+  });
+
+  test("asked for again and again from one address, it is refused after three per booking", async () => {
+    visitorIp = "203.0.113.9";
+    const OTHER = "3b7c1f6e-0d9a-4b52-8c1e-5a2f9d4e7b11";
+    historyRows = [
+      { channel: "email", event: "received", created_at: hoursAgo(0) },
+    ];
+    const answers = [];
+    bookingReads = 0;
+    for (let i = 0; i < 4; i++) {
+      answers.push(
+        await notifyBooking(null, {
+          bookingId: OTHER,
+          event: "received",
+          clientName: "",
+          clientEmail: "",
+          service: "x",
+          date: "",
+          time: "",
+        }),
+      );
+    }
+    // Three are judged (and refused: already sent); the fourth is not even read.
+    expect(answers.every((a) => !a.ok)).toBe(true);
+    expect(bookingReads).toBe(3);
   });
 });

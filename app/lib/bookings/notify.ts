@@ -523,7 +523,9 @@ export async function notifyBookingCore(
   }
 
   // ── Sync contact record ────────────────────────────────────────
-  if (event === "received" || event === "confirmed") {
+  // Only on the team's confirmation. The public `received` never writes the
+  // contact: whoever calls it is anonymous, and the form writes its own.
+  if (event === "confirmed") {
     const [firstName, ...lastParts] = clientName.trim().split(" ");
     void upsertContact(
       clientEmail,
