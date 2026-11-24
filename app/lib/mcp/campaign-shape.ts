@@ -1,12 +1,21 @@
+import type {
+  CampaignAudience,
+  CampaignLocale,
+  WhatsAppContent,
+} from "@/types/campaign";
+import { audienceLocales } from "@/lib/campaigns/languages";
+import { whatsappBlocks } from "@/lib/campaigns/whatsapp-content";
+
 /**
  * How a campaign is handed to an AI assistant.
  *
  * The assistant only reads campaigns. A WhatsApp campaign spends money and the
  * number's reputation, so creating, changing, sending and activating it stay in
  * the dashboard; there is no tool for them (a test keeps it so). What it reads
- * says the channel, and for WhatsApp the template and how many parameters it
- * has, never the parameters themselves: a fixed one is text the admin typed and
- * may carry a name or a number.
+ * says the channel, and for WhatsApp the template of each language the
+ * campaign is written in and where each of its parameters comes from (a field
+ * of the contact or the booking), never what a fixed one says: that is text the
+ * admin typed and may carry a name or a number.
  */
 
 type Counters = {
@@ -35,6 +44,57 @@ type EmailBlock = {
   doc?: unknown;
 } | null;
 
+/** Where one parameter comes from: a field by its name, or "fixed text" (never the text). */
+type ParameterSource = { from: string } | { from: "fixed_text" };
+
+type LanguageTemplate = {
+  template_id: string | null;
+  parameter_count: number;
+  parameters: ParameterSource[];
+};
+
+/**
+ * The template of each language a WhatsApp campaign is written in (the one its
+ * audience fixes, or both), or null for a language it has none for yet. Read
+ * the way the sender reads it (`whatsappBlocks`): a campaign saved in the old
+ * shape (one template, no language) has it under the language it was sent in.
+ */
+function whatsappSummary(
+  content: Record<string, unknown> | null | undefined,
+  audience: unknown,
+): { by_language: Partial<Record<CampaignLocale, LanguageTemplate | null>> } {
+  const stored = (audience ?? {}) as Partial<CampaignAudience>;
+  const fixed: Pick<CampaignAudience, "language" | "sendLocale"> = {
+    language:
+      stored.language === "es" || stored.language === "en"
+        ? stored.language
+        : "any",
+    sendLocale: stored.sendLocale,
+  };
+  const blocks = whatsappBlocks(
+    (content ?? {}).whatsapp as WhatsAppContent | undefined,
+    fixed,
+  );
+  const by_language: Partial<Record<CampaignLocale, LanguageTemplate | null>> =
+    {};
+  for (const locale of audienceLocales(fixed)) {
+    const block = blocks[locale];
+    const params = Array.isArray(block?.params) ? block.params : [];
+    by_language[locale] = block
+      ? {
+          template_id: block.templateId ?? null,
+          parameter_count: params.length,
+          parameters: params.map((param): ParameterSource =>
+            param?.kind === "field"
+              ? { from: param.field }
+              : { from: "fixed_text" },
+          ),
+        }
+      : null;
+  }
+  return { by_language };
+}
+
 /** One campaign in full: the row, its rates and a summary of its content. */
 export function shapeCampaign(campaign: Row): Record<string, unknown> {
   const { content, ...rest } = campaign;
@@ -48,8 +108,6 @@ export function shapeCampaign(campaign: Row): Record<string, unknown> {
     const { opened_count, clicked_count, ...kept } = rest;
     void opened_count;
     void clicked_count;
-    const block = (content ?? {}).whatsapp as
-      { templateId?: string | null; params?: unknown[] } | undefined;
     return {
       ...kept,
       channel,
@@ -59,10 +117,7 @@ export function shapeCampaign(campaign: Row): Record<string, unknown> {
         delivered: rate(delivered, recipients),
         read: rate(opened, delivered),
       },
-      whatsapp: {
-        template_id: block?.templateId ?? null,
-        parameter_count: Array.isArray(block?.params) ? block.params.length : 0,
-      },
+      whatsapp: whatsappSummary(content, campaign.audience),
     };
   }
 

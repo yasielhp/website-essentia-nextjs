@@ -98,7 +98,7 @@ export function registerBusinessTools(server: ToolServer): void {
     {
       title: "Get Campaign",
       description:
-        "One campaign: channel (email or whatsapp), kind, status, schedule, trigger, audience filter and the full statistics with rates. An email has a summary of its content (the subject, preheader and title per language and how long the body is, not the body); a WhatsApp campaign has its template id and how many parameters it fills, never their values.",
+        "One campaign: channel (email or whatsapp), kind, status, schedule, trigger, audience filter and the full statistics with rates. An email has a summary of its content (the subject, preheader and title per language and how long the body is, not the body); a WhatsApp campaign has, for each language it is written in (es, en), its template id and where each parameter comes from (a field of the contact or the booking, or a fixed text whose value is never shown), or null for a language with no template yet.",
       inputSchema: { id: z.string().uuid() },
     },
     async ({ id }) => {

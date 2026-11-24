@@ -18,6 +18,10 @@ const email = {
   },
 };
 
+const TEMPLATE_ES = "6f1c2a3e-1111-4222-8333-444455556666";
+const TEMPLATE_EN = "7a2d3b4f-2222-4333-8444-555566667777";
+
+/** For everybody, with a template for each language: the shape the form writes. */
 const whatsapp = {
   id: "c2",
   name: "Reapertura",
@@ -27,15 +31,22 @@ const whatsapp = {
   delivered_count: 80,
   opened_count: 40,
   clicked_count: 0,
+  audience: { language: "any" },
   content: {
     es: empty,
     en: empty,
     whatsapp: {
-      templateId: "6f1c2a3e-1111-4222-8333-444455556666",
-      params: [
-        { kind: "field", field: "first_name" },
-        { kind: "static", value: "Ana García, 600112233" },
-      ],
+      es: {
+        templateId: TEMPLATE_ES,
+        params: [
+          { kind: "field", field: "first_name" },
+          { kind: "static", value: "Ana García, 600112233" },
+        ],
+      },
+      en: {
+        templateId: TEMPLATE_EN,
+        params: [{ kind: "field", field: "first_name" }],
+      },
     },
   },
 };
@@ -57,13 +68,61 @@ describe("shapeCampaign", () => {
     expect(shaped).not.toHaveProperty("content");
   });
 
-  it("a WhatsApp campaign says its channel and which template, with how many parameters", () => {
+  it("a WhatsApp campaign says its channel and, for each language, its template and where each parameter comes from", () => {
     const shaped = shapeCampaign(whatsapp) as Record<string, unknown>;
     expect(shaped.channel).toBe("whatsapp");
     expect(shaped.whatsapp).toEqual({
-      template_id: "6f1c2a3e-1111-4222-8333-444455556666",
-      parameter_count: 2,
+      by_language: {
+        es: {
+          template_id: TEMPLATE_ES,
+          parameter_count: 2,
+          parameters: [{ from: "first_name" }, { from: "fixed_text" }],
+        },
+        en: {
+          template_id: TEMPLATE_EN,
+          parameter_count: 1,
+          parameters: [{ from: "first_name" }],
+        },
+      },
     });
+  });
+
+  it("a campaign saved in the old shape (one template, no language) has it under the language it was sent in", () => {
+    const old = {
+      ...whatsapp,
+      audience: { language: "any", sendLocale: "en" },
+      content: {
+        es: empty,
+        en: empty,
+        whatsapp: {
+          templateId: TEMPLATE_ES,
+          params: [{ kind: "static", value: "Ana García, 600112233" }],
+        },
+      },
+    };
+    expect((shapeCampaign(old) as Record<string, unknown>).whatsapp).toEqual({
+      by_language: {
+        es: null,
+        en: {
+          template_id: TEMPLATE_ES,
+          parameter_count: 1,
+          parameters: [{ from: "fixed_text" }],
+        },
+      },
+    });
+  });
+
+  it("an audience that fixes a language lists that language alone", () => {
+    const spanish = { ...whatsapp, audience: { language: "es" } };
+    expect(
+      Object.keys(
+        (
+          (shapeCampaign(spanish) as Record<string, unknown>).whatsapp as {
+            by_language: object;
+          }
+        ).by_language,
+      ),
+    ).toEqual(["es"]);
   });
 
   it("never carries what the admin typed into a fixed parameter", () => {
@@ -87,14 +146,13 @@ describe("shapeCampaign", () => {
     );
   });
 
-  it("a WhatsApp campaign with no template chosen yet says so", () => {
+  it("a WhatsApp campaign with no template chosen yet says so, language by language", () => {
     const bare = {
       ...whatsapp,
       content: { es: empty, en: empty },
     };
     expect((shapeCampaign(bare) as Record<string, unknown>).whatsapp).toEqual({
-      template_id: null,
-      parameter_count: 0,
+      by_language: { es: null, en: null },
     });
   });
 });
