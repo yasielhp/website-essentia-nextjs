@@ -114,6 +114,16 @@ export function CampaignForm({
 
   const errorText = (code: string) =>
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
+  /** A refusal in words; a template that cannot go out says in which language. */
+  const refusalText = (failure: { error: string; locale?: unknown }) =>
+    failure.error === "template_unavailable" &&
+    (failure.locale === "es" || failure.locale === "en")
+      ? t("errors.template_unavailable_in", {
+          language: t(
+            failure.locale === "es" ? "content.localeEs" : "content.localeEn",
+          ),
+        })
+      : errorText(failure.error);
 
   /** Marks `step` done and opens the next one the kind actually has. */
   function complete(step: Step) {
@@ -193,6 +203,12 @@ export function CampaignForm({
     if (!result.ok) {
       if (result.fieldErrors) {
         dispatch({ type: "SET_ERRORS", errors: result.fieldErrors });
+        // The error may be on the version that is not on screen: bring it.
+        const locale = firstErroredLocale(
+          result.fieldErrors,
+          state.activeLocale,
+        );
+        if (locale) dispatch({ type: "SET_LOCALE", locale });
         // A template that cannot go out is fixed in the template step.
         if (
           Object.keys(result.fieldErrors).some((k) =>
@@ -271,7 +287,7 @@ export function CampaignForm({
       () => ({ ok: false as const, error: "generic" }),
     );
     if (!result.ok) {
-      dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
+      dispatch({ type: "SUBMIT_ERROR", message: refusalText(result) });
       return;
     }
     notifySuccess(tToasts("campaignScheduled"));
@@ -286,7 +302,7 @@ export function CampaignForm({
       error: "generic",
     }));
     if (!result.ok) {
-      dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
+      dispatch({ type: "SUBMIT_ERROR", message: refusalText(result) });
       return;
     }
     notifySuccess(tToasts("campaignActivated"));
@@ -301,7 +317,7 @@ export function CampaignForm({
       error: "generic",
     }));
     if (!result.ok) {
-      dispatch({ type: "SUBMIT_ERROR", message: errorText(result.error) });
+      dispatch({ type: "SUBMIT_ERROR", message: refusalText(result) });
       return;
     }
     // A WhatsApp send can stop early; the toast says what actually happened.

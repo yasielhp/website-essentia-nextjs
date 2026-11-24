@@ -1987,6 +1987,7 @@
       "nothing_to_retry": "No hay mensajes que reintentar.",
       "whatsapp_not_configured": "WhatsApp no está configurado en el servidor.",
       "template_unavailable": "La plantilla elegida no está aprobada o ya no se puede enviar.",
+      "template_unavailable_in": "La plantilla de la versión en {language} no está aprobada o ya no se puede enviar.",
       "db": "Algo falló al guardar en la base de datos.",
       "locked": "Esta campaña ya no se puede cambiar.",
       "past": "Elige una fecha futura.",

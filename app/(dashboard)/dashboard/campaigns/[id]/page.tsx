@@ -137,6 +137,16 @@ export default function CampaignDetailPage() {
 
   const errorText = (code: string) =>
     t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.generic");
+  /** A refusal in words; a template that cannot go out says in which language. */
+  const refusalText = (failure: { error?: string; locale?: unknown }) =>
+    failure.error === "template_unavailable" &&
+    (failure.locale === "es" || failure.locale === "en")
+      ? t("errors.template_unavailable_in", {
+          language: t(
+            failure.locale === "es" ? "content.localeEs" : "content.localeEn",
+          ),
+        })
+      : errorText(failure.error ?? "generic");
 
   async function act<R extends { ok: boolean; error?: string }>(
     name: string,
@@ -147,7 +157,7 @@ export default function CampaignDetailPage() {
     try {
       const result = await action();
       if (result.ok) onOk(result);
-      else toast.error(errorText(result.error ?? "generic"));
+      else toast.error(refusalText(result));
     } catch {
       // A request that threw (the network, a gateway that gave up on a long
       // retry) must not leave the button as it was with nothing said.

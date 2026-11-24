@@ -229,4 +229,22 @@ describe("the form sends the test of the version on screen", () => {
   test("a refused validation names the version that is missing", () => {
     expect(form).toContain("errorText(incompleteError(check.errors))");
   });
+
+  test("an error the server found on the version that is not on screen brings that version on screen", () => {
+    expect(form).toMatch(
+      /const locale = firstErroredLocale\(\s*result\.fieldErrors,\s*state\.activeLocale,\s*\);\s*if \(locale\) dispatch\(\{ type: "SET_LOCALE", locale \}\);/,
+    );
+  });
+
+  test("a template that stopped being sendable is said with the language it is the template of", () => {
+    // Scheduling, activating and sending all refuse through the same words.
+    expect(form.match(/message: refusalText\(result\)/g) ?? []).toHaveLength(3);
+    expect(es.campaigns.errors.template_unavailable_in).toContain("{language}");
+    expect(en.campaigns.errors.template_unavailable_in).toContain("{language}");
+    const detail = readFileSync(
+      join(import.meta.dir, "..", "[id]", "page.tsx"),
+      "utf8",
+    );
+    expect(detail).toContain("else toast.error(refusalText(result));");
+  });
 });

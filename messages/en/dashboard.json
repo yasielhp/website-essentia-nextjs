@@ -1987,6 +1987,7 @@
       "nothing_to_retry": "There are no messages to retry.",
       "whatsapp_not_configured": "WhatsApp is not configured on the server.",
       "template_unavailable": "The chosen template is not approved or can no longer be sent.",
+      "template_unavailable_in": "The template of the {language} version is not approved or can no longer be sent.",
       "db": "Something went wrong saving to the database.",
       "locked": "This campaign can no longer be changed.",
       "past": "Pick a time in the future.",
