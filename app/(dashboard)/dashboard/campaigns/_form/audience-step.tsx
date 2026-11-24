@@ -313,13 +313,13 @@ function ListAudienceStep({
     });
   }
 
+  // By email "everyone" is everyone subscribed: nobody else is ever reached.
+  const everyone =
+    channel === "whatsapp" ? tSeg("everyone") : tSeg("everyoneEmail");
   const options: SelectOption<string>[] = [
     {
       value: "",
-      label:
-        list && !listFailed
-          ? `${tSeg("everyone")} (${list.everyone})`
-          : tSeg("everyone"),
+      label: list && !listFailed ? `${everyone} (${list.everyone})` : everyone,
     },
     ...segments.map((segment) => ({
       value: segment.id,
@@ -350,7 +350,7 @@ function ListAudienceStep({
             options={options}
             disabled={submitting || list === null}
             ariaLabel={tSeg("title")}
-            placeholder={tSeg("everyone")}
+            placeholder={everyone}
             onChange={pickSegment}
           />
         </div>
@@ -388,20 +388,26 @@ function ListAudienceStep({
           })}
         </p>
       )}
-      {channel === "whatsapp" && (
-        <div className="mt-3 text-xs">
-          {reach && !counting && (
-            <p className="text-petroleum-700 text-sm font-medium">
-              {t("reachWhatsApp", { count: reach.count })}
-              <span className="text-petroleum-400 font-normal">
-                {" · "}
-                {t("reachByLanguage", { en: reach.en, es: reach.es })}
-              </span>
-            </p>
-          )}
-          <p className="text-petroleum-400 mt-1">{t("reachWhatsAppNote")}</p>
-        </div>
-      )}
+      {/* Who receives it, on each channel: its consent, and the count of
+          those who have it. */}
+      <div className="mt-3 text-xs">
+        {reach && !counting && (
+          <p className="text-petroleum-700 text-sm font-medium">
+            {channel === "whatsapp"
+              ? t("reachWhatsApp", { count: reach.count })
+              : t("reachEmail", { count: reach.count })}
+            <span className="text-petroleum-400 font-normal">
+              {" · "}
+              {t("reachByLanguage", { en: reach.en, es: reach.es })}
+            </span>
+          </p>
+        )}
+        <p className="text-petroleum-400 mt-1">
+          {channel === "whatsapp"
+            ? t("reachWhatsAppNote")
+            : t("reachEmailNote")}
+        </p>
+      </div>
       {failed && (
         <div className="mt-3">
           <ReachFailed onRetry={retry} notReady={notReady} />

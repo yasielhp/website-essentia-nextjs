@@ -1852,7 +1852,9 @@
       },
       "reachFailed": "No se pudo calcular la audiencia; vuelve a intentarlo.",
       "reachNotReady": "WhatsApp aún no está listo en el servidor; avisa a quien administra la web.",
-      "reachRetry": "Reintentar"
+      "reachRetry": "Reintentar",
+      "reachEmail": "{count} suscritos a la newsletter",
+      "reachEmailNote": "Solo entran los contactos suscritos a la newsletter, con un email válido, que no se han dado de baja ni han rebotado. Añadir a alguien a mano no salta esta regla: sin su suscripción no recibe campañas por email."
     },
     "content": {
       "title": "Qué dice",
@@ -1884,7 +1886,6 @@
       "audienceSummary": "Audiencia",
       "contentSummary": "Contenido",
       "conditions": "Condiciones",
-      "noConditions": "Todos los contactos con email",
       "sendTest": "Enviarme una prueba",
       "testLanguage": "Versión de la prueba: {language}",
       "sendingTest": "Enviando…",
@@ -2047,7 +2048,7 @@
       "appointmentDesc": "Un mensaje de WhatsApp antes o después de cada cita: recordatorio o seguimiento. Solo a quien aceptó los avisos de la cita.",
       "kindLocked": "Una campaña guardada no puede pasar a ser un Aviso de cita ni dejar de serlo: cuenta citas, no listas.",
       "consentNoteWhatsApp": "WhatsApp solo escribe a quien aceptó recibir novedades y ofertas, con una plantilla aprobada por Meta. El Aviso de cita es la excepción: va a quien activó los avisos de la cita.",
-      "consentNoteEmail": "El email llega a los contactos de la audiencia que tienen correo y no se han dado de baja ni han rebotado. Para escribir solo a quien aceptó novedades y ofertas, elige «Solo suscritos a la newsletter» en el filtro Suscripción de la audiencia."
+      "consentNoteEmail": "El email solo llega a quien está suscrito a la newsletter (aceptó recibir novedades y ofertas), con un email válido y sin haberse dado de baja ni haber rebotado. Ninguna condición ni lista hecha a mano se salta esta regla."
     },
     "segment": {
       "title": "Segmento",
@@ -2064,7 +2065,8 @@
       "selectedHint": "Usando \"{name}\". Edítalo para cambiar las condiciones de todas las campañas que lo elijan a partir de ahora.",
       "manage": "Gestionar segmentos",
       "manualListHint": "Lista manual · llega a {count, plural, one {# persona} other {# personas}} (tras las exclusiones)",
-      "listFailed": "No se pudieron cargar los segmentos."
+      "listFailed": "No se pudieron cargar los segmentos.",
+      "everyoneEmail": "Todos los suscritos a la newsletter"
     },
     "trigger": {
       "title": "Disparador",
@@ -2153,7 +2155,7 @@
         "updated": "Actualizado",
         "created": "Creado"
       },
-      "noConditions": "Todos los contactos con email",
+      "noConditions": "Sin condiciones: todos los contactos",
       "form": {
         "search": "Buscar por nombre, correo o teléfono",
         "filterSentence": "{count, plural, one {El segmento incluye a la persona que cumple los filtros, y a las que los cumplan más adelante.} other {El segmento incluye a las # personas que cumplen los filtros, y a las que los cumplan más adelante.}}",
@@ -2187,7 +2189,8 @@
         "list": "Lista manual"
       },
       "listReach": "{selected, plural, one {# seleccionada} other {# seleccionadas}} · {count, plural, one {# recibe} other {# reciben}} hoy",
-      "listReachWhy": "Quien se dio de baja, rebotó o no ha dado su consentimiento queda fuera aunque esté en la lista."
+      "listReachWhy": "Quien se dio de baja, rebotó o no ha dado su consentimiento queda fuera aunque esté en la lista.",
+      "countNote": "«Personas» es a cuántos llega hoy un email: solo los suscritos a la newsletter, sin baja ni rebote. Por WhatsApp llega a quien aceptó novedades y ofertas por WhatsApp."
     },
     "template": {
       "title": "Punto de partida",

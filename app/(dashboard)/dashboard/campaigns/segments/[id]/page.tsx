@@ -224,6 +224,8 @@ export default function SegmentDetailPage() {
               {t("listReachWhy")}
             </p>
           )}
+          {/* The count is an email's reach: subscribers only. */}
+          <p className="text-petroleum-400 mt-1 text-xs">{t("countNote")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {confirmDelete ? (

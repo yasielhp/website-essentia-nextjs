@@ -349,19 +349,39 @@ describe("the note on who each channel writes to", () => {
       locales.en["campaigns.type.appointment"],
     );
   });
-  test("email names the audience filter exactly as the screen shows it, and does not claim a consent it does not require", () => {
+  test("email says it writes only to newsletter subscribers, and no longer offers a filter to choose it", () => {
     for (const locale of ["es", "en"] as const) {
       const note = locales[locale]["campaigns.type.consentNoteEmail"];
-      expect(note).toContain(
+      expect(note).not.toContain(
         locales[locale]["campaigns.audience.subscriptionOnly"],
       );
-      expect(note).toContain(
-        locales[locale]["campaigns.audience.subscription"],
-      );
     }
-    expect(locales.es["campaigns.type.consentNoteEmail"]).not.toMatch(
-      /solo escribe a quien acept/i,
+    expect(locales.es["campaigns.type.consentNoteEmail"]).toMatch(
+      /solo llega a quien está suscrito a la newsletter/,
     );
+    expect(locales.en["campaigns.type.consentNoteEmail"]).toMatch(
+      /only goes to people subscribed to the newsletter/,
+    );
+  });
+
+  test("the audience step, the picker, the review and the segment pages say the same rule, in both languages", () => {
+    for (const locale of ["es", "en"] as const) {
+      for (const key of [
+        "campaigns.audience.reachEmail",
+        "campaigns.audience.reachEmailNote",
+        "campaigns.segment.everyoneEmail",
+        "campaigns.segments.countNote",
+      ]) {
+        expect([locale, key, Boolean(locales[locale][key])]).toEqual([
+          locale,
+          key,
+          true,
+        ]);
+      }
+      // An email always has its line of conditions now: "every contact with
+      // an email" is said nowhere.
+      expect(locales[locale]["campaigns.review.noConditions"]).toBeUndefined();
+    }
   });
 });
 

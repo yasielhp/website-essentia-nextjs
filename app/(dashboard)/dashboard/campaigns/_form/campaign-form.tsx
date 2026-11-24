@@ -400,7 +400,10 @@ export function CampaignForm({
         ]
           .filter(Boolean)
           .join(" · ")
-      : `${audienceRow.value.name ?? t("segment.everyone")}${
+      : `${
+          audienceRow.value.name ??
+          t(whatsapp ? "segment.everyone" : "segment.everyoneEmail")
+        }${
           audienceRow.value.count !== null
             ? ` (${audienceRow.value.count})`
             : ""

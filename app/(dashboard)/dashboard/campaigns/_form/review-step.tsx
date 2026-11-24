@@ -31,11 +31,21 @@ export function describeAudience(
   audience: CampaignAudience,
   t: ReturnType<typeof useTranslations<"dashboard.campaigns.review">>,
   tAudience: ReturnType<typeof useTranslations<"dashboard.campaigns.audience">>,
+  /**
+   * An email campaign: it reaches newsletter subscribers only, whatever its
+   * conditions (the resolver's rule), so that is said first, always. A
+   * segment on its own belongs to no channel and says it only as a filter.
+   */
+  options: { subscribersOnly?: boolean } = {},
 ): string[] {
-  const lines: string[] = [];
+  const subscribers = options.subscribersOnly === true;
+  const lines: string[] = subscribers ? [t("condNewsletter")] : [];
   // A hand-made list is its people; the conditions were only how they were found.
   if (audience.manualOnly) {
-    return [t("condManualList", { count: audience.manualIds.length })];
+    return [
+      t("condManualList", { count: audience.manualIds.length }),
+      ...lines,
+    ];
   }
   if (audience.language !== "any") {
     lines.push(
@@ -47,7 +57,9 @@ export function describeAudience(
       }),
     );
   }
-  if (audience.newsletter === true) lines.push(t("condNewsletter"));
+  if (audience.newsletter === true && !subscribers) {
+    lines.push(t("condNewsletter"));
+  }
   if (audience.neverBooked) lines.push(t("condNeverBooked"));
   if (audience.hasBooked) lines.push(t("condHasBooked"));
   if (audience.services.length > 0) {
@@ -152,7 +164,9 @@ export function ReviewStep({
   const [confirmingActivate, setConfirmingActivate] = useState(false);
   const [scheduleAt, setScheduleAt] = useState(defaultScheduleValue);
 
-  const conditions = describeAudience(audience, t, tAudience);
+  const conditions = describeAudience(audience, t, tAudience, {
+    subscribersOnly: !whatsapp,
+  });
   const count = reach?.count ?? 0;
   const disabled = submitting || busy !== null;
 
@@ -186,11 +200,10 @@ export function ReviewStep({
           </h3>
           {conditions.length === 0 ? (
             <p className="text-petroleum-500 text-sm">
+              {/* An email always has a line: its subscribers. */}
               {kind === "appointment"
                 ? t("noConditionsAppointment")
-                : whatsapp
-                  ? t("noConditionsWhatsApp")
-                  : t("noConditions")}
+                : t("noConditionsWhatsApp")}
             </p>
           ) : (
             <ul className="text-petroleum-500 list-disc pl-4 text-sm">

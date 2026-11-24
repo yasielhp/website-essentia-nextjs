@@ -137,6 +137,7 @@ export default function SegmentsPage() {
           </div>
         )}
       </div>
+      <p className="text-petroleum-400 mt-3 text-xs">{t("countNote")}</p>
     </div>
   );
 }

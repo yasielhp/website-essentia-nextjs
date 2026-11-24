@@ -1852,7 +1852,9 @@
       },
       "reachFailed": "The audience could not be calculated; please try again.",
       "reachNotReady": "WhatsApp is not ready on the server yet; tell whoever manages the website.",
-      "reachRetry": "Try again"
+      "reachRetry": "Try again",
+      "reachEmail": "{count} newsletter subscribers",
+      "reachEmailNote": "Only contacts subscribed to the newsletter are included, with a valid email address, no unsubscribe and no bounce. Adding someone by hand does not get round it: without her subscription she gets no email campaigns."
     },
     "content": {
       "title": "What it says",
@@ -1884,7 +1886,6 @@
       "audienceSummary": "Audience",
       "contentSummary": "Content",
       "conditions": "Conditions",
-      "noConditions": "Every contact with an email address",
       "sendTest": "Send me a test",
       "testLanguage": "Version of the test: {language}",
       "sendingTest": "Sending…",
@@ -2047,7 +2048,7 @@
       "appointmentDesc": "A WhatsApp message before or after each appointment: reminder or follow-up. Only to clients who accepted appointment notices.",
       "kindLocked": "A saved campaign cannot become an Appointment notice or stop being one: it counts appointments, not lists.",
       "consentNoteWhatsApp": "WhatsApp only writes to people who agreed to receive news and offers, using a template approved by Meta. The Appointment notice is the exception: it goes to clients who switched on appointment notices.",
-      "consentNoteEmail": "An email goes to the contacts in the audience who have an address and have not unsubscribed or bounced. To write only to people who agreed to news and offers, choose “Newsletter subscribers only” in the Subscription filter of the audience."
+      "consentNoteEmail": "An email only goes to people subscribed to the newsletter (who agreed to receive news and offers), with a valid address, no unsubscribe and no bounce. No condition and no hand-made list gets round this rule."
     },
     "segment": {
       "title": "Segment",
@@ -2064,7 +2065,8 @@
       "selectedHint": "Using \"{name}\". Edit it to change the conditions for every campaign that picks it from now on.",
       "manage": "Manage segments",
       "manualListHint": "Manual list · reaches {count, plural, one {# person} other {# people}} (after exclusions)",
-      "listFailed": "The segments could not be loaded."
+      "listFailed": "The segments could not be loaded.",
+      "everyoneEmail": "All newsletter subscribers"
     },
     "trigger": {
       "title": "Trigger",
@@ -2153,7 +2155,7 @@
         "updated": "Updated",
         "created": "Created"
       },
-      "noConditions": "Every contact with an email",
+      "noConditions": "No conditions: every contact",
       "form": {
         "search": "Search by name, email or phone",
         "filterSentence": "{count, plural, one {The segment includes the person who meets the filters, and anyone who meets them later.} other {The segment includes the # people who meet the filters, and anyone who meets them later.}}",
@@ -2187,7 +2189,8 @@
         "list": "Manual list"
       },
       "listReach": "{selected, plural, one {# selected} other {# selected}} · {count} today",
-      "listReachWhy": "Anyone who unsubscribed, bounced or has not given consent is left out even if she is on the list."
+      "listReachWhy": "Anyone who unsubscribed, bounced or has not given consent is left out even if she is on the list.",
+      "countNote": "“People” is how many an email reaches today: newsletter subscribers only, with no unsubscribe or bounce. On WhatsApp it reaches those who agreed to news and offers on WhatsApp."
     },
     "template": {
       "title": "Starting point",
