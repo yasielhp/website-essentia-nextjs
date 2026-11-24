@@ -2,8 +2,18 @@ import { type NextRequest, NextResponse } from "next/server";
 import { insforgePublic as insforge } from "@/lib/insforge-public";
 import { getRedsysProvider } from "@/lib/payments";
 import { getAppUrl } from "@/lib/env";
+import { MEMBERSHIPS_ON_SALE } from "@/constants/memberships";
 
 export async function POST(req: NextRequest) {
+  // Memberships are not on sale: no plan is read and nothing goes to the bank,
+  // whoever calls. One switch, `MEMBERSHIPS_ON_SALE`, turns this back on.
+  if (!MEMBERSHIPS_ON_SALE) {
+    return NextResponse.json(
+      { error: "memberships_not_on_sale" },
+      { status: 404 },
+    );
+  }
+
   const provider = getRedsysProvider();
   if (!provider) {
     return NextResponse.json(

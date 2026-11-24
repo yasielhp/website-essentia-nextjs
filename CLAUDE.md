@@ -196,6 +196,10 @@ Each bookable service has its own OAuth tokens stored in `service_configs`. `get
 - `app/[locale]/opengraph-image.tsx` — locale-aware EN/ES copy. No `generateImageMetadata` (incompatible with edge runtime + dynamic parent segment).
 - `app/lib/og-logo.ts` — `getLogoSvgUrl(color?)` builds a clean SVG data URL from hardcoded path data (avoids React-specific attributes and `currentColor` from `public/logo.svg`).
 
+### Memberships (not launched)
+
+Memberships are NOT on sale (the owner, 2026-11-24; `memberships` has no row). ONE switch, `MEMBERSHIPS_ON_SALE` in `app/constants/memberships.ts` (`false`), and while it is off `/api/checkout/membership-session` answers 404 `{ error: "memberships_not_on_sale" }` before reading a plan or building a Redsys form, so not even a direct call starts a payment (`route.test.ts`). `/experiences/memberships` is in `UNLAUNCHED_ROUTES` (noindex, out of the sitemaps and of `llms.txt`) and shows the "Coming soon" with no plan or price; it stays reachable because the checkout's success and cancel URLs return there. Nothing on the site links to it: the closing calls of Wellness and Medicine book a session, Experiences has none (`memberships-not-launched.test.ts`). Launching takes more than the switch: put the page's sections back (`components/sections/memberships/` are kept; the page's `content.tsx` is in git before 42a8785d), take the route out of `UNLAUNCHED_ROUTES` and its "coming soon" description, and make the Redsys webhook record a membership payment, which it does not do today.
+
 ### Sitemaps
 
 Three routes: `/sitemap.xml` (index), `/sitemap-en.xml`, `/sitemap-es.xml`. Blog posts fetched via `fetchBlogPosts()` wrapped in `unstable_cache` (1h TTL). `BlogPost.lastModified` is a `string` (YYYY-MM-DD), not a `Date` — `unstable_cache` serializes to JSON which strips Date methods.
