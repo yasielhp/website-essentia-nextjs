@@ -42,12 +42,85 @@ describe("describeLastError", () => {
     });
   });
 
-  test("any other text stays as it was written", () => {
+  test("a template that cannot go out is said in words, with the language it is the template of", () => {
+    expect(
+      describeLastError("template_unavailable: template_not_approved (en)"),
+    ).toEqual({
+      kind: "note",
+      key: "templateUnavailableIn",
+      values: { issue: "template_not_approved", language: "en" },
+    });
+    // As a campaign saved before the languages wrote it.
     expect(
       describeLastError("template_unavailable: template_not_approved"),
     ).toEqual({
+      kind: "note",
+      key: "templateUnavailable",
+      values: { issue: "template_not_approved" },
+    });
+  });
+
+  test("and the sentence names the language and the reason, in Spanish and in English", () => {
+    const note = describeLastError("template_unavailable: param_count (en)");
+    if (note?.kind !== "note") throw new Error("not a note");
+    const format = (locale: "es" | "en") =>
+      String(
+        new IntlMessageFormat(
+          (
+            (locale === "es" ? es : en).campaigns.detail.notes as Record<
+              string,
+              string
+            >
+          )[note.key] as string,
+          locale,
+        ).format(note.values),
+      );
+    expect(format("es")).toBe(
+      "La plantilla de WhatsApp de la versión en inglés no tiene los parámetros que la campaña le da: no sale nada en ese idioma hasta que se corrija.",
+    );
+    expect(format("en")).toBe(
+      "The WhatsApp template of the English version does not have the parameters the campaign gives it: nothing goes out in that language until it is fixed.",
+    );
+  });
+
+  test("every reason a template can be refused for has its own words", () => {
+    const issues = [
+      "template_missing",
+      "template_not_approved",
+      "template_unsupported",
+      "template_language",
+      "param_count",
+      "template_category",
+    ];
+    for (const locale of ["es", "en"] as const) {
+      const notes = (locale === "es" ? es : en).campaigns.detail
+        .notes as Record<string, string>;
+      const sentence = (issue: string) =>
+        String(
+          new IntlMessageFormat(
+            notes.templateUnavailableIn as string,
+            locale,
+          ).format({ issue, language: "es" }),
+        );
+      const fallback = sentence("something_new");
+      for (const issue of issues) {
+        expect([locale, issue, sentence(issue) !== fallback]).toEqual([
+          locale,
+          issue,
+          true,
+        ]);
+      }
+    }
+  });
+
+  test("any other text stays as it was written", () => {
+    expect(describeLastError("131000: Something went wrong")).toEqual({
       kind: "raw",
-      text: "template_unavailable: template_not_approved",
+      text: "131000: Something went wrong",
+    });
+    expect(describeLastError("template_unavailable: x (fr)")).toEqual({
+      kind: "raw",
+      text: "template_unavailable: x (fr)",
     });
   });
 
@@ -276,6 +349,8 @@ describe("REPORT_NOTE_KEYS", () => {
       describeLastError(haltMessageIn("en", "x")),
       describeLastError(haltMessageIn("en", "x"), "whatsapp", "active"),
       describeLastError("[skipped] missing_en"),
+      describeLastError("template_unavailable: param_count (en)"),
+      describeLastError("template_unavailable: param_count"),
       describeRecipientError("[skipped] missing_es"),
       describeLastError(RUN_FAILED_ERROR),
       describeLastError(unrecordedMessage(1)),
@@ -295,7 +370,7 @@ describe("REPORT_NOTE_KEYS", () => {
       describeRecipientError("[skipped] no_consent", "appointment"),
     ];
     const keys = answers.flatMap((a) => (a?.kind === "note" ? [a.key] : []));
-    expect(keys.length).toBe(20);
+    expect(keys.length).toBe(22);
     for (const key of keys) {
       expect(REPORT_NOTE_KEYS as readonly string[]).toContain(key);
     }

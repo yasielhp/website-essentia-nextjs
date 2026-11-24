@@ -43,6 +43,15 @@ const UNRECORDED = /^(\d+) sent without being recorded$/;
 const MISSING_VERSION = /^\[skipped\] missing_(es|en)$/;
 
 /**
+ * What a WhatsApp send whose template cannot go out writes: the reason (a
+ * code of `campaignTemplateEligibility`) and, since a campaign has a template
+ * per language, which language's (`templateUnavailable` in
+ * `dispatch-whatsapp.ts`, and the preflight of `dispatch.ts`).
+ */
+const TEMPLATE_UNAVAILABLE =
+  /^template_unavailable: ([a-z_]+)(?: \((es|en)\))?$/;
+
+/**
  * The `last_error` of a campaign. A marker the engine writes is said in the
  * admin's words, never as it is stored; only what the engine did not mark
  * (Meta's or Resend's own text) reaches the screen untouched. The channel says
@@ -66,6 +75,17 @@ export function describeLastError(
       key: "missingVersion",
       values: { language: missing },
     };
+  }
+  const template = TEMPLATE_UNAVAILABLE.exec(lastError);
+  if (template) {
+    const [, issue = "", language] = template;
+    return language
+      ? {
+          kind: "note",
+          key: "templateUnavailableIn",
+          values: { issue, language },
+        }
+      : { kind: "note", key: "templateUnavailable", values: { issue } };
   }
   const inOne = parseLocaleHalt(lastError);
   if (inOne) {
@@ -105,6 +125,8 @@ export const REPORT_NOTE_KEYS = [
   "heldIn",
   "runFailed",
   "missingVersion",
+  "templateUnavailable",
+  "templateUnavailableIn",
   "unrecorded",
   "unrecordedWhatsApp",
   "unconfirmedInterrupted",
