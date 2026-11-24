@@ -50,7 +50,8 @@ describe("runAutomation on WhatsApp", () => {
     expect(rows[0]).toMatchObject({
       email: null,
       phone: "+34600000001",
-      language: "es",
+      // The language the resolver gave the recipient: the row keeps it.
+      language: "en",
       cycle: "",
     });
     expect(options).toEqual({

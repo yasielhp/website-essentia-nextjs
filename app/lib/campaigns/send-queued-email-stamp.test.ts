@@ -8,6 +8,7 @@ import {
   spyOn,
   test,
 } from "bun:test";
+import { EMPTY_AUDIENCE } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
 import { argsOf, has } from "./fake-db";
 import { NO_ANSWER_ERROR } from "./run-markers";
@@ -298,6 +299,95 @@ describe("sendQueued on email claims its rows before mailing them", () => {
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       },
     });
+  });
+});
+
+describe("sendQueued on email: each recipient gets the version of her language", () => {
+  const bilingual = (over: Record<string, unknown> = {}) =>
+    emailCampaign({
+      audience: { ...EMPTY_AUDIENCE, language: "any" },
+      content: {
+        en: {
+          subject: "Hello",
+          subjectB: "Hello again",
+          preheader: "",
+          title: "",
+          doc: null,
+        },
+        es: {
+          subject: "Hola",
+          subjectB: "Hola de nuevo",
+          preheader: "",
+          title: "",
+          doc: null,
+        },
+      } as never,
+      ...over,
+    });
+  const to = (n: number, language: "es" | "en", variant?: "a" | "b") =>
+    row(n, {
+      email: `c${n}@example.test`,
+      phone: null,
+      language,
+      variant: variant ?? null,
+    });
+  const unsubscribe = (email: Email) =>
+    email.headers?.["List-Unsubscribe"] ?? "";
+
+  test("a Spanish contact the Spanish email, an English one the English, in one send", async () => {
+    const rows = [to(1, "es"), to(2, "en"), to(3, "es")];
+    const mem = memoryDb(rows);
+    const result = await sendQueued(bilingual(), rows, { db: mem.db });
+    expect(result).toEqual({ sent: 3, failed: 0, lastError: null });
+    expect(batches).toHaveLength(1);
+    expect(batches[0]!.map((e) => [e.to, e.subject])).toEqual([
+      ["c1@example.test", "Hola"],
+      ["c2@example.test", "Hello"],
+      ["c3@example.test", "Hola"],
+    ]);
+    // And the link to leave is the page of her language.
+    expect(unsubscribe(batches[0]![0]!)).toContain("/es/newsletter/");
+    expect(unsubscribe(batches[0]![1]!)).not.toContain("/es/");
+  });
+
+  test("an A/B test deals its two subjects in each language", async () => {
+    const rows = [
+      to(1, "es", "a"),
+      to(2, "es", "b"),
+      to(3, "en", "a"),
+      to(4, "en", "b"),
+    ];
+    const mem = memoryDb(rows);
+    await sendQueued(bilingual({ kind: "split" }), rows, { db: mem.db });
+    expect(batches[0]!.map((e) => e.subject)).toEqual([
+      "Hola",
+      "Hola de nuevo",
+      "Hello",
+      "Hello again",
+    ]);
+  });
+
+  test("an audience that fixes a language sends that version to every row, whatever language it was queued with", async () => {
+    // Queued as English while the audience was everybody; the audience is
+    // Spanish now and the English version may be empty.
+    const rows = [to(1, "en"), to(2, "es")];
+    const mem = memoryDb(rows);
+    const spanish = bilingual({
+      audience: { ...EMPTY_AUDIENCE, language: "es" },
+    });
+    await sendQueued(spanish, rows, { db: mem.db });
+    expect(batches[0]!.map((e) => e.subject)).toEqual(["Hola", "Hola"]);
+    expect(unsubscribe(batches[0]![0]!)).toContain("/es/newsletter/");
+  });
+
+  test("the send language an older campaign chose decides nothing: the row's does", async () => {
+    const rows = [to(1, "en")];
+    const mem = memoryDb(rows);
+    const old = bilingual({
+      audience: { ...EMPTY_AUDIENCE, language: "any", sendLocale: "es" },
+    });
+    await sendQueued(old, rows, { db: mem.db });
+    expect(batches[0]!.map((e) => e.subject)).toEqual(["Hello"]);
   });
 });
 

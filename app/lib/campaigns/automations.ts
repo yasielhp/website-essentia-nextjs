@@ -99,7 +99,6 @@ export async function runAutomation(
           campaignId: campaign.id,
           recipient,
           channel: campaign.channel,
-          audience: campaign.audience,
           cycle,
           extra: { vars: vars ?? null },
         }),

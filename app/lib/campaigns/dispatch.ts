@@ -26,6 +26,7 @@ import {
   sendQueuedWhatsApp,
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
+import { recipientLocale } from "./languages";
 import { readAllPages } from "./paged-read";
 import { pause } from "./pause";
 import { conflictTarget, recipientRow } from "./recipient-rows";
@@ -280,8 +281,10 @@ async function stamp(
  * Mails every row still `queued` for a campaign, in chunks, stamping each as
  * `sent` or `failed`. Shared by one-off sends and automations.
  *
- * A row's `variant` picks the A/B subject; its `vars` (a blog post's title
- * and link, say) join the recipient's first name in the template.
+ * A row's `language` picks which version she gets (the campaign is written
+ * in every language its audience includes); its `variant` picks the A/B
+ * subject of that version; its `vars` (a blog post's title and link, say) join
+ * the recipient's first name in the template.
  *
  * Like the WhatsApp sender, it CLAIMS its rows before it mails them: one
  * conditional UPDATE per chunk moves them `queued` -> `sending` and stamps
@@ -375,8 +378,11 @@ export async function sendQueued(
       chunk.map(async (row) => {
         const contact = one(row.contacts);
         const token = contact?.unsubscribe_token ?? "";
-        const unsubscribeUrl = `${appUrl}${row.language === "es" ? "/es" : ""}/newsletter/unsubscribe?token=${token}`;
-        const block = content[row.language];
+        // Her version: the row's own language, or the audience's when it
+        // fixes one (a row queued under another audience has no other).
+        const language = recipientLocale(campaign.audience, row.language);
+        const unsubscribeUrl = `${appUrl}${language === "es" ? "/es" : ""}/newsletter/unsubscribe?token=${token}`;
+        const block = content[language];
         const { subject, html } = await campaignEmail({
           content:
             row.variant === "b" && block.subjectB
@@ -385,7 +391,7 @@ export async function sendQueued(
           firstName: contact?.first_name ?? "",
           vars: row.vars ?? undefined,
           unsubscribeUrl,
-          locale: row.language,
+          locale: language,
         });
         return {
           to: row.email,
@@ -763,7 +769,6 @@ export async function dispatchCampaign(
           campaignId,
           recipient: r,
           channel: campaign.channel,
-          audience: campaign.audience,
           cycle: "",
           extra: { variant: split ? (index % 2 === 0 ? "a" : "b") : null },
         }),

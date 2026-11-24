@@ -1,15 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { CampaignAudience } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
 import { conflictTarget, recipientRow } from "./recipient-rows";
-
-const audience = (
-  overrides: Partial<CampaignAudience> = {},
-): Pick<CampaignAudience, "language" | "sendLocale"> => ({
-  language: "any",
-  sendLocale: "es",
-  ...overrides,
-});
 
 const emailRecipient: Recipient = {
   id: "contact-1",
@@ -40,7 +31,6 @@ describe("recipientRow", () => {
       campaignId: "c1",
       recipient: emailRecipient,
       channel: "email",
-      audience: audience(),
       cycle: "",
       extra: { variant: "a" },
     });
@@ -55,18 +45,16 @@ describe("recipientRow", () => {
       campaignId: "c1",
       recipient: emailRecipient,
       channel: "email",
-      audience: audience(),
       cycle: "",
     });
     expect(row).not.toHaveProperty("phone");
   });
 
-  test("a WhatsApp row has a NULL email, the E.164 phone and the campaign's language", () => {
+  test("a WhatsApp row has a NULL email, the E.164 phone and the recipient's language", () => {
     const row = recipientRow({
       campaignId: "c1",
       recipient: whatsappRecipient,
       channel: "whatsapp",
-      audience: audience({ language: "any", sendLocale: "es" }),
       cycle: "2026",
       extra: { vars: { service: "Drenaje" } },
     });
@@ -75,22 +63,27 @@ describe("recipientRow", () => {
       contact_id: "contact-2",
       email: null,
       phone: "+34600112233",
-      language: "es",
+      // The language the resolver gave her: her own, or the audience's when
+      // it fixes one. It picks the template the row goes out with.
+      language: "en",
       status: "queued",
       cycle: "2026",
       vars: { service: "Drenaje" },
     });
   });
 
-  test("the campaign's fixed language beats the recipient's own", () => {
-    const row = recipientRow({
-      campaignId: "c1",
-      recipient: whatsappRecipient,
-      channel: "whatsapp",
-      audience: audience({ language: "en" }),
-      cycle: "",
-    });
-    expect(row.language).toBe("en");
+  test("on both channels the row's language is the recipient's, as the resolver set it", () => {
+    for (const channel of ["email", "whatsapp"] as const) {
+      for (const language of ["es", "en"] as const) {
+        const row = recipientRow({
+          campaignId: "c1",
+          recipient: { ...whatsappRecipient, language },
+          channel,
+          cycle: "",
+        });
+        expect(row.language).toBe(language);
+      }
+    }
   });
 
   test("an empty email becomes NULL, never an empty string", () => {
@@ -98,7 +91,6 @@ describe("recipientRow", () => {
       campaignId: "c1",
       recipient: { ...whatsappRecipient, email: "" },
       channel: "whatsapp",
-      audience: audience(),
       cycle: "",
     });
     expect(row.email).toBeNull();

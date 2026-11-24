@@ -30,11 +30,44 @@ function audience(overrides: Partial<CampaignAudience>): CampaignAudience {
 const ids = (list: { id: string }[]) => list.map((r) => r.id);
 
 describe("filterAudience — fixed exclusions", () => {
-  it("a chosen send locale overrides the contact's own language", () => {
+  it("with both languages, each contact is written to in her own", () => {
+    const en = c({ language: "en" });
+    const es = c({ id: "2", email: "es@example.com", language: "es" });
+    const result = filterAudience([en, es], audience({ language: "any" }), NOW);
+    expect(result.map((r) => r.language)).toEqual(["en", "es"]);
+  });
+
+  it("the send language an older campaign chose no longer overrides the contact's", () => {
     const en = c({ language: "en" });
     const result = filterAudience(
       [en],
       audience({ language: "any", sendLocale: "es" }),
+      NOW,
+    );
+    expect(result.map((r) => r.language)).toEqual(["en"]);
+  });
+
+  it("a contact with no language reads as English, as the language filter reads her", () => {
+    const unknown = c({ language: null });
+    expect(
+      filterAudience([unknown], audience({ language: "any" }), NOW).map(
+        (r) => r.language,
+      ),
+    ).toEqual(["en"]);
+    // The same contact is in an English segment and not in a Spanish one.
+    expect(
+      ids(filterAudience([unknown], audience({ language: "en" }), NOW)),
+    ).toEqual([unknown.id]);
+    expect(
+      filterAudience([unknown], audience({ language: "es" }), NOW),
+    ).toEqual([]);
+  });
+
+  it("a contact added by hand to a Spanish audience gets the Spanish version: there is no other", () => {
+    const en = c({ language: "en" });
+    const result = filterAudience(
+      [en],
+      audience({ language: "es", manualIds: [en.id] }),
       NOW,
     );
     expect(result.map((r) => r.language)).toEqual(["es"]);

@@ -4,20 +4,23 @@ import {
   validateCampaign,
   validateCampaignDraft,
 } from "@/lib/schemas";
+import { missingLocales } from "./languages";
 
 /**
  * The payload `saveCampaign` validates, field by field. The action once left
  * `kind` and `trigger` out, so every save failed with two errors no step shows.
  */
+// A Spanish segment: the campaign is written in Spanish and nothing else.
 const audience = {
-  language: "any" as const,
+  language: "es" as const,
   newsletter: null,
   services: [],
   lastBooking: null,
   neverBooked: false,
-  sendLocale: "es" as const,
   manualIds: [],
 };
+/** An audience that spans both languages: both versions are owed. */
+const everyone = { ...audience, language: "any" as const };
 
 const empty = { subject: "", preheader: "", title: "", doc: null };
 const filled = {
@@ -32,6 +35,18 @@ const filled = {
   },
 };
 
+const filledEn = {
+  subject: "Something beautiful is taking shape at Essentia",
+  preheader: "A place to come back to yourself.",
+  title: "A place to come back to yourself.",
+  doc: {
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [{ type: "text", text: "Hello." }] },
+    ],
+  },
+};
+
 const campaign = {
   name: "Reapertura",
   kind: "standard" as const,
@@ -41,7 +56,7 @@ const campaign = {
 };
 
 describe("validateCampaign", () => {
-  test("a standard campaign written in the send language passes", () => {
+  test("a campaign for a Spanish audience needs the Spanish version and no other", () => {
     expect(validateCampaign(campaign)).toEqual({
       ok: true,
       data: { ...campaign, channel: "email" },
@@ -59,7 +74,7 @@ describe("validateCampaign", () => {
     }
   });
 
-  test("the send language cannot be left empty", () => {
+  test("the language of the audience cannot be left empty", () => {
     const result = validateCampaign({
       ...campaign,
       content: { en: empty, es: empty },
@@ -245,19 +260,144 @@ describe("the channel default", () => {
   });
 });
 
-describe("the email rules, now checked by the campaign schema", () => {
-  test("an auxiliary language block left half written is refused", () => {
-    const r = validateCampaign({
-      ...campaign,
-      content: {
-        en: { ...empty, subject: "Only a subject" },
-        es: filled,
-      },
-    });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors["content.en.title"]).toBe("titleRequired");
+describe("a campaign is written in every language its audience includes", () => {
+  const bilingual = {
+    ...campaign,
+    audience: everyone,
+    content: { en: filledEn, es: filled },
+  };
+
+  test("an audience of both languages with both versions passes", () => {
+    expect(validateCampaign(bilingual).ok).toBe(true);
   });
 
+  test("without the English version it is refused, on the English fields", () => {
+    const r = validateCampaign({
+      ...bilingual,
+      content: { en: empty, es: filled },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors).toEqual({
+        "content.en.subject": "subjectRequired",
+        "content.en.title": "titleRequired",
+        "content.en.doc": "bodyRequired",
+      });
+      expect(missingLocales(r.errors)).toEqual(["en"]);
+    }
+  });
+
+  test("without the Spanish version, on the Spanish ones", () => {
+    const r = validateCampaign({
+      ...bilingual,
+      content: { en: filledEn, es: empty },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(missingLocales(r.errors)).toEqual(["es"]);
+  });
+
+  test("a version half written is as missing as one not begun", () => {
+    const r = validateCampaign({
+      ...bilingual,
+      content: { en: { ...empty, subject: "Only a subject" }, es: filled },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors["content.en.title"]).toBe("titleRequired");
+      expect(r.errors["content.en.subject"]).toBeUndefined();
+    }
+  });
+
+  test("an English audience needs only the English version", () => {
+    expect(
+      validateCampaign({
+        ...campaign,
+        audience: { ...audience, language: "en" },
+        content: { en: filledEn, es: empty },
+      }).ok,
+    ).toBe(true);
+  });
+
+  test("the version nobody will receive may stay half written: it is not sent", () => {
+    // Begun while the audience was everybody, then narrowed to Spanish. The
+    // tab is gone from the form; an error there would be one nobody can fix.
+    expect(
+      validateCampaign({
+        ...campaign,
+        content: { en: { ...empty, subject: "Only a subject" }, es: filled },
+      }).ok,
+    ).toBe(true);
+  });
+
+  test("but its fields keep their limits", () => {
+    const r = validateCampaign({
+      ...campaign,
+      content: { en: { ...empty, subject: "x".repeat(121) }, es: filled },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors["content.en.subject"]).toBe("subjectTooLong");
+  });
+
+  test("a draft may have one version half written", () => {
+    expect(
+      validateCampaignDraft({
+        ...bilingual,
+        content: { en: { ...empty, subject: "Only a subject" }, es: filled },
+      }).ok,
+    ).toBe(true);
+  });
+
+  test("the send language an older form chose is accepted and decides nothing", () => {
+    const r = validateCampaign({
+      ...bilingual,
+      audience: { ...everyone, sendLocale: "es" as const },
+      content: { en: empty, es: filled },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(missingLocales(r.errors)).toEqual(["en"]);
+  });
+
+  test("an A/B test has its two subjects in each language", () => {
+    const r = validateCampaign({ ...bilingual, kind: "split" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors).toEqual({
+        "content.es.subjectB": "subjectBRequired",
+        "content.en.subjectB": "subjectBRequired",
+      });
+    }
+    expect(
+      validateCampaign({
+        ...bilingual,
+        kind: "split",
+        content: {
+          en: { ...filledEn, subjectB: "Another way to say it" },
+          es: { ...filled, subjectB: "Otra forma de decirlo" },
+        },
+      }).ok,
+    ).toBe(true);
+  });
+
+  test("the automated kinds are held to the same: each recipient in her language", () => {
+    for (const [kind, event] of [
+      ["automated", "segment_entry"],
+      ["autoresponder", "newsletter_subscribed"],
+      ["rss", "new_blog_post"],
+      ["dateBased", "birthday"],
+    ] as const) {
+      const base = { ...bilingual, kind, trigger: { event } };
+      expect(validateCampaign(base).ok).toBe(true);
+      const r = validateCampaign({
+        ...base,
+        content: { en: empty, es: filled },
+      });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(missingLocales(r.errors)).toEqual(["en"]);
+    }
+  });
+});
+
+describe("the email rules, now checked by the campaign schema", () => {
   test("a split test without a second subject is refused", () => {
     const r = validateCampaign({ ...campaign, kind: "split" });
     expect(r.ok).toBe(false);

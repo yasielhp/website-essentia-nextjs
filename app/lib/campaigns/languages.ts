@@ -1,0 +1,71 @@
+import type {
+  CampaignAudience,
+  CampaignLanguage,
+  CampaignLocale,
+} from "@/types/campaign";
+import { toLocale } from "./conditions";
+
+/**
+ * Which languages a campaign is written in, and which one each person gets.
+ *
+ * A campaign is written in every language its audience includes, and each
+ * contact receives the version of HER language. Pure and free of server
+ * imports: the form, the validation and the senders read the same rule.
+ */
+
+/** Spanish first: the house order, and the order of the tabs. */
+export const CAMPAIGN_LOCALES: readonly CampaignLocale[] = ["es", "en"];
+
+/**
+ * The languages a campaign goes out in, and so the versions it must have: the
+ * one its audience fixes, or both when the audience spans the two.
+ *
+ * Decided by the audience's language condition and nothing else, not by who is
+ * in it today: an automation mails whoever qualifies later, in whatever
+ * language she has, and a rule that read today's list would let one go without
+ * her version.
+ */
+export function audienceLocales(audience: {
+  language: CampaignLanguage;
+}): CampaignLocale[] {
+  return audience.language === "any"
+    ? [...CAMPAIGN_LOCALES]
+    : [audience.language];
+}
+
+/**
+ * The language ONE recipient is written to in: her own when the campaign has
+ * both versions; the audience's when it fixes one, whoever she is (a contact
+ * added by hand to a Spanish segment has no English version to get).
+ *
+ * `own` is the contact's `preferred_language` as stored, or the language a row
+ * was queued with. Read by `toLocale`, the rule the language filter and the
+ * counts by language already use: only Spanish is Spanish, anything else
+ * (English, nothing, a value nobody expected) reads as English.
+ */
+export function recipientLocale(
+  audience: Pick<CampaignAudience, "language">,
+  own: string | null | undefined,
+): CampaignLocale {
+  return audience.language === "any"
+    ? toLocale(own ?? null)
+    : audience.language;
+}
+
+/**
+ * The languages a validation left incomplete, read off its error keys
+ * (`content.en.subject`, `content.whatsapp.es.templateId`…), so a refusal can
+ * say WHICH version is missing instead of "something is wrong".
+ */
+export function missingLocales(
+  errors: Record<string, string>,
+): CampaignLocale[] {
+  const keys = Object.keys(errors);
+  return CAMPAIGN_LOCALES.filter((locale) =>
+    keys.some(
+      (key) =>
+        key.startsWith(`content.${locale}.`) ||
+        key.startsWith(`content.whatsapp.${locale}.`),
+    ),
+  );
+}

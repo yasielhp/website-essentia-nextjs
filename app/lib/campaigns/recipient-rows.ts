@@ -1,5 +1,4 @@
-import { sendLocaleOf } from "@/lib/schemas";
-import type { CampaignAudience, CampaignChannel } from "@/types/campaign";
+import type { CampaignChannel } from "@/types/campaign";
 import type { Recipient } from "./audience-filter";
 
 /**
@@ -21,9 +20,13 @@ export function conflictTarget(channel: CampaignChannel): ConflictTarget {
 /**
  * A WhatsApp row has no email: NULL, never "", which would collide with every
  * other row on the unique email index and silently drop all but one. Its phone
- * is the resolver's (E.164, already de-duplicated), and its language is the
- * campaign's, since one template is written in one language. An email row
- * never carries a phone: the contact's raw one would fail the E.164 check.
+ * is the resolver's (E.164, already de-duplicated). An email row never carries
+ * a phone: the contact's raw one would fail the E.164 check.
+ *
+ * On both channels `language` is the recipient's, as the resolver set it
+ * (`recipientLocale`: her own, or the audience's when it fixes one). It is what
+ * picks her version when the row is sent: the email block, or the WhatsApp
+ * template, of that language.
  *
  * `extra` goes last: `variant` for a split send, `vars` for an automation.
  */
@@ -31,7 +34,6 @@ export function recipientRow(input: {
   campaignId: string;
   recipient: Recipient;
   channel: CampaignChannel;
-  audience: Pick<CampaignAudience, "language" | "sendLocale">;
   cycle: string;
   extra?: Record<string, unknown>;
 }): Record<string, unknown> {
@@ -42,7 +44,7 @@ export function recipientRow(input: {
     contact_id: recipient.id,
     email: recipient.email || null,
     ...(whatsapp ? { phone: recipient.phone } : {}),
-    language: whatsapp ? sendLocaleOf(input.audience) : recipient.language,
+    language: recipient.language,
     status: "queued",
     cycle: input.cycle,
     ...input.extra,

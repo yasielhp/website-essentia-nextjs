@@ -285,8 +285,8 @@ describe("dispatchCampaign: a WhatsApp send", () => {
       contact_id: "contact-1",
       email: null,
       phone: "+34600000001",
-      // The campaign's language (es), not the recipient's (en).
-      language: "es",
+      // The language the resolver gave the recipient: the row keeps it.
+      language: "en",
       status: "queued",
       cycle: "",
       variant: null,

@@ -12,6 +12,7 @@ import type {
   WhatsAppContent,
 } from "@/types/campaign";
 import { docIsEmpty } from "@/lib/campaigns/doc";
+import { audienceLocales } from "@/lib/campaigns/languages";
 import { APPOINTMENT_HOURS } from "@/lib/campaigns/appointment-form";
 import { MAX_LIST_PEOPLE } from "@/lib/campaigns/segment-conditions";
 import { kindAllowedForChannel } from "@/lib/campaigns/whatsapp-form";
@@ -390,16 +391,6 @@ const campaignLocaleContentSchema = z.object({
   doc: docNode.nullable().refine((doc) => !docIsEmpty(doc), "bodyRequired"),
 });
 
-function isEmptyLocale(block: CampaignLocaleContent): boolean {
-  return (
-    block.subject === "" &&
-    !block.subjectB &&
-    block.preheader === "" &&
-    block.title === "" &&
-    docIsEmpty(block.doc)
-  );
-}
-
 /** Runs the strict block schema and reports its issues under `content.<locale>`. */
 function refineLocale(
   locale: CampaignLocale,
@@ -472,8 +463,14 @@ export const campaignContentSchema = z.object({
 }) satisfies z.ZodType<CampaignContent>;
 
 /**
- * The one language a campaign is written in: the segment's when it fixes one,
- * else the admin's choice, else Spanish — the house default.
+ * The language a campaign was written in when a campaign had ONE: the
+ * segment's when it fixes one, else the admin's old choice (`sendLocale`), else
+ * Spanish, the house default.
+ *
+ * A campaign is now written in every language its audience includes
+ * (`requiredLocales`) and `sendLocale` decides nothing about who gets what.
+ * This is still how a row saved in the old shape is read (its lone WhatsApp
+ * template was that language's), and the language a form opens on.
  */
 export function sendLocaleOf(
   audience: Pick<CampaignAudience, "language" | "sendLocale">,
@@ -482,11 +479,16 @@ export function sendLocaleOf(
   return audience.sendLocale ?? "es";
 }
 
-/** The locale blocks a campaign must fill in: exactly one. */
+/**
+ * The languages a campaign must be written in: the one its audience fixes, or
+ * both when it spans the two. Each recipient gets the version of her language
+ * (`recipientLocale`). The rule lives in `languages.ts`, which the senders
+ * read too.
+ */
 export function requiredLocales(
-  audience: Pick<CampaignAudience, "language" | "sendLocale">,
+  audience: Pick<CampaignAudience, "language">,
 ): CampaignLocale[] {
-  return [sendLocaleOf(audience)];
+  return audienceLocales(audience);
 }
 
 export const campaignKindSchema = z.enum([
@@ -621,11 +623,11 @@ function addCampaignIssues(
 
 /**
  * The whole campaign. What it must contain depends on the channel. An email
- * needs the language blocks the audience selects (the one rule that needs
- * `audience` and `content` side by side), and any other block somebody
- * started must be complete too. A WhatsApp campaign needs only a template and
- * ignores the email blocks. `campaignContentSchema` holds just the per-field
- * limits.
+ * needs the version of every language its audience includes (the one rule
+ * that needs `audience` and `content` side by side): both when the audience
+ * spans the two, the audience's own when it fixes one. A WhatsApp campaign
+ * needs only a template and ignores the email blocks. `campaignContentSchema`
+ * holds just the per-field limits.
  */
 export const campaignSchema = z
   .object({
@@ -651,19 +653,14 @@ export const campaignSchema = z
       }
       return;
     }
-    const required = requiredLocales(value.audience);
-    for (const locale of ["en", "es"] as const) {
-      // A block somebody started must be complete; the one language the email
-      // goes out in must be there even if nobody touched it.
-      if (!isEmptyLocale(value.content[locale]) || required.includes(locale)) {
-        refineLocale(locale, value.content[locale], ctx, ["content"]);
-      }
-      // An A/B test with one subject is not a test.
-      if (
-        required.includes(locale) &&
-        value.kind === "split" &&
-        !value.content[locale].subjectB?.trim()
-      ) {
+    // Every language the audience includes must have its whole version: each
+    // recipient gets hers, and one left half written would reach people. The
+    // version of a language the audience leaves out is not sent, so nothing is
+    // asked of it beyond its limits (its tab is not even on the form).
+    for (const locale of requiredLocales(value.audience)) {
+      refineLocale(locale, value.content[locale], ctx, ["content"]);
+      // An A/B test with one subject is not a test, in either language.
+      if (value.kind === "split" && !value.content[locale].subjectB?.trim()) {
         ctx.addIssue({
           code: "custom",
           path: ["content", locale, "subjectB"],
