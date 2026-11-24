@@ -177,21 +177,33 @@ Todo lo demás ya usaba la clave de servicio en el servidor y no cambia: la canc
 
 **Orden.** (1) Desplegar el código. (2) Recargar (o cerrar) las pestañas abiertas de `/booking` y de «Nueva reserva» del panel: una pestaña anterior al despliegue llama a estas funciones desde el navegador y, con la migración aplicada, reservaría sin contacto enlazado, sin aviso de «eres socia» y sin pasar el lead a cliente (la reserva sí se hace; el fallo queda en la consola). (3) Aplicarla y verificarla, en la misma sesión que las dos de `bookings` (no depende de ellas ni ellas de esta). Volver al código anterior con la migración aplicada tiene el mismo efecto que esas pestañas: primero se deshace (la vuelta atrás está en el archivo).
 
-**Lo que no cambia.** Quien rellena el formulario público con el correo de otra persona sigue escribiendo su contacto (nombre, teléfono, y novedades si marca la casilla): ver (vi). Ahora pasa por una acción con entrada estricta y límites, no por una llamada directa sin límite y con cualquier consentimiento.
+**Lo que no cambia, y lo que sí (decisión de la dueña, 2026-11-24).** Quien rellena el formulario público con el correo de otra persona ya **no** reescribe su contacto: un contacto existente conserva nombre, teléfono e idioma, y solo gana el «sí» que se marque, nunca por encima de una baja. Ver (vi).
 
 ---
 
 ## (vi) El consentimiento por casilla no verifica que el número sea de quien lo marca
 
-**Estado: riesgo ACEPTADO y documentado** (decisión del 2026-11-17). No se restringe el estampado a contactos recién creados: dejaría sin WhatsApp a casi todas las reservas de clientas ya conocidas.
+**Estado: riesgo ACEPTADO y documentado** (decisión del 2026-11-17), **acotado el 2026-11-24** por decisión de la dueña: ninguna vía pública cambia un contacto que ya existe. No se restringe el estampado a contactos recién creados: dejaría sin WhatsApp a casi todas las reservas de clientas ya conocidas.
 
-**Qué pasa.** El formulario público escribe el contacto con `upsert_contact`, con `p_newsletter` y `p_whatsapp_marketing` (una sola casilla de novedades y ofertas). Hasta el 2026-11-24 lo llamaba **desde el navegador** con la clave anon; desde entonces lo llama el servidor (`savePublicContact`, `app/lib/contacts/public-contact.ts`) con entrada estricta, sin poder mandar el consentimiento de los avisos y con límite por llamante y por correo, y la migración `20261124_revoke_public_definer_functions` (sin aplicar) le quita la función al navegador. Lo que sigue vale igual: la acción es pública, como el formulario. Después, `saveBookingConsents` estampa el consentimiento de los avisos de la cita al aceptar los Términos y la Política. La función es `SECURITY DEFINER`. Nada comprueba que quien rellena el formulario es el dueño del número ni del correo. Consecuencias, ahora **también para los avisos de la cita**, no solo para las novedades:
+**Qué es una vía pública.** Toda la que no demuestra la dirección: el formulario de reserva (una invitada, alguien que reserva para otra persona y también la sesión de una clienta), las inscripciones a carreras y cursos, el bono comprado en la web, el formulario de newsletter del pie y el alta de cuenta. Todas escriben el contacto con `writeContact` (`app/lib/contacts/write-contact.ts`) en modo `public`, en el servidor y con la clave de servicio.
 
-- Alguien puede reservar con **su** correo, el número de **otra persona** y los Términos aceptados: el centro escribiría a esa persona (confirmación y recordatorio), que nunca consintió. Antes de este cambio eso exigía marcar una casilla; ahora basta aceptar los Términos, que es obligatorio para reservar.
-- Con el correo de otra persona, `upsert_contact` **sobrescribe el contacto**: nombre, teléfono e idioma (`phone = EXCLUDED.phone`, ver `insforge/migrations/20261117h_whatsapp_optout_clears_other_consent.sql`). Y como esa llamada deja el contacto recién escrito, **la ventana de 15 minutos de `saveBookingConsents` no protege**: la ventana existe para que nadie estampe un contacto antiguo sin pasar por el formulario, pero quien sí pasa por el formulario con el correo ajeno cumple la condición de "escrito hace menos de 15 minutos" por construcción. Limita el abuso a "quien rellena el formulario", no a "el dueño del contacto".
-- Marcar la casilla de novedades con el correo de otra persona **limpia su baja** (`whatsapp_opted_out_at`) y le pone el consentimiento. Es un "gap aceptado" (comentario en `booking-submit.ts` y en `booking-consent.ts`), igual que con la newsletter. Los avisos de la cita **solos** no levantan una baja: `saveBookingConsents` solo estampa un contacto sin consentimiento y sin baja.
-- Orden con una baja previa, **intencionado**: marcar novedades es un sí explícito, así que `upsert_contact` limpia la baja y retira los avisos (la baja es global), y a continuación se estampan de nuevo los avisos. Una clienta que se dio de baja de los avisos los recupera al marcar novedades. Fijado en `self-consent.test.ts`.
-- Desmarcar la casilla de novedades más tarde no retira nada ("sin marcar no toca"): la retirada es el enlace del correo, BAJA o STOP, o el centro desde la ficha.
+**Qué puede hacer hoy una vía pública** (fijado en `write-contact.test.ts`, `public-contact.test.ts`, `self-consent.test.ts`, `whatsapp-consent.test.ts`, `event-registration.test.ts`, `newsletter.test.ts`):
+
+- **Crear** un contacto que no existe con lo que se escribió (nombre, teléfono, idioma, género), como siempre, y con el «sí» de novedades si se marcó (newsletter y WhatsApp marketing juntos).
+- A un contacto que **ya existe**, solo **añadirle** el «sí» que se da (newsletter, WhatsApp marketing), y solo si no hay una baja de ese canal. Se le toca `updated_at` (para que el consentimiento de avisos que sigue vea la fila recién escrita), nada más.
+- Estampar el consentimiento de los avisos de la cita (`saveBookingConsents`) solo en un contacto escrito en los últimos 15 minutos, sin consentimiento previo, sin baja **y cuyo teléfono sea el que se escribió** (comparado en E.164).
+
+**Qué no puede hacer:**
+
+- Cambiar el nombre, el teléfono, el idioma o el género de un contacto existente. Lo escrito se queda en la **fila de la reserva**, donde el equipo lo ve.
+- Levantar una baja: ni `whatsapp_opted_out_at` (STOP/BAJA) ni `newsletter_unsubscribed_at`, marque lo que marque. Hasta el 2026-11-24, marcar novedades levantaba la baja y devolvía los avisos; ya no. Volver es responder por WhatsApp y que el centro lo active, la preferencia de su propia cuenta (`updateNewsletterForUser`, con su sesión verificada) o los interruptores de su ficha.
+- Estampar los avisos en un contacto existente cuyo teléfono no es el escrito.
+
+**Adónde van los avisos.** Al número del **contacto** (`clientPhone`, el mismo que usan las campañas de cita), nunca al escrito en la reserva. Como una vía pública ya no reescribe el número del contacto, el teléfono que escribe un desconocido con el correo de otra clienta no recibe nunca sus avisos: ni la confirmación inmediata ni las campañas de cita. Un contacto sin número válido no recibe WhatsApp.
+
+**El equipo.** La confirmación de una reserva desde el panel y el pago de una reserva web solo **enlazan** el contacto (modo `link`: lo encuentran o lo crean con los datos de la reserva, y pasan un lead a cliente con `promote_contact_to_client`; una socia sigue siendo socia), porque los datos de la reserva los escribió quien la hizo. En «Nueva reserva», admin y staff siguen reescribiendo el contacto como antes (`upsert_contact`); un **partner** enlaza uno existente o crea uno nuevo, sin cambiar nada de uno existente (ni sus suscripciones). El MCP (`create_booking`, solo admin y staff) también como antes.
+
+**Lo que sigue abierto.** Con un correo **nuevo** y un número ajeno, alguien puede reservar y aceptar los Términos: el contacto nuevo lleva ese número y el centro escribiría a esa persona, que nunca consintió. Con el correo de **otra clienta** y **su mismo número** (quien conozca los dos) también se estampan los avisos. Son los casos que solo cierra verificar el número (abajo).
 
 **Mitigaciones.**
 
