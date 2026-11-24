@@ -18,7 +18,7 @@
     "subheading": "Dos programas. Una dirección compartida.",
     "runningClub": {
       "title": "Club de Running",
-      "description": "Rutas costeras semanales por Costa Adeje. Todos los niveles son bienvenidos."
+      "description": "Salidas semanales por Santa Cruz de Tenerife. Todos los niveles son bienvenidos."
     },
     "education": {
       "title": "Programas de Educación",
@@ -53,16 +53,16 @@
   "runningClub": {
     "heading": "Club de Running.",
     "subheading": "Cada sábado, 7:30h.",
-    "body": "Rutas curadas por Costa Adeje, todos los niveles son bienvenidos. Más que una carrera — es el ritual semanal que ancla las experiencias Essentia.",
+    "body": "Rutas curadas por Santa Cruz de Tenerife, todos los niveles son bienvenidos. Más que una carrera — es el ritual semanal que ancla las experiencias Essentia.",
     "cta": "Únete a la carrera",
     "meta": {
       "title": "Club de Running | Experiencias Essentia",
-      "description": "Únete al club de running de Essentia en Tenerife. Cada sábado a las 7:30 — rutas costeras curadas, grupos por ritmo y desayuno compartido."
+      "description": "Únete al club de running de Essentia en Santa Cruz de Tenerife. Cada sábado a las 7:30 — rutas curadas, grupos por ritmo y desayuno compartido."
     },
     "hero": {
       "title": "Club de Running.",
       "body": "Cada sábado por la mañana corremos juntos por una de las costas más espectaculares de Canarias. Sin competición, sin ego, solo movimiento y buena compañía.",
-      "imageAlt": "Club de Running Essentia — ruta costera en Costa Adeje",
+      "imageAlt": "Club de Running Essentia en Santa Cruz de Tenerife",
       "ctaNextRun": "Próxima carrera",
       "ctaJoin": "Únete a las experiencias"
     },
@@ -85,7 +85,7 @@
       "items": {
         "routes": {
           "title": "Rutas curadas",
-          "description": "Cada semana una ruta diferente por Costa Adeje: senderos costeros, rutas volcánicas y caminos acantilados con vistas al Atlántico."
+          "description": "Cada semana una ruta diferente por Santa Cruz de Tenerife y sus alrededores, con vistas al Atlántico."
         },
         "paced": {
           "title": "Grupos por ritmo",
@@ -105,7 +105,7 @@
     "register": {
       "meta": {
         "title": "Inscríbete a la carrera | Club de Running Essentia",
-        "description": "Inscríbete a la próxima sesión del Club de Running Essentia en Costa Adeje, Tenerife."
+        "description": "Inscríbete a la próxima sesión del Club de Running Essentia en Santa Cruz de Tenerife."
       },
       "imageAlt": "Club de Running Essentia",
       "title": "Inscribirme en esta carrera",

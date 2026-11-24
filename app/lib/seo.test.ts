@@ -210,3 +210,47 @@ describe("the home and Wellness pages say what the centre offers today", () => {
     expect(fallback).not.toMatch(NOT_OFFERED);
   });
 });
+
+describe("the Running Club is in Santa Cruz de Tenerife, with no fixed address", () => {
+  const files = [
+    "messages/es/experiences.json",
+    "messages/en/experiences.json",
+    "app/(site)/[locale]/(page)/experiences/running-club/page.tsx",
+  ].map((path) => [
+    path,
+    readFileSync(join(import.meta.dir, "../..", path), "utf8"),
+  ]);
+
+  test("no word of Costa Adeje in its copy, its metadata or its page", () => {
+    for (const [path, text] of files) {
+      expect(`${path}: ${/adeje/i.test(text!)}`).toBe(`${path}: false`);
+    }
+  });
+
+  test("its metadata names the city, and no street", () => {
+    for (const locale of ["es", "en"]) {
+      const messages = JSON.parse(
+        readFileSync(
+          join(import.meta.dir, "../../messages", locale, "experiences.json"),
+          "utf8",
+        ),
+      ) as {
+        runningClub: {
+          meta: { title: string; description: string };
+          register: { meta: { description: string } };
+        };
+      };
+      for (const description of [
+        messages.runningClub.meta.description,
+        messages.runningClub.register.meta.description,
+      ]) {
+        expect(description).toContain("Santa Cruz de Tenerife");
+        expect(description).not.toMatch(/rambla|calle|avenida|\d{5}/i);
+        expect(description.length).toBeLessThanOrEqual(META_DESCRIPTION_MAX);
+      }
+      expect(messages.runningClub.meta.title.length).toBeLessThanOrEqual(
+        META_TITLE_MAX,
+      );
+    }
+  });
+});

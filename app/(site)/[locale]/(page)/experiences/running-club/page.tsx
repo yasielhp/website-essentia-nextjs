@@ -51,8 +51,8 @@ export default async function RunningClubPage({
       title="Running Club"
       body={
         isEs
-          ? "Salidas en grupo por rutas de la costa de Costa Adeje, con entrenamiento y desayuno compartido."
-          : "Group runs along the coastal routes of Costa Adeje, with structured training and a shared breakfast."
+          ? "Salidas en grupo por Santa Cruz de Tenerife, con entrenamiento y desayuno compartido."
+          : "Group runs around Santa Cruz de Tenerife, with structured training and a shared breakfast."
       }
     />
   );
