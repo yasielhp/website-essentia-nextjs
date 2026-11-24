@@ -42,22 +42,22 @@ Los hace quien administra la cuenta de Meta del centro. Los nombres de pantalla 
 
 Se aplican a mano a la única base viva (producción). Estado comprobado el 2026-11-17 con consultas de solo lectura.
 
-| Archivo (`insforge/migrations/`)                     | Qué hace                                                                                                            | Estado en la BD viva                                                   |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `20261117a_whatsapp_consent_and_templates.sql`       | Consentimiento en `contacts`, tabla `whatsapp_templates`                                                            | **Aplicada**                                                           |
-| `20261117b_upsert_contact_whatsapp.sql`              | `upsert_contact` con el parámetro de WhatsApp                                                                       | **Aplicada** (la función viva ya es la de `h`)                         |
-| `20261117c_campaign_channel.sql`                     | `campaigns.channel`, `campaign_recipients.phone`, índice único por teléfono, `record_campaign_event`                | **Aplicada**                                                           |
-| `20261117e_whatsapp_templates_support.sql`           | `whatsapp_templates.unsupported_reason`                                                                             | **Aplicada**                                                           |
-| `20261117f_whatsapp_marketing_consent.sql`           | `whatsapp_marketing_opted_in_at` y `upsert_contact` con dos consentimientos                                         | **Aplicada**                                                           |
-| `20261117g_campaign_checks.sql`                      | Restricciones de canal y teléfono, `whatsapp_unreachable_at`                                                        | **Aplicada**                                                           |
-| `20261117h_whatsapp_optout_clears_other_consent.sql` | Tras una baja, activar un uso retira el otro                                                                        | **Aplicada**                                                           |
-| `20261117i_campaign_recipient_claim.sql`             | `campaign_recipients.claimed_at` (reclamo por fila)                                                                 | **Aplicada**                                                           |
-| `20261117j_message_templates.sql`                    | Tabla `message_templates` (mensajes editables)                                                                      | **Aplicada**                                                           |
-| `20261117k_booking_whatsapp_reminder.sql`            | `bookings.whatsapp_reminder_sent_at`                                                                                | **Aplicada. Columna obsoleta, sin uso** (ver 5.1)                      |
-| `20261117l_whatsapp_suppressed_phones.sql`           | Lista de números que escribieron STOP o BAJA                                                                        | **Aplicada el 2026-11-24** (tabla con RLS y sin políticas, verificada) |
-| `20261117m_booking_events_rls.sql`                   | Activa RLS en `booking_events`                                                                                      | **NO aplicada. Decisión del usuario**                                  |
-| `20261117n_profiles_email_guard.sql`                 | Impide que quien no es admin cambie el `email` de su propio perfil (amplía `profiles_guard_role`)                   | **NO aplicada. Decisión del usuario**                                  |
-| `20261124_service_tiers_rls.sql`                     | RLS en `service_tiers`: cualquiera lee los tipos activos, el equipo todos, nadie escribe con la clave del navegador | **NO aplicada. Solo DESPUÉS de desplegar esta rama**                   |
+| Archivo (`insforge/migrations/`)                     | Qué hace                                                                                                                                 | Estado en la BD viva                                                    |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `20261117a_whatsapp_consent_and_templates.sql`       | Consentimiento en `contacts`, tabla `whatsapp_templates`                                                                                 | **Aplicada**                                                            |
+| `20261117b_upsert_contact_whatsapp.sql`              | `upsert_contact` con el parámetro de WhatsApp                                                                                            | **Aplicada** (la función viva ya es la de `h`)                          |
+| `20261117c_campaign_channel.sql`                     | `campaigns.channel`, `campaign_recipients.phone`, índice único por teléfono, `record_campaign_event`                                     | **Aplicada**                                                            |
+| `20261117e_whatsapp_templates_support.sql`           | `whatsapp_templates.unsupported_reason`                                                                                                  | **Aplicada**                                                            |
+| `20261117f_whatsapp_marketing_consent.sql`           | `whatsapp_marketing_opted_in_at` y `upsert_contact` con dos consentimientos                                                              | **Aplicada**                                                            |
+| `20261117g_campaign_checks.sql`                      | Restricciones de canal y teléfono, `whatsapp_unreachable_at`                                                                             | **Aplicada**                                                            |
+| `20261117h_whatsapp_optout_clears_other_consent.sql` | Tras una baja, activar un uso retira el otro                                                                                             | **Aplicada**                                                            |
+| `20261117i_campaign_recipient_claim.sql`             | `campaign_recipients.claimed_at` (reclamo por fila)                                                                                      | **Aplicada**                                                            |
+| `20261117j_message_templates.sql`                    | Tabla `message_templates` (mensajes editables)                                                                                           | **Aplicada**                                                            |
+| `20261117k_booking_whatsapp_reminder.sql`            | `bookings.whatsapp_reminder_sent_at`                                                                                                     | **Aplicada. Columna obsoleta, sin uso** (ver 5.1)                       |
+| `20261117l_whatsapp_suppressed_phones.sql`           | Lista de números que escribieron STOP o BAJA                                                                                             | **Aplicada el 2026-11-24** (tabla con RLS y sin políticas, verificada)  |
+| `20261117m_booking_events_rls.sql`                   | Activa RLS en `booking_events`                                                                                                           | **NO aplicada. Decisión del usuario**                                   |
+| `20261117n_profiles_email_guard.sql`                 | Impide que quien no es admin cambie el `email` de su propio perfil (amplía `profiles_guard_role`)                                        | **NO aplicada. Decisión del usuario**                                   |
+| `20261124_service_tiers_and_settings_rls.sql`        | RLS en `service_tiers` y `service_settings`: cualquiera lee las filas activas, el equipo todas, nadie escribe con la clave del navegador | **NO aplicada. Solo DESPUÉS de desplegar esta rama y recargar Ajustes** |
 
 No existe la `d`: la tabla de mensajes editables salió como `j` porque `d` a `i` estaban ocupadas.
 
@@ -77,8 +77,8 @@ npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/202611
 # 20261117n: solo si el usuario decide aplicarla (ver más abajo)
 npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261117n_profiles_email_guard.sql | grep -v -E '^(BEGIN|COMMIT);$')"
 
-# 20261124_service_tiers_rls: solo DESPUÉS de desplegar esta rama (ver más abajo)
-npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261124_service_tiers_rls.sql | grep -v -E '^(BEGIN|COMMIT);$')"
+# 20261124_service_tiers_and_settings_rls: solo DESPUÉS de desplegar esta rama y recargar las pestañas de Ajustes (ver más abajo)
+npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261124_service_tiers_and_settings_rls.sql | grep -v -E '^(BEGIN|COMMIT);$')"
 ```
 
 Cada una se envía como una sola consulta. Verificar siempre después:
@@ -93,10 +93,10 @@ npx -y @insforge/cli@latest db query "SELECT relname, relrowsecurity FROM pg_cla
 # n: debe devolver true
 npx -y @insforge/cli@latest db query "SELECT pg_get_functiondef('public.profiles_guard_role'::regproc) LIKE '%NEW.email := OLD.email%' AS guards_email"
 
-# service_tiers: RLS activada, dos políticas (las dos SELECT) y solo SELECT para anon y authenticated
-npx -y @insforge/cli@latest db query "SELECT relrowsecurity FROM pg_class WHERE oid = 'public.service_tiers'::regclass"
-npx -y @insforge/cli@latest db query "SELECT policyname, cmd, roles::text, qual FROM pg_policies WHERE schemaname = 'public' AND tablename = 'service_tiers' ORDER BY policyname"
-npx -y @insforge/cli@latest db query "SELECT grantee, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privs FROM information_schema.role_table_grants WHERE table_schema = 'public' AND table_name = 'service_tiers' AND grantee IN ('anon','authenticated') GROUP BY grantee ORDER BY grantee"
+# service_tiers y service_settings: RLS activada en las dos (true y true), cuatro políticas (todas SELECT, dos por tabla) y solo SELECT para anon y authenticated (cuatro filas)
+npx -y @insforge/cli@latest db query "SELECT relname, relrowsecurity FROM pg_class WHERE oid IN ('public.service_tiers'::regclass, 'public.service_settings'::regclass) ORDER BY relname"
+npx -y @insforge/cli@latest db query "SELECT tablename, policyname, cmd, roles::text, qual FROM pg_policies WHERE schemaname = 'public' AND tablename IN ('service_tiers', 'service_settings') ORDER BY tablename, policyname"
+npx -y @insforge/cli@latest db query "SELECT table_name, grantee, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privs FROM information_schema.role_table_grants WHERE table_schema = 'public' AND table_name IN ('service_tiers', 'service_settings') AND grantee IN ('anon','authenticated') GROUP BY table_name, grantee ORDER BY table_name, grantee"
 ```
 
 ### `20261117l`: por qué es obligatoria
@@ -124,11 +124,11 @@ Hoy una usuaria con sesión puede reescribir el `email` de **su propio** perfil 
 
 **Es seguro aplicarla** (comprobado en `app/` el 2026-11-17): ninguna pantalla cambia `profiles.email` desde el navegador. La única escritura del navegador sobre `profiles` es la página "Mi cuenta" del panel (nombre, teléfono, idioma, avatar); el cambio de correo de una persona del equipo va por `updateUserProfile` con la clave de servicio, que el trigger deja pasar. Vuelta atrás: aplicar de nuevo `20260810e_profiles_guard_role_tolerates_api_key.sql`.
 
-### `20261124_service_tiers_rls`: después de desplegar, no antes
+### `20261124_service_tiers_and_settings_rls`: después de desplegar, no antes
 
-`service_tiers` (los tipos de sesión y sus precios) no tiene RLS y los roles del navegador pueden escribirla: cualquiera con la clave pública podía cambiar lo que se cobra. El código de esta rama ya guarda un tipo de sesión desde el servidor (`saveSessionType`, solo administradoras); la migración cierra la tabla: lectura de los activos para cualquiera, de todos para el equipo, y ninguna escritura con la clave del navegador.
+`service_tiers` (los tipos de sesión y sus precios) y `service_settings` (los servicios) no tienen RLS y los roles del navegador pueden escribirlas: cualquiera con la clave pública podía cambiar lo que se cobra, y borrar un servicio, que **en cascada** (`service_tiers_service_id_fkey` es `ON DELETE CASCADE`) borra sus tipos de sesión y, con ellos, sus asignaciones de personal y sus planes de bono. Por eso las dos se cierran en el mismo archivo: cerrar solo `service_tiers` no cerraba nada. El código de esta rama ya guarda un tipo de sesión desde el servidor (`saveSessionType`, solo administradoras); nada en el código escribe `service_settings`. La migración cierra las dos: lectura de las filas activas para cualquiera, de todas para el equipo, ninguna política de escritura y `INSERT`, `UPDATE` y `DELETE` retirados a `anon` y `authenticated`.
 
-**Orden.** Primero desplegar la rama, después aplicar. El modal de Ajustes de la versión anterior escribe desde el navegador y no mira la respuesta: con la migración aplicada antes diría «guardado» sin guardar nada. Después de aplicarla: en Ajustes, cambiar un precio y comprobar que se guarda; en el formulario público, que la lista de tipos de sesión sigue saliendo. El detalle (quién lee la tabla y con qué clave) está en el hallazgo (v) de `2026-11-17-whatsapp-findings.md`.
+**Orden.** (1) Desplegar la rama. (2) **Recargar** (o cerrar) toda pestaña que tenga Ajustes abierto: una pestaña abierta antes del despliegue sigue con el modal anterior, que escribe desde el navegador y no mira la respuesta; con la migración aplicada diría «guardado» sin guardar nada. (3) Aplicar y verificar. Aplicada antes del despliegue pasa lo mismo a todo el mundo. **Volver a `main` (o a cualquier versión anterior a esta rama) con la migración ya aplicada rompe el guardado de tipos de sesión en silencio**: deshacer antes la migración (vuelta atrás al final del archivo) o no volver atrás el código. Después de aplicarla: en Ajustes, cambiar un precio y comprobar que se guarda; en el formulario público, que la lista de tipos de sesión sigue saliendo. El detalle (quién lee la tabla y con qué clave) está en el hallazgo (v) de `2026-11-17-whatsapp-findings.md`.
 
 ---
 
