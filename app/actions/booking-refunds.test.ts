@@ -155,6 +155,7 @@ describe("fetchBookingRefund", () => {
       unverifiedEur: 0,
       refundableEur: 100,
       canMark: true,
+      duplicates: [],
     });
   });
 

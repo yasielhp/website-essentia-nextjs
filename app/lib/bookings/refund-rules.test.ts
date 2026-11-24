@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { bookingMoney, heldEur, ledgerTotals } from "@/lib/payments/ledger";
 import {
   cancelErasesOnlinePayment,
+  duplicateRefunds,
   onlinePayment,
   refundOnCancel,
   refundPatch,
@@ -444,5 +445,46 @@ describe("suspectedOnline: looks paid online, no Redsys payment on record", () =
       refundableEur: 100,
       canMark: true,
     });
+  });
+});
+
+describe("duplicate payments are kept apart from the booking's own refund", () => {
+  const Y = "790098299999";
+  const dup = (event: string, amountEur: number) =>
+    entry(event, amountEur, {
+      provider_id: Y,
+      payload: { amountEur, orderId: Y, duplicate: true },
+    });
+
+  it("owed on their own order, less what was returned on it", () => {
+    const entries = [
+      redsysPaid(100),
+      dup("duplicate", 100),
+      dup("refund_owed", 100),
+    ];
+    expect(duplicateRefunds(entries)).toEqual([
+      { orderId: Y, amountEur: 100, owedEur: 100 },
+    ]);
+    expect(duplicateRefunds([...entries, dup("refunded", 100)])).toEqual([
+      { orderId: Y, amountEur: 100, owedEur: 0 },
+    ]);
+  });
+
+  it("they owe nothing on the booking itself, and returning one does not count as its refund", () => {
+    const entries = [
+      redsysPaid(100),
+      dup("refund_owed", 100),
+      dup("refunded", 100),
+    ];
+    const view = refundView(
+      { ...paidOnline, status: "confirmed" },
+      entries,
+      true,
+    );
+    expect(view.state).toEqual({ kind: "none" });
+    expect(view.onlineEur).toBe(100);
+    expect(
+      refundableEur(paidOnline, entries, onlinePayment(paidOnline, entries)),
+    ).toBe(100);
   });
 });

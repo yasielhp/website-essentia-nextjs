@@ -69,7 +69,22 @@ function resolveDb(table: string, ops: string[]): unknown {
       }
       return { data: [], error: null };
     case "booking_events":
-      return { data: priorPaidEvent ? [{ id: "e-1" }] : [], error: null };
+      // The webhook's own entry for this order: what a retry is told by.
+      return {
+        data: priorPaidEvent
+          ? [
+              {
+                id: "e-1",
+                event: "paid",
+                actor_role: "system",
+                provider_id: "ord-1",
+                payload: { amountEur: 45 },
+                created_at: "2026-11-24T10:00:00Z",
+              },
+            ]
+          : [],
+        error: null,
+      };
     case "contacts":
       return { data: { preferred_language: "es" }, error: null };
     default:

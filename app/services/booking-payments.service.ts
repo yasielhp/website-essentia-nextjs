@@ -12,6 +12,9 @@ import { notifyStaffOfPaidBooking } from "@/lib/bookings/notify-staff-paid";
 import { pendingConsentUrl } from "@/lib/consent/server";
 import { amountOwed, paymentStatusAfter } from "@/lib/payments/amounts";
 import { notifyClientOnWhatsApp } from "@/lib/whatsapp/notify-client";
+import { judgeArrival } from "@/lib/payments/duplicate-payment";
+import { recordDuplicatePayment } from "@/lib/bookings/refunds";
+import type { PaymentEntry } from "@/lib/bookings/refund-rules";
 
 /**
  * Records money received through Redsys and notifies the client.
@@ -29,6 +32,12 @@ import { notifyClientOnWhatsApp } from "@/lib/whatsapp/notify-client";
 export async function handleBookingPaid(
   bookingId: string,
   amountCents: number,
+  /**
+   * The Redsys order the notification is for. It may be an EARLIER checkout
+   * than the one `stripe_session_id` holds (a second tab); without it, that
+   * column is read, as before.
+   */
+  notifiedOrderId?: string,
 ): Promise<void> {
   const adminClient = getAdminClient();
 
@@ -49,21 +58,31 @@ export async function handleBookingPaid(
     return;
   }
 
-  // Redsys retries its notification. A deposit leaves the booking in
-  // `deposit_paid`, so checking the status is not enough: a retry would add the
-  // money a second time. Key on the order id instead: one `payment/paid` event
-  // per Redsys order, ever.
-  const orderId = (booking.stripe_session_id as string | null) ?? null;
+  // Redsys retries its notification, so the status is not enough to tell a
+  // retry: key on the order. One `payment/paid` (or `payment/duplicate`) entry
+  // per Redsys order, ever. And a SECOND order authorised for a booking that
+  // already holds money (two tabs, an old page) is a duplicate: recorded and
+  // owed back, never added to the booking.
+  const orderId =
+    notifiedOrderId ?? (booking.stripe_session_id as string | null) ?? null;
+  const received =
+    Number.isFinite(amountCents) && amountCents > 0 ? amountCents / 100 : 0;
   if (orderId) {
-    const { data: already } = await adminClient.database
-      .from("booking_events")
-      .select("id")
-      .eq("booking_id", bookingId)
-      .eq("channel", "payment")
-      .eq("event", "paid")
-      .eq("provider_id", orderId)
-      .limit(1);
-    if ((already ?? []).length > 0) return;
+    const arrival = judgeArrival(
+      booking as { payment_status: string | null; amount_paid_eur: number },
+      await paymentEntries(bookingId),
+      orderId,
+    );
+    if (arrival.kind === "retry") return;
+    if (arrival.kind === "duplicate") {
+      await recordDuplicatePayment({
+        bookingId,
+        orderId,
+        amountEur: received,
+        firstOrderId: arrival.firstOrderId,
+      });
+      return;
+    }
   }
 
   // The first money to arrive is what turns the request into a session someone
@@ -72,8 +91,6 @@ export async function handleBookingPaid(
     booking.payment_status !== "deposit_paid" &&
     booking.payment_status !== "paid";
 
-  const received =
-    Number.isFinite(amountCents) && amountCents > 0 ? amountCents / 100 : 0;
   // A numeric column can arrive as a string.
   const priceEur = booking.price_eur == null ? 0 : Number(booking.price_eur);
   const paidEur = Number(booking.amount_paid_eur ?? 0) + received;
@@ -92,7 +109,40 @@ export async function handleBookingPaid(
     .eq("id", bookingId)
     .eq("amount_paid_eur", Number(booking.amount_paid_eur ?? 0))
     .select("id");
-  if (((applied ?? []) as unknown[]).length === 0) return;
+  if (((applied ?? []) as unknown[]).length === 0) {
+    // Another notification added money in between. If it was ANOTHER order,
+    // this one is a duplicate; the same order arriving twice at once is a
+    // retry, and is left alone. Judged again on what is now recorded.
+    if (orderId) {
+      const { data: now } = await adminClient.database
+        .from("bookings")
+        .select("payment_status, amount_paid_eur")
+        .eq("id", bookingId)
+        .maybeSingle();
+      const again = judgeArrival(
+        (now ?? booking) as {
+          payment_status: string | null;
+          amount_paid_eur: number;
+        },
+        await paymentEntries(bookingId),
+        orderId,
+      );
+      if (again.kind === "duplicate" && again.firstOrderId) {
+        await recordDuplicatePayment({
+          bookingId,
+          orderId,
+          amountEur: received,
+          firstOrderId: again.firstOrderId,
+        });
+      } else if (again.kind !== "retry") {
+        console.warn("[handleBookingPaid] concurrent payment left alone", {
+          bookingId,
+          orderId,
+        });
+      }
+    }
+    return;
+  }
 
   // The money wins: a booking the cron released as unpaid comes back when the
   // bank finally answers. But its hour may have been given to somebody else in
@@ -264,4 +314,15 @@ async function contactLocale(
     ?.preferred_language === "en"
     ? "en"
     : "es";
+}
+
+/** The booking's payment history, oldest first; empty when unreadable. */
+async function paymentEntries(bookingId: string): Promise<PaymentEntry[]> {
+  const { data } = await getAdminClient()
+    .database.from("booking_events")
+    .select("event, actor_role, provider_id, payload, created_at, status")
+    .eq("booking_id", bookingId)
+    .eq("channel", "payment")
+    .order("created_at", { ascending: true });
+  return (data ?? []) as PaymentEntry[];
 }

@@ -60,10 +60,35 @@ export async function POST(req: NextRequest) {
       .eq("stripe_session_id", orderId)
       .maybeSingle();
 
-    const bookingId = (booking as { id: string } | null)?.id;
-    const paymentStatus =
+    let bookingId = (booking as { id: string } | null)?.id;
+    let paymentStatus =
       (booking as { payment_status: string | null } | null)?.payment_status ??
       null;
+    if (!bookingId) {
+      // An EARLIER checkout of a booking (a second tab opened a newer order,
+      // which `stripe_session_id` now holds): every order opened is in the
+      // booking's history.
+      const { data: opened } = await db
+        .from("booking_events")
+        .select("booking_id")
+        .eq("channel", "payment")
+        .eq("event", "checkout")
+        .eq("provider_id", orderId)
+        .limit(1);
+      const earlier = (opened as { booking_id: string | null }[] | null)?.[0]
+        ?.booking_id;
+      if (earlier) {
+        bookingId = earlier;
+        const { data: row } = await db
+          .from("bookings")
+          .select("payment_status")
+          .eq("id", earlier)
+          .maybeSingle();
+        paymentStatus =
+          (row as { payment_status: string | null } | null)?.payment_status ??
+          null;
+      }
+    }
     if (!bookingId) {
       // Not a booking: it may be a bonus bought on the website. Their order
       // numbers carry a letter, so the two can never be the same order.
@@ -93,7 +118,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (event.type === "payment.succeeded") {
-      await handleBookingPaid(bookingId, Number(payload.Ds_Amount));
+      // With the order notified: it may not be the booking's latest, and a
+      // second one for a booking already paid is a duplicate to refund.
+      await handleBookingPaid(bookingId, Number(payload.Ds_Amount), orderId);
     } else if (!UNPAID.includes(paymentStatus ?? "pending")) {
       // A refusal can never take money back: a booking that is paid, part
       // paid or refunded keeps its state, and no "rejected" line is written

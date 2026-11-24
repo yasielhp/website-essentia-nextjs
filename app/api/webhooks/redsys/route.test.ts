@@ -66,9 +66,14 @@ function notification(fields: Record<string, string>): NextRequest {
 type Write = { table: string; patch: unknown; ops: string[] };
 
 let bookingRow: Record<string, unknown> | null = null;
+/**
+ * The booking that opened the notified order as an EARLIER checkout: found in
+ * the history (`payment/checkout`), not by `stripe_session_id`.
+ */
+let earlierCheckout: string | null = null;
 let bonusRow: Record<string, unknown> | null = null;
 let writes: Write[] = [];
-let paid: [string, number][] = [];
+let paid: [string, number, string | undefined][] = [];
 let bonusPaid: [string, number][] = [];
 let recorded: { summary?: string; event?: string }[] = [];
 
@@ -80,7 +85,19 @@ function chain(table: string): unknown {
       writes.push({ table, patch, ops });
       return { data: [{ id: "x" }], error: null };
     }
-    if (table === "bookings") return { data: bookingRow, error: null };
+    if (table === "bookings") {
+      const byOrder = ops.some((op) =>
+        op.startsWith('eq(["stripe_session_id"'),
+      );
+      if (byOrder && earlierCheckout) return { data: null, error: null };
+      return { data: bookingRow, error: null };
+    }
+    if (table === "booking_events") {
+      return {
+        data: earlierCheckout ? [{ booking_id: earlierCheckout }] : [],
+        error: null,
+      };
+    }
     if (table === "bonus_orders") return { data: bonusRow, error: null };
     return { data: null, error: null };
   };
@@ -132,8 +149,8 @@ beforeAll(async () => {
   }));
   mock.module("@/services/booking-payments.service", () => ({
     ...real.bookingPaid,
-    handleBookingPaid: async (id: string, cents: number) => {
-      paid.push([id, cents]);
+    handleBookingPaid: async (id: string, cents: number, order?: string) => {
+      paid.push([id, cents, order]);
     },
   }));
   mock.module("@/services/bonus-payments.service", () => ({
@@ -165,6 +182,7 @@ afterAll(() => {
 beforeEach(() => {
   bookingRow = { id: "b-1", payment_status: "paid" };
   bonusRow = null;
+  earlierCheckout = null;
   writes = [];
   paid = [];
   bonusPaid = [];
@@ -181,7 +199,7 @@ describe("POST /api/webhooks/redsys", () => {
     bookingRow = { id: "b-1", payment_status: "pending" };
     const res = await post({ Ds_TransactionType: "0", Ds_Response: "0000" });
     expect(res).toEqual({ status: 200, body: "OK" });
-    expect(paid).toEqual([["b-1", 13000]]);
+    expect(paid).toEqual([["b-1", 13000, ORDER]]);
     expect(writes).toEqual([]);
   });
 
@@ -247,6 +265,14 @@ describe("POST /api/webhooks/redsys", () => {
     warn.mockRestore();
     expect(bonusPaid).toEqual([]);
     expect(writes).toEqual([]);
+  });
+
+  test("a payment on an EARLIER checkout of the booking (a second tab) still finds it, with its own order", async () => {
+    earlierCheckout = "b-1";
+    bookingRow = { id: "b-1", payment_status: "pending" };
+    const res = await post({ Ds_TransactionType: "0", Ds_Response: "0000" });
+    expect(res).toEqual({ status: 200, body: "OK" });
+    expect(paid).toEqual([["b-1", 13000, ORDER]]);
   });
 
   test("a notification with a forged signature is refused", async () => {

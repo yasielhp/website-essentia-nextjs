@@ -327,6 +327,72 @@ async function flagUnverified(
   });
 }
 
+/**
+ * A second authorised payment for a booking that already holds money (two
+ * tabs, an old page): the booking stays paid ONCE (its amount and state are
+ * not touched, so the ledger counts it once), and the second charge is
+ * recorded and owed back on its own order: a `payment/duplicate` entry with
+ * both orders and the amount, a `refund_owed` for it (tagged `duplicate`, kept
+ * apart from the booking's own refund), and the office's "refund owed" email
+ * naming the duplicate order. Never throws.
+ */
+export async function recordDuplicatePayment(input: {
+  bookingId: string;
+  orderId: string;
+  amountEur: number;
+  firstOrderId: string | null;
+}): Promise<void> {
+  const { bookingId, orderId, amountEur, firstOrderId } = input;
+  const amount = formatPrice(amountEur, "es");
+  try {
+    await recordBookingEvent({
+      bookingId,
+      channel: "payment",
+      event: "duplicate",
+      actorRole: "system",
+      summary:
+        `Pago duplicado · ${amount} · pedido ${orderId} · la reserva ya estaba pagada` +
+        (firstOrderId ? ` con el pedido ${firstOrderId}` : ""),
+      providerId: orderId,
+      payload: { orderId, firstOrderId, amountEur, duplicate: true },
+    });
+    await recordBookingEvent({
+      bookingId,
+      channel: "payment",
+      event: REFUND_OWED,
+      actorRole: "system",
+      summary: `Reembolso pendiente · ${amount} · pedido ${orderId} · pago duplicado`,
+      providerId: orderId,
+      payload: {
+        amountEur,
+        orderId,
+        firstOrderId,
+        reason: "duplicate",
+        duplicate: true,
+      },
+    });
+    const ctx = await readRefundContext(bookingId);
+    if (!ctx) {
+      console.error("[refunds] duplicate payment, booking unreadable:", {
+        bookingId,
+        orderId,
+      });
+      return;
+    }
+    await tellTheOffice(ctx, {
+      amount,
+      orderId,
+      source: "duplicate",
+      late: false,
+      duplicateOf: firstOrderId,
+      actorRole: "system",
+      actorId: null,
+    });
+  } catch (err) {
+    console.error("[refunds] could not record the duplicate payment:", err);
+  }
+}
+
 /** The email to the office, recorded in the history like every other. */
 async function tellTheOffice(
   ctx: RefundContext,
@@ -337,6 +403,8 @@ async function tellTheOffice(
     late: boolean;
     /** Paid online by the booking's word only: the office is asked to check. */
     unverified?: boolean;
+    /** A duplicate payment: the order the booking was first paid with. */
+    duplicateOf?: string | null;
     actorRole: BookingEventActorRole;
     actorId: string | null;
   },
@@ -348,7 +416,7 @@ async function tellTheOffice(
   const service = [b.service_title, b.service_tiers?.label]
     .filter(Boolean)
     .join(" — ");
-  const subject = `${notice.unverified ? "Revisar reembolso" : "Reembolso pendiente"} — ${notice.amount} · ${clientName}`;
+  const subject = `${notice.unverified ? "Revisar reembolso" : notice.source === "duplicate" ? "Reembolso pendiente (pago duplicado)" : "Reembolso pendiente"} — ${notice.amount} · ${clientName}`;
   const entry: BookingEventInput = {
     bookingId: b.id,
     channel: "email",
@@ -377,6 +445,7 @@ async function tellTheOffice(
         source: notice.source,
         late: notice.late,
         unverified: notice.unverified === true,
+        duplicateOf: notice.duplicateOf ?? null,
         bookingUrl: `${getAppUrl()}/dashboard/bookings/${b.id}`,
       }),
     });

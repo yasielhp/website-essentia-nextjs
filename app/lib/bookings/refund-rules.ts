@@ -46,6 +46,17 @@ export type PaymentEntry = {
 /** An entry that states a fact (not a `failed` one, which records a doubt). */
 const counts = (e: PaymentEntry) => e.status !== "failed";
 
+/**
+ * An entry about a DUPLICATE payment (a second authorisation for a booking
+ * already paid): its refund is owed on its own order and kept apart from the
+ * booking's own refund (`duplicateRefunds`); the booking's money never counted
+ * it.
+ */
+export const isDuplicate = (e: PaymentEntry) => e.payload?.duplicate === true;
+
+/** The booking's own refund entries: facts, and not about a duplicate. */
+const own = (e: PaymentEntry) => counts(e) && !isDuplicate(e);
+
 /** What was paid online, and the Redsys order that took it. */
 export type OnlinePayment = { orderId: string | null; onlineEur: number };
 
@@ -67,6 +78,8 @@ export type BookingRefundView = OnlinePayment & {
   refundableEur: number;
   /** True for an administrator, on a cancelled booking with money to return. */
   canMark: boolean;
+  /** Second payments for this booking, each owed back on its own order. */
+  duplicates: DuplicateRefund[];
 };
 
 /** Why marking a refund was refused (`markBookingRefunded`). */
@@ -226,7 +239,7 @@ export function cancelErasesOnlinePayment(
 /** Cents already marked as returned. */
 function refundedCents(entries: PaymentEntry[]): number {
   return entries
-    .filter((e) => e.event === REFUNDED && counts(e))
+    .filter((e) => e.event === REFUNDED && own(e))
     .reduce((sum, e) => sum + toCents(entryAmount(e)), 0);
 }
 
@@ -272,7 +285,7 @@ export function refundState(
 
   let last = -1;
   entries.forEach((e, i) => {
-    if ((e.event === REFUND_OWED || e.event === REFUND_WAIVED) && counts(e)) {
+    if ((e.event === REFUND_OWED || e.event === REFUND_WAIVED) && own(e)) {
       last = i;
     }
   });
@@ -343,6 +356,37 @@ export function markableEur(
     : 0;
 }
 
+/** A duplicate payment and what is still owed back on it. */
+export type DuplicateRefund = {
+  orderId: string;
+  amountEur: number;
+  owedEur: number;
+};
+
+/**
+ * Every duplicate payment of the booking, by its own order: what it took and
+ * what is still owed (its `refund_owed`, less the `refunded` entries on the
+ * same order). Independent of the booking's state: a duplicate that arrives
+ * after the booking was refunded or cancelled is owed all the same.
+ */
+export function duplicateRefunds(entries: PaymentEntry[]): DuplicateRefund[] {
+  const byOrder = new Map<string, { owed: number; back: number }>();
+  for (const e of entries) {
+    if (!isDuplicate(e) || !counts(e) || !e.provider_id) continue;
+    const row = byOrder.get(e.provider_id) ?? { owed: 0, back: 0 };
+    if (e.event === REFUND_OWED) row.owed += toCents(entryAmount(e));
+    if (e.event === REFUNDED) row.back += toCents(entryAmount(e));
+    byOrder.set(e.provider_id, row);
+  }
+  return [...byOrder.entries()]
+    .filter(([, row]) => row.owed > 0)
+    .map(([orderId, row]) => ({
+      orderId,
+      amountEur: row.owed / 100,
+      owedEur: Math.max(row.owed - row.back, 0) / 100,
+    }));
+}
+
 /** The dashboard's view of it, from what the server read. */
 export function refundView(
   booking: RefundBooking,
@@ -359,5 +403,6 @@ export function refundView(
     state: refundState(booking, entries, online),
     refundableEur: markable,
     canMark: isAdmin && booking.status === "cancelled" && markable > 0,
+    duplicates: duplicateRefunds(entries),
   };
 }

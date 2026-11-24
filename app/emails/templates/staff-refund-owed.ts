@@ -8,7 +8,12 @@ import { emailBase } from "./_base";
  * marked as made once it is.
  */
 
-export type RefundOwedSource = "client_link" | "dashboard" | "assistant";
+export type RefundOwedSource =
+  | "client_link"
+  | "dashboard"
+  | "assistant"
+  /** Not a cancellation: a second payment for a booking already paid. */
+  | "duplicate";
 
 const esc = (value: string) =>
   value
@@ -39,7 +44,14 @@ const COPY = {
       client_link: "por el cliente, desde el enlace del correo",
       dashboard: "por el equipo, desde el panel",
       assistant: "por el equipo, desde un asistente",
+      duplicate: "no se ha cancelado: es un segundo pago de la misma reserva",
     },
+    duplicate: (first: string | null) =>
+      first
+        ? `Es un pago duplicado: la reserva ya estaba pagada con el pedido ${first} y sigue pagada una sola vez. Devuelve este segundo cobro, con su propio número de pedido, y márcalo como reembolsado en la reserva.`
+        : "Es un pago duplicado: la reserva ya estaba pagada (o reembolsada) y sigue contándose una sola vez. Devuelve este segundo cobro, con su propio número de pedido, y márcalo como reembolsado en la reserva.",
+    duplicateTitle: (amount: string, client: string) =>
+      `Pago duplicado: hay que devolver ${amount} a ${client}`,
     noOrder: "sin número (búscalo por fecha e importe)",
     check: {
       kicker: "Revisar reembolso",
@@ -72,7 +84,14 @@ const COPY = {
       client_link: "by the client, from the email link",
       dashboard: "by the team, from the dashboard",
       assistant: "by the team, from an assistant",
+      duplicate: "not cancelled: a second payment for the same booking",
     },
+    duplicate: (first: string | null) =>
+      first
+        ? `This is a duplicate payment: the booking was already paid with order ${first} and stays paid once. Return this second charge, under its own order number, and mark it as refunded on the booking.`
+        : "This is a duplicate payment: the booking was already paid (or refunded) and still counts once. Return this second charge, under its own order number, and mark it as refunded on the booking.",
+    duplicateTitle: (amount: string, client: string) =>
+      `Duplicate payment: ${amount} must be returned to ${client}`,
     noOrder: "no number (look it up by date and amount)",
     check: {
       kicker: "Check refund",
@@ -98,6 +117,7 @@ export function staffRefundOwedEmail({
   source,
   late,
   unverified = false,
+  duplicateOf,
   bookingUrl,
 }: {
   locale?: "es" | "en";
@@ -117,12 +137,26 @@ export function staffRefundOwedEmail({
    * before returning anything, not told to refund.
    */
   unverified?: boolean;
+  /**
+   * For a duplicate payment (`source: "duplicate"`): the order the booking
+   * was first paid with, or null when it was paid at the desk.
+   */
+  duplicateOf?: string | null;
   bookingUrl: string;
 }): string {
   const c = COPY[locale];
+  const duplicate = source === "duplicate";
   const kicker = unverified ? c.check.kicker : c.kicker;
-  const title = unverified ? c.check.title : c.title;
-  const body = unverified ? c.check.body : c.body;
+  const title = unverified
+    ? c.check.title
+    : duplicate
+      ? c.duplicateTitle
+      : c.title;
+  const body = unverified
+    ? c.check.body
+    : duplicate
+      ? c.duplicate(duplicateOf ?? null)
+      : c.body;
   const rows: [string, string][] = [
     [c.rows.client, clientName],
     ...(clientEmail ? [[c.rows.email, clientEmail] as [string, string]] : []),
