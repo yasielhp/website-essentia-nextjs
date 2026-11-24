@@ -49,6 +49,7 @@ import {
   WHATSAPP_NOT_READY,
 } from "@/lib/campaigns/audience-reach";
 import { readAllPages } from "@/lib/campaigns/paged-read";
+import { incompleteError } from "@/lib/campaigns/languages";
 import { refusalOfSave, saveStrictness } from "@/lib/campaigns/save-mode";
 import { sendEmail } from "@/emails/send";
 import { campaignEmail } from "@/emails/templates/campaign";
@@ -1219,6 +1220,33 @@ export async function sendTestWhatsAppCampaign(
 
 // ─── Sending ────────────────────────────────────────────────────
 
+/** What the full rules read of a saved campaign. */
+const SENDABLE_FIELDS = "name, channel, kind, trigger, audience, content";
+type SendableRow = Pick<
+  CampaignRow,
+  "name" | "channel" | "kind" | "trigger" | "audience" | "content"
+>;
+
+/**
+ * Why a saved campaign may not leave yet, or null. The form holds a campaign
+ * to the full rules before it sends, schedules or switches it on, but the
+ * list does all three to a saved draft without the form, and a draft may be
+ * half written: the version of one language missing, say. So the rules are
+ * asked again here, of what is stored, and the refusal says which version is
+ * missing when that is the reason.
+ */
+function notReadyToGoOut(row: SendableRow): Failure | null {
+  const check = validateCampaign({
+    name: row.name,
+    channel: row.channel,
+    kind: row.kind,
+    trigger: row.trigger,
+    audience: row.audience,
+    content: row.content,
+  });
+  return check.ok ? null : { ok: false, error: incompleteError(check.errors) };
+}
+
 export async function sendCampaignNow(
   accessToken: string | null,
   id: string,
@@ -1234,13 +1262,16 @@ export async function sendCampaignNow(
   // to talk about. `dispatchCampaign` holds the same rule for the cron.
   const { data: saved, error: readError } = await getAdminClient()
     .database.from("campaigns")
-    .select("kind")
+    .select(SENDABLE_FIELDS)
     .eq("id", id)
     .maybeSingle();
   if (readError) return { ok: false, error: "db" };
   if (saved && isAutomatedKind((saved as { kind: CampaignKind }).kind)) {
     return { ok: false, error: "locked" };
   }
+  // The list sends a saved draft without going through the form.
+  const unfinished = saved ? notReadyToGoOut(saved as SendableRow) : null;
+  if (unfinished) return unfinished;
 
   // The page this is called from allows 60 s; a WhatsApp send stops before
   // that and says how many rows are left for the cron to finish.
@@ -1271,7 +1302,7 @@ export async function scheduleCampaign(
   const db = getAdminClient().database;
   const { data: saved, error: readError } = await db
     .from("campaigns")
-    .select("kind, channel, audience, content")
+    .select(SENDABLE_FIELDS)
     .eq("id", id)
     .maybeSingle();
   if (readError) return { ok: false, error: "db" };
@@ -1280,6 +1311,8 @@ export async function scheduleCampaign(
     if (isAutomatedKind((saved as { kind: CampaignKind }).kind)) {
       return { ok: false, error: "locked" };
     }
+    const unfinished = notReadyToGoOut(saved as SendableRow);
+    if (unfinished) return unfinished;
     const gate = await templateGate(
       saved as Pick<CampaignRow, "channel" | "audience" | "content" | "kind">,
       db,
@@ -1330,15 +1363,8 @@ export async function activateCampaign(
   const row = data as CampaignRow;
   if (!isAutomatedKind(row.kind)) return { ok: false, error: "locked" };
 
-  const check = validateCampaign({
-    name: row.name,
-    channel: row.channel,
-    kind: row.kind,
-    trigger: row.trigger,
-    audience: row.audience,
-    content: row.content,
-  });
-  if (!check.ok) return { ok: false, error: "invalid" };
+  const unfinished = notReadyToGoOut(row);
+  if (unfinished) return unfinished;
 
   // The campaign sheet switches a saved campaign on without a save, so the
   // template is checked again here.

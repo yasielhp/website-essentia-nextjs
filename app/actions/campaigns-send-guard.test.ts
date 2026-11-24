@@ -17,10 +17,46 @@ import { argsOf, chainDb, has } from "@/lib/campaigns/fake-db";
  */
 
 let kind: string | null = "standard";
+/** The language condition of the saved campaign's audience. */
+let language: "any" | "es" | "en" = "any";
+/** Which versions the saved campaign has written. */
+let written: ("es" | "en")[] = ["es", "en"];
 let readError = false;
 let missing = false;
 let dispatched: string[] = [];
 let updates: unknown[] = [];
+
+const EMPTY = { subject: "", preheader: "", title: "", doc: null };
+const version = (hello: string) => ({
+  subject: hello,
+  // An A/B test (`split` is one of the one-off kinds below) has two.
+  subjectB: `${hello} B`,
+  preheader: "",
+  title: hello,
+  doc: {
+    type: "doc",
+    content: [{ type: "paragraph", content: [{ type: "text", text: hello }] }],
+  },
+});
+/** The campaign as the database holds it: what the actions read back. */
+const saved = () => ({
+  name: "Reapertura",
+  channel: "email",
+  kind,
+  trigger: {},
+  audience: {
+    language,
+    newsletter: null,
+    services: [],
+    lastBooking: null,
+    neverBooked: false,
+    manualIds: [],
+  },
+  content: {
+    es: written.includes("es") ? version("Hola") : EMPTY,
+    en: written.includes("en") ? version("Hello") : EMPTY,
+  },
+});
 
 const real = {
   admin: { ...(await import("@/lib/insforge-admin")) },
@@ -60,12 +96,7 @@ beforeAll(async () => {
           return { data: [{ id: "camp-1" }], error: null };
         }
         if (readError) return { data: null, error: { message: "boom" } };
-        return {
-          data: missing
-            ? null
-            : { kind, channel: "email", audience: {}, content: {} },
-          error: null,
-        };
+        return { data: missing ? null : saved(), error: null };
       }).db,
     }),
   }));
@@ -81,6 +112,8 @@ afterAll(() => {
 
 beforeEach(() => {
   kind = "standard";
+  language = "any";
+  written = ["es", "en"];
   readError = false;
   missing = false;
   dispatched = [];
@@ -167,5 +200,60 @@ describe("scheduleCampaign", () => {
       ok: false,
       error: "past",
     });
+  });
+});
+
+describe("nothing goes out with a language of its audience missing", () => {
+  test("an audience of both languages with only the Spanish version is not sent, and the refusal says English is missing", async () => {
+    written = ["es"];
+    expect(await sendCampaignNow("t", "camp-1")).toEqual({
+      ok: false,
+      error: "missing_en",
+    });
+    expect(dispatched).toEqual([]);
+  });
+
+  test("nor scheduled", async () => {
+    written = ["en"];
+    expect(await scheduleCampaign("t", "camp-1", FUTURE)).toEqual({
+      ok: false,
+      error: "missing_es",
+    });
+    expect(updates).toEqual([]);
+  });
+
+  test("with neither version the refusal names both", async () => {
+    written = [];
+    expect(await sendCampaignNow("t", "camp-1")).toEqual({
+      ok: false,
+      error: "missing_both",
+    });
+    expect(await scheduleCampaign("t", "camp-1", FUTURE)).toEqual({
+      ok: false,
+      error: "missing_both",
+    });
+  });
+
+  test("a Spanish audience needs only the Spanish version, to be sent or scheduled", async () => {
+    language = "es";
+    written = ["es"];
+    expect(await sendCampaignNow("t", "camp-1")).toMatchObject({ ok: true });
+    expect(await scheduleCampaign("t", "camp-1", FUTURE)).toEqual({
+      ok: true,
+    });
+  });
+
+  test("and an English one only the English", async () => {
+    language = "en";
+    written = ["en"];
+    expect(await sendCampaignNow("t", "camp-1")).toMatchObject({ ok: true });
+    language = "en";
+    written = ["es"];
+    dispatched = [];
+    expect(await sendCampaignNow("t", "camp-1")).toEqual({
+      ok: false,
+      error: "missing_en",
+    });
+    expect(dispatched).toEqual([]);
   });
 });

@@ -69,3 +69,17 @@ export function missingLocales(
     ),
   );
 }
+
+/**
+ * What a send, a schedule or an activation answers for a campaign that fails
+ * its validation: WHICH version is missing when that is what is wrong (the
+ * dashboard has a sentence for each), else the plain "check the fields".
+ */
+export function incompleteError(
+  errors: Record<string, string>,
+): "missing_es" | "missing_en" | "missing_both" | "invalid" {
+  const missing = missingLocales(errors);
+  if (missing.length === 0) return "invalid";
+  if (missing.length > 1) return "missing_both";
+  return missing[0] === "es" ? "missing_es" : "missing_en";
+}

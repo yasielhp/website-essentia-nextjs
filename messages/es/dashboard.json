@@ -1984,7 +1984,10 @@
       "no_phone": "Tu perfil no tiene teléfono al que enviar la prueba.",
       "meta": "Meta rechazó la petición.",
       "test_rate_limited": "Has enviado demasiadas pruebas; espera un poco.",
-      "pause_to_save": "Pausa la campaña para guardarla incompleta."
+      "pause_to_save": "Pausa la campaña para guardarla incompleta.",
+      "missing_es": "Falta la versión en español: la audiencia incluye ese idioma.",
+      "missing_en": "Falta la versión en inglés: la audiencia incluye ese idioma.",
+      "missing_both": "Faltan las versiones en español y en inglés."
     },
     "type": {
       "title": "Tipo de campaña",

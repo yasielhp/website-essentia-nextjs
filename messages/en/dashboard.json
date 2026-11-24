@@ -1984,7 +1984,10 @@
       "no_phone": "Your profile has no phone number to send the test to.",
       "meta": "Meta rejected the request.",
       "test_rate_limited": "You have sent too many tests; wait a little.",
-      "pause_to_save": "Pause the campaign to save it incomplete."
+      "pause_to_save": "Pause the campaign to save it incomplete.",
+      "missing_es": "The Spanish version is missing: the audience includes that language.",
+      "missing_en": "The English version is missing: the audience includes that language.",
+      "missing_both": "The Spanish and English versions are missing."
     },
     "type": {
       "title": "Campaign type",

@@ -3,6 +3,7 @@ import { EMPTY_AUDIENCE } from "@/types/campaign";
 import {
   CAMPAIGN_LOCALES,
   audienceLocales,
+  incompleteError,
   missingLocales,
   recipientLocale,
 } from "./languages";
@@ -74,5 +75,27 @@ describe("missingLocales", () => {
   test("an error that is nobody's language names none", () => {
     expect(missingLocales({ name: "nameRequired" })).toEqual([]);
     expect(missingLocales({})).toEqual([]);
+  });
+});
+
+describe("incompleteError", () => {
+  test("says which version is missing when that is what is wrong", () => {
+    expect(incompleteError({ "content.en.subject": "subjectRequired" })).toBe(
+      "missing_en",
+    );
+    expect(incompleteError({ "content.es.doc": "bodyRequired" })).toBe(
+      "missing_es",
+    );
+    expect(
+      incompleteError({
+        "content.es.doc": "bodyRequired",
+        "content.whatsapp.en.templateId": "templateRequired",
+      }),
+    ).toBe("missing_both");
+  });
+
+  test("anything else is the plain 'check the fields'", () => {
+    expect(incompleteError({ name: "nameRequired" })).toBe("invalid");
+    expect(incompleteError({})).toBe("invalid");
   });
 });
