@@ -23,6 +23,10 @@ type Ctx = { table: string; ops: string[] };
 
 let bookingRow: Record<string, unknown> = {};
 let bookingUpdates = 0;
+/** False when the conditional UPDATE matches nothing: another tab got there first. */
+let updateMatches = true;
+/** The filters the cancelling UPDATE was conditioned on. */
+let updateOps: string[] = [];
 let sent: { to: string; subject: string; html: string }[] = [];
 let recorded: { event?: string; channel?: string; summary?: string }[] = [];
 /** The booking's `payment` entries, as `booking_events` answers them. */
@@ -36,7 +40,8 @@ function resolveDb({ table, ops }: Ctx): unknown {
   if (table === "bookings") {
     if (ops.includes("update")) {
       bookingUpdates += 1;
-      return { data: [{ id: "b-1" }], error: null };
+      updateOps = ops;
+      return { data: updateMatches ? [{ id: "b-1" }] : [], error: null };
     }
     return ops.includes("maybeSingle") || ops.includes("single")
       ? { data: bookingRow, error: null }
@@ -52,8 +57,10 @@ function chain(ctx: Ctx): unknown {
         return (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) =>
           Promise.resolve(resolveDb(ctx)).then(ok, bad);
       }
-      return () => {
-        ctx.ops.push(String(prop));
+      return (...args: unknown[]) => {
+        ctx.ops.push(
+          prop === "neq" ? `neq:${args.map(String).join("=")}` : String(prop),
+        );
         return proxy;
       };
     },
@@ -122,6 +129,8 @@ afterAll(() => {
 
 beforeEach(() => {
   bookingUpdates = 0;
+  updateMatches = true;
+  updateOps = [];
   sent = [];
   recorded = [];
   paymentEntries = [];
@@ -265,5 +274,55 @@ describe("the refund promised by the cancellation link", () => {
     expect(page?.refundEur).toBeNull();
     expect((await actions.cancelBookingByToken("tok", "es")).ok).toBe(false);
     expect(recorded).toEqual([]);
+  });
+});
+
+describe("two tabs cancelling at once", () => {
+  test("the write is conditioned on the booking not being cancelled yet", async () => {
+    setSystemTime(new Date("2026-07-13T09:00:00Z"));
+    await actions.cancelBookingByToken("tok", "es");
+    expect(updateOps).toContain("neq:status=cancelled");
+  });
+
+  test("the one that loses writes nothing more and sends nothing", async () => {
+    setSystemTime(new Date("2026-07-13T09:00:00Z"));
+    updateMatches = false;
+    const res = await actions.cancelBookingByToken("tok", "es");
+    expect(res).toEqual({ ok: false, reason: "already" });
+    expect(recorded).toEqual([]);
+    expect(sent).toEqual([]);
+  });
+});
+
+describe("one moment for the window and the refund", () => {
+  test("a click at exactly 24 hours is cancelled AND refunded, however long the call takes", async () => {
+    bookingRow = {
+      ...bookingRow,
+      payment_status: "paid",
+      payment_mode: "full",
+      amount_paid_eur: "100.00",
+      stripe_session_id: "790098209516",
+      balance_settled_method: null,
+    };
+    paymentEntries = [
+      {
+        event: "paid",
+        actor_role: "system",
+        provider_id: "790098209516",
+        payload: { amountEur: 100 },
+        created_at: "2026-07-01T10:00:00Z",
+      },
+    ];
+    // 24 h 00 min before; the clock moves on while the call runs.
+    setSystemTime(new Date("2026-07-14T09:00:00Z"));
+    const realNow = Date.now;
+    let calls = 0;
+    Date.now = () => realNow() + (calls++ > 0 ? 60_000 : 0);
+    try {
+      const res = await actions.cancelBookingByToken("tok", "es");
+      expect(res).toEqual({ ok: true, refundEur: 100 });
+    } finally {
+      Date.now = realNow;
+    }
   });
 });

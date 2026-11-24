@@ -110,17 +110,28 @@ export async function cancelBookingByToken(
   const booking = (data as Row[] | null)?.[0];
   if (!booking) return { ok: false, reason: "not_found" };
   if (booking.status === "cancelled") return { ok: false, reason: "already" };
+  // ONE moment for the window and for the refund: read twice, a click at
+  // 24 h 00 min could pass the first and be judged late by the second.
+  const now = Date.now();
   // In the Canaries' own time, winter and summer: the server's clock is UTC.
-  if (!isOutsideCancellationWindow(booking.date, booking.time)) {
+  if (!isOutsideCancellationWindow(booking.date, booking.time, now)) {
     return { ok: false, reason: "too_late" };
   }
 
-  const { error } = await db
+  // Conditioned on the booking not being cancelled yet: two tabs clicking at
+  // once cancel it once, so the refund, the office's email and the client's
+  // are written and sent once.
+  const { data: cancelled, error } = await db
     .from("bookings")
     .update({ status: "cancelled" })
-    .eq("id", booking.id);
+    .eq("id", booking.id)
+    .neq("status", "cancelled")
+    .select("id");
 
   if (error) return { ok: false, reason: "not_found" };
+  if (((cancelled ?? []) as unknown[]).length === 0) {
+    return { ok: false, reason: "already" };
+  }
 
   // Recorded as its own entry, separate from the email below: what the centre
   // needs to see first is that the client ended the booking themselves, which
@@ -141,6 +152,7 @@ export async function cancelBookingByToken(
     actorRole: "client",
     date: booking.date,
     time: booking.time,
+    now,
   });
 
   // The same email staff send when they cancel from the dashboard, so the

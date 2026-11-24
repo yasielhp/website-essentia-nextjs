@@ -30,7 +30,9 @@ export function sessionStartsAt(
 
 /**
  * Hours from `now` to the start of the session; negative once it has begun,
- * and -1 for a booking with no day (it can never be inside the window).
+ * and -1 for a booking with no day, which therefore reads as LATE: the client
+ * cannot cancel it by link, and a cancellation of it owes no refund unless the
+ * team decides otherwise.
  */
 export function hoursUntilSession(
   date: string | null | undefined,
