@@ -69,13 +69,22 @@ describe("the closing calls of Wellness, Medicine and Experiences", () => {
 });
 
 describe("the Experiences page", () => {
-  test("speaks of no members, no member dinners and no network that exists today", () => {
+  /** What would promise a club with members, which does not exist yet. */
+  const MEMBERS =
+    /miembro|\bmembers?\b|member dinners|red de personas|network of people|club privado|private club/i;
+
+  test("its hero and its values speak of no members, private club or network that exists today", () => {
     for (const messages of [esExperiences, enExperiences]) {
-      const values = JSON.stringify(messages.values);
-      expect(values).not.toMatch(
-        /miembro|\bmembers?\b|member dinners|red de personas|network of people/i,
-      );
-      expect(values).toMatch(/running/i);
+      for (const block of [
+        messages.hero.body,
+        JSON.stringify(messages.values),
+      ]) {
+        expect(block).not.toMatch(MEMBERS);
+      }
+      expect(messages.hero.body).toMatch(/running/i);
+      expect(messages.hero.body).toContain("Santa Cruz de Tenerife");
     }
+    expect(esExperiences.hero.body).toMatch(/^Muy pronto/);
+    expect(enExperiences.hero.body).toMatch(/^Coming soon/);
   });
 });
