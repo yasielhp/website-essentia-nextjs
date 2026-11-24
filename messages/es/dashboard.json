@@ -448,7 +448,9 @@
           "reminded": "Recordatorio",
           "refund_owed": "Reembolso pendiente",
           "refund_waived": "Sin reembolso",
-          "refunded": "Reembolsada"
+          "refunded": "Reembolsada",
+          "checkout": "Pago iniciado",
+          "duplicate": "Pago duplicado"
         },
         "roles": {
           "admin": "Administrador",

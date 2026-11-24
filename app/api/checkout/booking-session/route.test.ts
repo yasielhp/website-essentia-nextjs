@@ -40,6 +40,8 @@ let storedSettings: unknown = {
   fullPaymentDiscountPercent: 0,
 };
 let bookingUpdates: Record<string, unknown>[] = [];
+/** Rows inserted into `booking_events` (the order written to the history). */
+let inserts: Record<string, unknown>[] = [];
 /** When set, the `app_settings` read is refused by the database. */
 let settingsRefused = false;
 
@@ -69,6 +71,12 @@ function chain(table: string): unknown {
       if (prop === "update") {
         return (p: Record<string, unknown>) => {
           patch = p;
+          return proxy;
+        };
+      }
+      if (prop === "insert") {
+        return (rows: Record<string, unknown>[]) => {
+          if (table === "booking_events") inserts.push(...rows);
           return proxy;
         };
       }
@@ -117,6 +125,7 @@ beforeEach(() => {
   settingsRefused = false;
   booking = { ...BOOKING };
   writeRefused = false;
+  inserts = [];
 });
 
 async function checkout(body: Record<string, unknown>) {
@@ -205,45 +214,43 @@ describe("never charged twice", () => {
       { payment_status: "pending", amount_paid_eur: 10 },
     ],
   ] as const) {
-    test(`a booking ${label} opens no checkout and keeps its order`, async () => {
+    test(`a booking ${label} opens no checkout, says so, and keeps its order`, async () => {
       booking = { ...booking, ...state, stripe_session_id: "790098209516" };
-      const { status, sent } = await checkout({});
-      expect(status).toBe(409);
-      expect(sent).toBeNull();
+      const res = await POST(
+        new NextRequest(
+          "https://app.example.test/api/checkout/booking-session",
+          {
+            method: "POST",
+            body: JSON.stringify({ bookingId: "b-1", tierId: "t-1" }),
+          },
+        ),
+      );
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ code: "already_paid" });
       expect(bookingUpdates).toEqual([]);
+      expect(inserts).toEqual([]);
     });
   }
 
-  test("a checkout opened a minute ago keeps its order, so Redsys refuses a second charge", async () => {
-    const order = String((Date.now() % 1e12) - 60_000).padStart(12, "0");
-    booking = { ...booking, stripe_session_id: order };
-    const { status, sent, orderId } = await checkout({});
-    expect(status).toBe(200);
-    expect(orderId).toBe(order);
-    expect(sent?.DS_MERCHANT_ORDER).toBe(order);
-    expect(bookingUpdates[0]?.stripe_session_id).toBe(order);
-  });
-
-  test("a checkout opened an hour ago, or one whose payment was refused, gets a new order", async () => {
-    const old = String((Date.now() % 1e12) - 3_600_000).padStart(12, "0");
-    booking = { ...booking, stripe_session_id: old };
-    expect((await checkout({})).orderId).not.toBe(old);
-
-    const fresh = String((Date.now() % 1e12) - 60_000).padStart(12, "0");
-    booking = {
-      ...booking,
-      payment_status: "failed",
-      stripe_session_id: fresh,
-    };
-    bookingUpdates = [];
+  test("every checkout opens a new order and writes it to the history", async () => {
+    booking = { ...booking, stripe_session_id: "790098209516" };
     const { status, orderId } = await checkout({});
     expect(status).toBe(200);
-    expect(orderId).not.toBe(fresh);
+    expect(orderId).not.toBe("790098209516");
+    expect(bookingUpdates[0]?.stripe_session_id).toBe(orderId);
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0]).toMatchObject({
+      booking_id: "b-1",
+      channel: "payment",
+      event: "checkout",
+      provider_id: orderId,
+    });
   });
 
   test("paid between the read and the write: refused, and the client is not sent to the bank", async () => {
     writeRefused = true;
     const { status } = await checkout({});
     expect(status).toBe(409);
+    expect(inserts).toEqual([]);
   });
 });

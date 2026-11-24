@@ -37,7 +37,11 @@ export type BookingEventName =
   /** Cancelled inside the last 24 hours: nothing is returned. */
   | "refund_waived"
   /** The money was returned (by hand, in the Redsys portal) and marked so. */
-  | "refunded";
+  | "refunded"
+  /** A Redsys checkout was opened, under this order number. */
+  | "checkout"
+  /** A second authorised payment for a booking already paid: to refund. */
+  | "duplicate";
 
 /**
  * How far it got.

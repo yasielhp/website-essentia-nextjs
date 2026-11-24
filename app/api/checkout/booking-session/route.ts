@@ -4,7 +4,9 @@ import { getRedsysProvider } from "@/lib/payments";
 import { getAppUrl } from "@/lib/env";
 import { fullPaymentCharge } from "@/lib/payments/amounts";
 import { readPaymentSettings } from "@/lib/settings/app-settings";
-import { PAID_STATES, orderToReuse } from "@/lib/payments/checkout-order";
+import { ALREADY_PAID, holdsMoney } from "@/lib/payments/checkout-order";
+import { recordBookingEvent } from "@/lib/booking-events/record";
+import { formatPrice } from "@/utils/format";
 
 type CheckoutBody = {
   bookingId: string;
@@ -92,14 +94,11 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
-  // Paid already: a second checkout would overwrite the order the payment came
-  // under and could charge the client twice.
-  if (
-    PAID_STATES.includes(booking.payment_status ?? "") ||
-    Number(booking.amount_paid_eur ?? 0) > 0
-  ) {
+  // Paid already: a second checkout would charge the client twice. The form
+  // reads the code and shows the booking as paid.
+  if (holdsMoney(booking)) {
     return NextResponse.json(
-      { error: "Booking is already paid" },
+      { error: "Booking is already paid", code: ALREADY_PAID },
       { status: 409 },
     );
   }
@@ -148,10 +147,8 @@ export async function POST(req: NextRequest) {
   );
 
   const appUrl = getAppUrl();
-  // The checkout opened a moment ago keeps its order (see `orderToReuse`).
-  const reused = orderToReuse(booking, Date.now());
+  // A NEW order every time (see `checkout-order.ts`).
   const formData = provider.buildFormData({
-    ...(reused ? { orderId: reused } : {}),
     amount: Math.round(chargeEur * 100), // Redsys expects cents
     currency: "978", // EUR
     description: description || "Booking",
@@ -186,10 +183,23 @@ export async function POST(req: NextRequest) {
     .select("id");
   if (((opened ?? []) as unknown[]).length === 0) {
     return NextResponse.json(
-      { error: "Booking is already paid" },
+      { error: "Booking is already paid", code: ALREADY_PAID },
       { status: 409 },
     );
   }
+
+  // Every order opened, in the history: `stripe_session_id` keeps only the
+  // last, and a payment that arrives on an earlier one (a second tab) must
+  // still find its booking.
+  await recordBookingEvent({
+    bookingId,
+    channel: "payment",
+    event: "checkout",
+    actorRole: "anonymous",
+    summary: `Pago iniciado · ${formatPrice(chargeEur, "es")} · pedido ${formData.orderId}`,
+    providerId: formData.orderId,
+    payload: { orderId: formData.orderId, amountEur: chargeEur },
+  });
 
   return NextResponse.json(formData);
 }

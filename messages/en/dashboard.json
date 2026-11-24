@@ -448,7 +448,9 @@
           "reminded": "Reminder",
           "refund_owed": "Refund pending",
           "refund_waived": "No refund",
-          "refunded": "Refunded"
+          "refunded": "Refunded",
+          "checkout": "Payment started",
+          "duplicate": "Duplicate payment"
         },
         "roles": {
           "admin": "Admin",
