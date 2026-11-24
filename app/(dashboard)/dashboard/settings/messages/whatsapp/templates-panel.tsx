@@ -164,9 +164,10 @@ export function TemplatesPanel({
   }, [loading, failed, configured, lastSync]);
 
   // The button, and under it, small and muted, when the copy was last brought
-  // from Meta (it brings itself). Right-aligned together, wherever they are drawn.
+  // from Meta (it brings itself): one column, the line CENTRED on the button's
+  // axis, wherever the column is drawn.
   const actions = (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-center gap-1 whitespace-nowrap">
       <Button className="gap-2" onClick={() => setForm(null)}>
         <IconPlus />
         {t("new")}
@@ -185,14 +186,18 @@ export function TemplatesPanel({
   return (
     <div>
       {actionsSlot && createPortal(actions, actionsSlot)}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-petroleum-400 max-w-full text-sm">{t("intro")}</p>
-        </div>
-        {actionsSlot === undefined && (
+      {/* In a card, the description lives in the card's own header, beside the
+          button's column; only on its own does the panel draw both. */}
+      {actionsSlot === undefined && (
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-petroleum-400 max-w-full text-sm">
+              {t("intro")}
+            </p>
+          </div>
           <div className="flex max-w-full flex-wrap gap-3">{actions}</div>
-        )}
-      </div>
+        </div>
+      )}
 
       {syncFailed && !syncing && (
         <div

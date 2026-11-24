@@ -72,10 +72,13 @@ describe("where the panel puts it", () => {
     "utf8",
   );
 
-  test("under the New template button, right-aligned with it, in one block that goes wherever the button goes", () => {
+  test("under the New template button, CENTRED on its axis, in one column that goes wherever the button goes", () => {
     const start = panel.indexOf("const actions = (");
     const block = panel.slice(start, panel.indexOf("return (", start));
-    expect(block).toContain("flex-col items-end");
+    expect(block).toContain("flex-col items-center");
+    expect(block).not.toContain("items-end");
+    // The line is not allowed to wrap: a longer line widens the column, centred on the same axis.
+    expect(block).toContain("whitespace-nowrap");
     expect(block.indexOf("<Button")).toBeLessThan(block.indexOf("<SyncStamp"));
   });
 

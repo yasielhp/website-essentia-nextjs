@@ -51,11 +51,31 @@ describe("the two cards of Messages in Settings", () => {
     expect(whatsapp).not.toContain("<dialog");
   });
 
-  test("the WhatsApp card keeps a place at the right of its heading for the button and the line under it, which wrap under the title when narrow", () => {
+  test("the WhatsApp card's header is two columns from the top: title with its description right under it, and a place for the button and its line", () => {
     const html = render(<WhatsAppTemplatesSettings />);
     expect(html).toMatch(
-      /<div class="[^"]*flex-wrap[^"]*justify-between[^"]*"><div class="[^"]*h-10[^"]*"><h2[^>]*>Plantillas de WhatsApp<\/h2><\/div><div class="[^"]*ml-auto[^"]*flex-col[^"]*items-end[^"]*"><\/div><\/div>/,
+      /<div class="[^"]*mb-6[^"]*flex-col[^"]*sm:flex-row[^"]*sm:items-start[^"]*sm:justify-between[^"]*"><div class="min-w-0"><div class="mb-4 flex h-10 items-center"><h2[^>]*>Plantillas de WhatsApp<\/h2><\/div><p class="[^"]*text-sm[^"]*">Meta revisa cada plantilla[^<]*<\/p><\/div><div class="[^"]*shrink-0[^"]*self-start[^"]*"><\/div><\/div>/,
     );
+  });
+
+  test("its vertical rhythm is the other card's: the same heading row, then the description at the same space, then a card gap before what follows", () => {
+    const row = (html: string) =>
+      /<div class="(mb-4 flex h-10 items-center)"><h2/.exec(html)?.[1];
+    expect(row(render(<WhatsAppTemplatesSettings />))).toBe(
+      row(render(<AutomaticMessagesSettings />)),
+    );
+    // The automatic messages card puts its description 24 px above the list; so does this header.
+    expect(render(<WhatsAppTemplatesSettings />)).toContain("mb-6");
+  });
+
+  test("the description is in the header, and the panel does not draw it a second time inside the card", () => {
+    const panel = readFileSync(
+      join(import.meta.dir, "messages/whatsapp/templates-panel.tsx"),
+      "utf8",
+    );
+    expect(panel).toContain("actionsSlot === undefined && (");
+    // Only that branch holds the description.
+    expect(panel.split('t("intro")')).toHaveLength(2);
   });
 
   test("there are no tabs and no page header of its own left in the cards", () => {

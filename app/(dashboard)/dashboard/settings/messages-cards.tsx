@@ -53,7 +53,8 @@ export function AutomaticMessagesSettings() {
 
 /**
  * "WhatsApp templates": the account's templates and the button to create one,
- * which sits in the card's own header, to the right of the title. The panel
+ * which sits in the card's own header, to the right of the title and its
+ * description. The panel
  * asks Meta to refresh its copy when it opens, which is one more reason for it
  * not to load until the card is near the screen.
  */
@@ -65,19 +66,21 @@ export function WhatsAppTemplatesSettings() {
   const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
   return (
     <div>
-      {/* The button, and under it when the copy was brought from Meta, sit at
-          the right of the title; where the header is too narrow they wrap under
-          it and stay right-aligned. */}
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="flex h-10 items-center">
-          <h2 className="font-display text-petroleum-700 text-xl">
-            {t("heading")}
-          </h2>
+      {/* Two columns, both from the top: the title with its description right
+          under it (the same space as in the other cards), and the button with
+          the line under it, centred on it. Neither pushes the other: the table
+          starts after the taller one. On a phone they stack, the button's
+          column under the description. */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-4 flex h-10 items-center">
+            <h2 className="font-display text-petroleum-700 text-xl">
+              {t("heading")}
+            </h2>
+          </div>
+          <p className="text-petroleum-400 max-w-full text-sm">{t("intro")}</p>
         </div>
-        <div
-          ref={setActionsSlot}
-          className="ml-auto flex shrink-0 flex-col items-end"
-        />
+        <div ref={setActionsSlot} className="flex shrink-0 self-start" />
       </div>
       <LoadWhenVisible
         placeholder={
