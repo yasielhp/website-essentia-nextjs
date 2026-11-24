@@ -105,6 +105,32 @@ describe("describeLastError", () => {
     expect(say(held, "en")).toContain("The Spanish messages are held");
   });
 
+  test("a language with no version is said with its language, for the campaign and for the row", () => {
+    expect(describeLastError("[skipped] missing_en", "email")).toEqual({
+      kind: "note",
+      key: "missingVersion",
+      values: { language: "en" },
+    });
+    expect(describeRecipientError("[skipped] missing_es")).toEqual({
+      kind: "note",
+      key: "skippedMissingVersion",
+      values: { language: "es" },
+    });
+    const notes = es.campaigns.detail.notes as Record<string, string>;
+    expect(
+      new IntlMessageFormat(notes.skippedMissingVersion as string, "es").format(
+        { language: "es" },
+      ),
+    ).toBe("Omitido: la versión en español no tiene asunto o cuerpo");
+    expect(
+      new IntlMessageFormat(
+        (en.campaigns.detail.notes as Record<string, string>)
+          .missingVersion as string,
+        "en",
+      ).format({ language: "en" }),
+    ).toContain("The English version has no subject or no body");
+  });
+
   test("a marker in the middle of a text is not a halt", () => {
     expect(describeLastError("x [halted] y")).toEqual({
       kind: "raw",
@@ -249,6 +275,8 @@ describe("REPORT_NOTE_KEYS", () => {
       describeLastError(haltMessage("")),
       describeLastError(haltMessageIn("en", "x")),
       describeLastError(haltMessageIn("en", "x"), "whatsapp", "active"),
+      describeLastError("[skipped] missing_en"),
+      describeRecipientError("[skipped] missing_es"),
       describeLastError(RUN_FAILED_ERROR),
       describeLastError(unrecordedMessage(1)),
       describeLastError(unrecordedMessage(1), "whatsapp"),
@@ -267,7 +295,7 @@ describe("REPORT_NOTE_KEYS", () => {
       describeRecipientError("[skipped] no_consent", "appointment"),
     ];
     const keys = answers.flatMap((a) => (a?.kind === "note" ? [a.key] : []));
-    expect(keys.length).toBe(18);
+    expect(keys.length).toBe(20);
     for (const key of keys) {
       expect(REPORT_NOTE_KEYS as readonly string[]).toContain(key);
     }

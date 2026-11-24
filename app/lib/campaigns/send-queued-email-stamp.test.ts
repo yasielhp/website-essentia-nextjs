@@ -150,12 +150,18 @@ beforeEach(() => {
   deliveries = new Map();
 });
 
+/** A body worth sending: a version with none is not sent at all. */
+const BODY = {
+  type: "doc",
+  content: [{ type: "paragraph", content: [{ type: "text", text: "Hola" }] }],
+};
+
 const emailCampaign = (over: Record<string, unknown> = {}) =>
   campaign({
     channel: "email",
     content: {
-      en: { subject: "Hi", preheader: "", title: "", doc: null },
-      es: { subject: "Hola", preheader: "", title: "", doc: null },
+      en: { subject: "Hi", preheader: "", title: "", doc: BODY },
+      es: { subject: "Hola", preheader: "", title: "", doc: BODY },
       whatsapp: { templateId: null, params: SOURCES },
     } as never,
     ...over,
@@ -271,13 +277,13 @@ describe("sendQueued on email claims its rows before mailing them", () => {
     const split = emailCampaign({
       kind: "split",
       content: {
-        en: { subject: "Hi", preheader: "", title: "", doc: null },
+        en: { subject: "Hi", preheader: "", title: "", doc: BODY },
         es: {
           subject: "Hola A",
           subjectB: "Hola B",
           preheader: "",
           title: "",
-          doc: null,
+          doc: BODY,
         },
         whatsapp: { templateId: null, params: SOURCES },
       } as never,
@@ -312,14 +318,14 @@ describe("sendQueued on email: each recipient gets the version of her language",
           subjectB: "Hello again",
           preheader: "",
           title: "",
-          doc: null,
+          doc: BODY,
         },
         es: {
           subject: "Hola",
           subjectB: "Hola de nuevo",
           preheader: "",
           title: "",
-          doc: null,
+          doc: BODY,
         },
       } as never,
       ...over,
@@ -946,5 +952,94 @@ describe("an outage longer than the retries costs one chunk, not the campaign", 
     ).toHaveLength(150);
     expect(mem.campaign.status).toBe("active");
     expect(mem.campaign.last_error).toBe(NOTICE);
+  });
+});
+
+describe("sendQueued on email: a language with no version to send", () => {
+  const to = (n: number, language: "es" | "en") =>
+    row(n, { email: `c${n}@example.test`, phone: null, language });
+  /** For everybody, and only the Spanish version written. */
+  const onlySpanish = (over: Record<string, unknown> = {}) =>
+    emailCampaign({
+      audience: { ...EMPTY_AUDIENCE, language: "any", sendLocale: "es" },
+      content: {
+        en: { subject: "", preheader: "", title: "", doc: null },
+        es: { subject: "Hola", preheader: "", title: "", doc: BODY },
+      } as never,
+      ...over,
+    });
+
+  test("an English contact is not sent an empty email: her row fails as skipped, naming English, and the Spanish ones go out", async () => {
+    const rows = [to(1, "es"), to(2, "en"), to(3, "es")];
+    const mem = memoryDb(rows);
+    const result = await sendQueued(onlySpanish(), rows, { db: mem.db });
+    expect(mailed()).toEqual(["c1@example.test", "c3@example.test"]);
+    expect(result).toEqual({
+      sent: 2,
+      failed: 1,
+      lastError: "[skipped] missing_en",
+    });
+    expect(mem.status("row-2")).toBe("failed");
+    expect(mem.error("row-2")).toBe("[skipped] missing_en");
+    // Never claimed: it was never going to be mailed.
+    expect(mem.rows.get("row-2")?.claimed_at).toBeNull();
+  });
+
+  test("a version with a subject and no body is no version either", async () => {
+    const rows = [to(1, "en")];
+    const mem = memoryDb(rows);
+    const noBody = onlySpanish({
+      content: {
+        en: { subject: "Hello", preheader: "", title: "", doc: null },
+        es: { subject: "Hola", preheader: "", title: "", doc: BODY },
+      },
+    });
+    const result = await sendQueued(noBody, rows, { db: mem.db });
+    expect(batches).toEqual([]);
+    expect(result).toMatchObject({ failed: 1 });
+    expect(mem.error("row-1")).toBe("[skipped] missing_en");
+  });
+
+  test("nor one with a body and no subject", async () => {
+    const rows = [to(1, "es")];
+    const mem = memoryDb(rows);
+    const noSubject = onlySpanish({
+      content: {
+        en: { subject: "Hello", preheader: "", title: "", doc: BODY },
+        es: { subject: "  ", preheader: "", title: "", doc: BODY },
+      },
+    });
+    await sendQueued(noSubject, rows, { db: mem.db });
+    expect(batches).toEqual([]);
+    expect(mem.error("row-1")).toBe("[skipped] missing_es");
+  });
+
+  test("a retry does not requeue it: only writing the version and sending again reaches her", async () => {
+    const rows = [to(1, "es"), to(2, "en")];
+    const mem = memoryDb(rows, {
+      campaign: onlySpanish({ status: "draft" }),
+    });
+    const sent = await dispatchCampaign(
+      "camp-1",
+      {},
+      {
+        db: mem.db,
+        resolveAudience: async () => [
+          {
+            id: "contact-1",
+            email: "c1@example.test",
+            firstName: "Ana",
+            language: "es",
+          } as Recipient,
+        ],
+      },
+    );
+    expect(sent).toMatchObject({ ok: true, sent: 1, failed: 1 });
+    expect(mem.campaign.status).toBe("sent");
+    expect(await retryFailed("camp-1", {}, { db: mem.db })).toEqual({
+      ok: false,
+      error: "nothing_to_retry",
+    });
+    expect(mailed()).toEqual(["c1@example.test"]);
   });
 });

@@ -1927,6 +1927,7 @@
         "haltedNoReason": "WhatsApp dejó de enviar porque Meta rechazó varios lotes seguidos.",
         "haltedIn": "WhatsApp dejó de enviar la versión en {language, select, es {español} other {inglés}}: Meta rechazó su plantilla varias veces seguidas ({reason}). Esos mensajes siguen en la cola, sin enviar.",
         "heldIn": "Los mensajes en {language, select, es {español} other {inglés}} están retenidos: Meta rechazó su plantilla varias veces seguidas ({reason}). Los del otro idioma siguen saliendo. Corrige la plantilla y pausa y reanuda la campaña para que vuelvan a salir.",
+        "missingVersion": "La versión en {language, select, es {español} other {inglés}} no tiene asunto o cuerpo: a quien le tocaba no se le envió nada.",
         "runFailed": "La última ejecución falló; se reintenta sola cada 15 minutos.",
         "unrecorded": "{count} correos salieron sin poder anotarse; revisa antes de reintentar para no enviarlos dos veces.",
         "unrecordedWhatsApp": "{count} mensajes salieron sin poder anotarse; revisa antes de reintentar para no enviarlos dos veces.",
@@ -1940,7 +1941,8 @@
         "skippedNoContact": "Omitido: el contacto ya no existe",
         "skippedNoEmail": "Omitido: no tiene email",
         "skippedSuppressed": "Omitido: ese número escribió STOP",
-        "skippedOther": "Omitido: {reason}"
+        "skippedOther": "Omitido: {reason}",
+        "skippedMissingVersion": "Omitido: la versión en {language, select, es {español} other {inglés}} no tiene asunto o cuerpo"
       },
       "columnsAppointment": "Cita",
       "retrying": "Reintentando…"

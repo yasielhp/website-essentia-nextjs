@@ -26,6 +26,7 @@ import {
   sendQueuedWhatsApp,
   type WhatsAppDeps,
 } from "./dispatch-whatsapp";
+import { docIsEmpty } from "./doc";
 import { parseHalted } from "./error-markers";
 import { haltDecision, type LocaleHalt } from "./language-halt";
 import { audienceLocales, recipientLocale } from "./languages";
@@ -212,6 +213,22 @@ export function chunkKey(campaignId: string, rowIds: string[]): string {
   return `campaign-${campaignId}/${digest}`;
 }
 
+/**
+ * The `error` of an email row whose language has no version to send: its
+ * subject or its body was never written. A `[skipped]` like the others, so a
+ * retry leaves it alone; writing the version and sending the campaign again is
+ * what reaches those people.
+ */
+export const missingVersionError = (locale: CampaignLocale): string =>
+  `${SKIPPED_PREFIX}missing_${locale}`;
+
+/** Whether a language's email has what an email needs: a subject and a body. */
+function versionWritten(
+  block: CampaignContent[CampaignLocale] | undefined,
+): boolean {
+  return Boolean(block?.subject?.trim()) && !docIsEmpty(block?.doc);
+}
+
 /** What a campaign says when messages left whose rows could not be written. */
 export const unrecordedMessage = (count: number): string =>
   `${count} sent without being recorded`;
@@ -362,23 +379,32 @@ export async function sendQueued(
 
   // The table lets a row carry only a phone. On an email campaign it has
   // nowhere to go: it fails as skipped instead of being handed to Resend.
+  //
+  // Nor does a row whose language has no version: her email would go out
+  // with no subject or no body. The form and the actions ask for the version
+  // of every language of the audience, but what is stored can still lack one
+  // (an older campaign written for one language, a row queued under another
+  // audience), and that is decided here, at the last moment, row by row. It
+  // fails as skipped, naming the language, and the other rows go on.
+  const unsendable = (row: QueuedRow): string | null => {
+    if (row.email === null) return `${SKIPPED_PREFIX}no_email`;
+    const language = recipientLocale(campaign.audience, row.language);
+    return versionWritten(content[language])
+      ? null
+      : missingVersionError(language);
+  };
   const rows = queued.filter(
-    (row): row is QueuedRow & { email: string } => row.email !== null,
+    (row): row is QueuedRow & { email: string } => unsendable(row) === null,
   );
   if (rows.length < queued.length) {
     await Promise.all(
-      queued
-        .filter((row) => row.email === null)
-        .map((row) => {
-          failed += 1;
-          lastError = `${SKIPPED_PREFIX}no_email`;
-          return stamp(
-            db,
-            row.id,
-            { status: "failed", error: lastError },
-            sleep,
-          );
-        }),
+      queued.flatMap((row) => {
+        const error = unsendable(row);
+        if (error === null) return [];
+        failed += 1;
+        lastError = error;
+        return [stamp(db, row.id, { status: "failed", error }, sleep)];
+      }),
     );
   }
 

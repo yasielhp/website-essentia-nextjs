@@ -37,6 +37,12 @@ export type ReportNote =
 const UNRECORDED = /^(\d+) sent without being recorded$/;
 
 /**
+ * What an email row whose language had no version to send carries
+ * (`missingVersionError` in `dispatch.ts`), and the campaign after it.
+ */
+const MISSING_VERSION = /^\[skipped\] missing_(es|en)$/;
+
+/**
  * The `last_error` of a campaign. A marker the engine writes is said in the
  * admin's words, never as it is stored; only what the engine did not mark
  * (Meta's or Resend's own text) reaches the screen untouched. The channel says
@@ -53,6 +59,14 @@ export function describeLastError(
 ): ReportNote | null {
   if (!lastError) return null;
   if (lastError === RUN_FAILED_ERROR) return { kind: "note", key: "runFailed" };
+  const missing = MISSING_VERSION.exec(lastError)?.[1];
+  if (missing) {
+    return {
+      kind: "note",
+      key: "missingVersion",
+      values: { language: missing },
+    };
+  }
   const inOne = parseLocaleHalt(lastError);
   if (inOne) {
     return {
@@ -90,6 +104,7 @@ export const REPORT_NOTE_KEYS = [
   "haltedIn",
   "heldIn",
   "runFailed",
+  "missingVersion",
   "unrecorded",
   "unrecordedWhatsApp",
   "unconfirmedInterrupted",
@@ -102,6 +117,7 @@ export const REPORT_NOTE_KEYS = [
   "skippedNoContact",
   "skippedNoEmail",
   "skippedSuppressed",
+  "skippedMissingVersion",
   "skippedOther",
 ] as const;
 
@@ -139,6 +155,14 @@ export function describeRecipientError(
     const reason = error.slice(SKIPPED_PREFIX.length);
     if (reason === "no_consent" && kind === "appointment") {
       return { kind: "note", key: "skippedNoConsentAppointment" };
+    }
+    const missing = MISSING_VERSION.exec(error)?.[1];
+    if (missing) {
+      return {
+        kind: "note",
+        key: "skippedMissingVersion",
+        values: { language: missing },
+      };
     }
     return Object.hasOwn(SKIP_KEYS, reason)
       ? { kind: "note", key: SKIP_KEYS[reason] }
