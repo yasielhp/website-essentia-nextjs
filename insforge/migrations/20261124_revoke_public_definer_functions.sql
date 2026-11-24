@@ -49,9 +49,10 @@
 --   - the public booking form called `check_email_role`, `upsert_contact` and
 --     `promote_contact_to_client` from the browser. Now the member check and
 --     the contact are a server action (`app/actions/public-contact.ts`: a
---     strict input, rate limited per caller and per email, the answer is
---     "member" or not and never the role, no booking-notice consent can be
---     sent), and the lead becomes a client in the last step's own action
+--     strict input, rate limited per caller, the answer is "member" or not
+--     and never the role, no booking-notice consent can be sent, and an
+--     existing contact is never rewritten: `writeContact`, the public way),
+--     and the lead becomes a client in the last step's own action
 --     (`app/lib/bookings/public-booking.ts`), only for the booking's own
 --     contact;
 --   - the run and course registration pages (not launched: they show
@@ -61,11 +62,12 @@
 --     herself, by her verified session; only admin and staff another account;
 --   - the dashboard's "New booking" called `upsert_contact` from the browser.
 --     Now `linkDeskContact` (`app/actions/desk-booking.ts`), the team only;
---   - already on the server with the service key, unchanged: `upsert_contact`
---     in the MCP tools (`app/lib/bookings/for-staff.ts`), the booking form's
---     own consents (`app/lib/whatsapp/self-consent.ts`) and the bonus
---     purchase (`app/services/bonus-payments.service.ts`), which also calls
---     `promote_contact_to_client`.
+--   - already on the server with the service key: `upsert_contact` in the
+--     MCP tools (`app/lib/bookings/for-staff.ts`) and, for admin and staff at
+--     the desk, `app/lib/contacts/write-contact.ts`; every public path writes
+--     its contact there without it. `promote_contact_to_client` in the bonus
+--     purchase, the team's confirmation (`app/lib/bookings/notify.ts`) and a
+--     paid web booking (`app/services/booking-payments.service.ts`).
 -- A test (`app/lib/public-definer-functions.test.ts`) reads the source and
 -- fails if any module on the browser's side calls a function of the
 -- database, or if anything but the modules above calls these.
