@@ -5,7 +5,7 @@ import gsap from "gsap";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
-import { cardPrice, pricesOfTreatment } from "@/lib/treatments/prices";
+import { cardMeta } from "@/lib/treatments/prices";
 import type { TreatmentData } from "./data";
 import { useTreatmentPrices } from "./use-treatment-prices";
 import {
@@ -100,7 +100,8 @@ function ManualTherapiesSection() {
   const manualServices = manualTherapyTreatments;
   // Each card's price is its session type's, the one the booking form shows
   // and charges, not a figure kept in code: the centre changes its prices
-  // itself. A treatment whose session type is not on sale shows none.
+  // itself. A treatment whose session type is not on sale, or not in the
+  // length the card says, shows none.
   const prices = useTreatmentPrices("manual-therapies");
 
   return (
@@ -133,14 +134,10 @@ function ManualTherapiesSection() {
                     {t(`manualTherapiesCards.${service.id}.title`)}
                   </h3>
                   {/* Duration and price on one line, as the facial cards
-                      write theirs: "30 min · 70 €". */}
+                      write theirs: "30 min · 70 €". Until the prices are
+                      read, and if they cannot be, it is the duration alone. */}
                   <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
-                    {[
-                      ...service.durations,
-                      ...pricesOfTreatment(prices, service.title).map((price) =>
-                        cardPrice(price, locale),
-                      ),
-                    ].join(" · ")}
+                    {cardMeta(prices, service.title, service.durations, locale)}
                   </span>
                 </div>
 

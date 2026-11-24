@@ -21,6 +21,7 @@ type Tier = {
   service_id: string;
   active: boolean;
   label: string | null;
+  duration_minutes: number | null;
   price_eur: number | string | null;
   price_center_eur: number | string | null;
 };
@@ -80,6 +81,7 @@ const tier = (over: Partial<Tier>): Tier => ({
   service_id: "manual-therapies",
   active: true,
   label: "Espira",
+  duration_minutes: 30,
   price_eur: "70.00",
   price_center_eur: "70.00",
   ...over,
@@ -95,18 +97,23 @@ describe("fetchTreatmentPrices", () => {
   test("the session types of that service that are on sale, each with its price", async () => {
     tiers = [
       tier({}),
-      tier({ label: "Pulse", price_eur: 85, price_center_eur: 85 }),
+      tier({
+        label: "Pulse",
+        duration_minutes: 45,
+        price_eur: 85,
+        price_center_eur: 85,
+      }),
     ];
     expect(await fetchTreatmentPrices("manual-therapies")).toEqual([
-      { label: "Espira", priceEur: 70 },
-      { label: "Pulse", priceEur: 85 },
+      { label: "Espira", durationMinutes: 30, priceEur: 70 },
+      { label: "Pulse", durationMinutes: 45, priceEur: 85 },
     ]);
   });
 
   test("a session type the centre switched off has no price to show", async () => {
     tiers = [tier({}), tier({ label: "Alure Duo", active: false })];
     expect(await fetchTreatmentPrices("manual-therapies")).toEqual([
-      { label: "Espira", priceEur: 70 },
+      { label: "Espira", durationMinutes: 30, priceEur: 70 },
     ]);
   });
 
@@ -116,15 +123,18 @@ describe("fetchTreatmentPrices", () => {
       tier({ service_id: "facial-therapies", label: "Aurum" }),
     ];
     expect(await fetchTreatmentPrices("manual-therapies")).toEqual([
-      { label: "Espira", priceEur: 70 },
+      { label: "Espira", durationMinutes: 30, priceEur: 70 },
     ]);
   });
 
-  test("only the name and the prices are read: no id, no payment data", async () => {
+  test("only the name, the length and the prices are read: no id, no payment data", async () => {
     tiers = [tier({})];
     await fetchTreatmentPrices("manual-therapies");
     expect(reads).toEqual([
-      { table: "service_tiers", columns: "label, price_eur, price_center_eur" },
+      {
+        table: "service_tiers",
+        columns: "label, duration_minutes, price_eur, price_center_eur",
+      },
     ]);
   });
 

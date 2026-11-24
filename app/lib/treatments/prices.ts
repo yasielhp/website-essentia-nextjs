@@ -11,13 +11,23 @@ import type { SupportedLocale } from "@/utils/format";
  * disagree. Pure: the read is `listPublicTierPrices`.
  */
 
-/** One session type on sale and what it costs. */
-export type TierPrice = { label: string; priceEur: number };
+/** One session type on sale: its name, how long it lasts and what it costs. */
+export type TierPrice = {
+  label: string;
+  /** Null when the session type has no length set. */
+  durationMinutes: number | null;
+  priceEur: number;
+};
 
 const asAmount = (value: unknown): number | null => {
   if (value === null || value === undefined || value === "") return null;
   const amount = Number(value);
   return Number.isFinite(amount) && amount > 0 ? amount : null;
+};
+
+const asMinutes = (value: unknown): number | null => {
+  const minutes = asAmount(value);
+  return minutes !== null && Number.isInteger(minutes) ? minutes : null;
 };
 
 /**
@@ -34,41 +44,62 @@ export function toTierPrices(rows: unknown): TierPrice[] {
   const prices: TierPrice[] = [];
   for (const row of rows) {
     if (!row || typeof row !== "object") continue;
-    const { label, price_eur, price_center_eur } = row as Record<
-      string,
-      unknown
-    >;
+    const { label, duration_minutes, price_eur, price_center_eur } =
+      row as Record<string, unknown>;
     if (typeof label !== "string" || label.trim() === "") continue;
     const priceEur = asAmount(price_center_eur) ?? asAmount(price_eur);
     if (priceEur === null) continue;
-    prices.push({ label, priceEur });
+    prices.push({
+      label,
+      durationMinutes: asMinutes(duration_minutes),
+      priceEur,
+    });
   }
   return prices;
 }
 
 /**
- * The prices of one treatment: those of the session types that carry its name,
- * which is how a tier meets its treatment (`sameTreatment`). Usually one. A
- * treatment sold in several lengths has several, each shown once and in the
- * order they were read. None means it is not on sale, and its card shows no
- * price at all rather than an old one.
+ * The minutes a card's length states: `"30 min"` is 30. Anything that is not
+ * one plain length (`"45–60 min"`, `"1 h"`) is null and is not guessed at: a
+ * price tied to the wrong length is a wrong price.
  */
-export function pricesOfTreatment(
+export function minutesOf(duration: string): number | null {
+  const match = /^\s*(\d{1,4})\s*min\s*$/i.exec(duration);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * The price that goes with one length of a treatment's card, or null.
+ *
+ * A session type is this treatment's when it carries its name, which is how a
+ * tier meets its treatment (`sameTreatment`), AND lasts what the card says: a
+ * treatment can be sold in two lengths, and the price of the 90 minutes is not
+ * the price of the 60. `durationMinutes` null is a card that states no length:
+ * then the name alone decides, as long as it has one price. With several the
+ * card would have to say "from", which the site has no wording for, so it
+ * shows none. Null means "show no price", never "show an old one".
+ */
+export function priceOf(
   prices: readonly TierPrice[],
   title: string,
-): number[] {
-  const found: number[] = [];
+  durationMinutes: number | null,
+): number | null {
+  const found = new Set<number>();
   for (const price of prices) {
     if (!sameTreatment(price.label, title)) continue;
-    if (!found.includes(price.priceEur)) found.push(price.priceEur);
+    if (durationMinutes !== null && price.durationMinutes !== durationMinutes) {
+      continue;
+    }
+    found.add(price.priceEur);
   }
-  return found;
+  // Two rows with one name and one length that disagree are not a price.
+  return found.size === 1 ? [...found][0]! : null;
 }
 
 /**
  * A price as a card writes it: `70 €` in Spanish and `€70` in English, with no
- * decimals when there are none to show (`72,50 €` when there are). The facial
- * cards write theirs the same way.
+ * decimals when there are none to show (`72,50 €` when there are). It is how
+ * the cards wrote their prices when these were typed by hand.
  */
 export function cardPrice(amount: number, locale: SupportedLocale): string {
   const digits = Number.isInteger(amount) ? 0 : 2;
@@ -78,4 +109,31 @@ export function cardPrice(amount: number, locale: SupportedLocale): string {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(amount);
+}
+
+/**
+ * The line under a card's title: each length the card shows, followed by its
+ * price when there is one (`30 min · 70 €`).
+ *
+ * With no prices (they are read after the page opens, and the read can fail)
+ * it is the lengths alone, which is the line the card had before it showed any
+ * price: nothing appears or moves except the price itself.
+ */
+export function cardMeta(
+  prices: readonly TierPrice[],
+  title: string,
+  durations: readonly string[],
+  locale: SupportedLocale,
+): string {
+  if (durations.length === 0) {
+    const price = priceOf(prices, title, null);
+    return price === null ? "" : cardPrice(price, locale);
+  }
+  return durations
+    .flatMap((duration) => {
+      const minutes = minutesOf(duration);
+      const price = minutes === null ? null : priceOf(prices, title, minutes);
+      return price === null ? [duration] : [duration, cardPrice(price, locale)];
+    })
+    .join(" · ");
 }
