@@ -12,6 +12,7 @@ import {
   reportTiles,
   sentCountOf,
   statusBreakdown,
+  variantSubjects,
 } from "./report";
 
 describe("describeLastError", () => {
@@ -350,5 +351,46 @@ describe("the markers of the engine never reach the screen as they are stored", 
       expect(Object.hasOwn(es.campaigns.detail.notes, key)).toBe(true);
       expect(Object.hasOwn(en.campaigns.detail.notes, key)).toBe(true);
     }
+  });
+});
+
+describe("variantSubjects: the two subjects of an A/B test, in each language it went out in", () => {
+  const block = (subject: string, subjectB?: string) => ({
+    subject,
+    ...(subjectB ? { subjectB } : {}),
+    preheader: "",
+    title: "",
+    doc: null,
+  });
+  const content = {
+    es: block("Hola", "Hola de nuevo"),
+    en: block("Hello", "Hello again"),
+  };
+
+  test("an audience of both languages: each variant's subject in Spanish and in English", () => {
+    const campaign = { audience: { language: "any" as const }, content };
+    expect(variantSubjects(campaign, "a")).toEqual(["Hola", "Hello"]);
+    expect(variantSubjects(campaign, "b")).toEqual([
+      "Hola de nuevo",
+      "Hello again",
+    ]);
+  });
+
+  test("an audience that fixes a language: that language's alone", () => {
+    expect(
+      variantSubjects({ audience: { language: "en" as const }, content }, "b"),
+    ).toEqual(["Hello again"]);
+  });
+
+  test("a subject nobody wrote is left out, not shown as a blank", () => {
+    expect(
+      variantSubjects(
+        {
+          audience: { language: "any" as const },
+          content: { es: block("Hola"), en: block("Hello", "Hello again") },
+        },
+        "b",
+      ),
+    ).toEqual(["Hello again"]);
   });
 });

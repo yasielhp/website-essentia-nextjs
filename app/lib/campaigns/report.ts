@@ -1,9 +1,12 @@
 import type {
   CampaignChannel,
+  CampaignContent,
   CampaignKind,
+  CampaignLanguage,
   CampaignRecipientRow,
   RecipientStatus,
 } from "@/types/campaign";
+import { audienceLocales } from "./languages";
 import {
   SKIPPED_PREFIX,
   UNCONFIRMED_PREFIX,
@@ -217,4 +220,24 @@ export function statusBreakdown(
     status,
     count: counts.get(status) ?? 0,
   }));
+}
+
+/**
+ * The subject one variant of an A/B test carried, in each language the
+ * campaign went out in (Spanish first): an A/B test has its two subjects per
+ * language, and each recipient was dealt one of hers. A subject nobody wrote
+ * is left out.
+ */
+export function variantSubjects(
+  campaign: {
+    audience: { language: CampaignLanguage };
+    content: Pick<CampaignContent, "es" | "en">;
+  },
+  variant: "a" | "b",
+): string[] {
+  return audienceLocales(campaign.audience).flatMap((locale) => {
+    const block = campaign.content[locale];
+    const subject = variant === "a" ? block?.subject : block?.subjectB;
+    return subject?.trim() ? [subject] : [];
+  });
 }

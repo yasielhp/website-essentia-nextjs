@@ -36,6 +36,7 @@ import {
   reportTiles,
   sentCountOf,
   statusBreakdown,
+  variantSubjects,
   type ReportTile,
 } from "@/lib/campaigns/report";
 import { RecipientTable } from "./recipient-table";
@@ -482,7 +483,7 @@ export default function CampaignDetailPage() {
         {whatsapp ? t("detail.readNote") : t("detail.openNote")}
       </p>
 
-      {whatsapp ? (
+      {whatsapp && (
         <section className="border-sand-200 rounded-2xl border bg-white p-6">
           <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
             {t("detail.byStatus")}
@@ -498,27 +499,28 @@ export default function CampaignDetailPage() {
             ))}
           </ul>
         </section>
-      ) : (
-        <section className="border-sand-200 rounded-2xl border bg-white p-6">
-          <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
-            {t("detail.byLanguage")}
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            {byLanguage.map(({ lang, total, delivered }) => (
-              <div key={lang}>
-                <p className="text-petroleum-400 text-xs uppercase">{lang}</p>
-                <p className="text-petroleum-700 text-lg font-medium">
-                  {total}
-                  <span className="text-petroleum-400 ml-2 text-sm">
-                    {t("detail.delivered").toLowerCase()}{" "}
-                    {rate(delivered, total)}
-                  </span>
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
       )}
+
+      {/* On both channels: each recipient was written to in her language,
+          with the email, or the WhatsApp template, of that language. */}
+      <section className="border-sand-200 rounded-2xl border bg-white p-6">
+        <h2 className="text-petroleum-500 mb-3 text-sm font-semibold">
+          {t("detail.byLanguage")}
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
+          {byLanguage.map(({ lang, total, delivered }) => (
+            <div key={lang}>
+              <p className="text-petroleum-400 text-xs uppercase">{lang}</p>
+              <p className="text-petroleum-700 text-lg font-medium">
+                {total}
+                <span className="text-petroleum-400 ml-2 text-sm">
+                  {t("detail.delivered").toLowerCase()} {rate(delivered, total)}
+                </span>
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {campaign.kind === "split" && (
         <section className="border-sand-200 rounded-2xl border bg-white p-6">
@@ -532,8 +534,9 @@ export default function CampaignDetailPage() {
                 ["opened", "clicked"].includes(r.status),
               ).length;
               const clicked = rows.filter((r) => r.status === "clicked").length;
-              const block = campaign.content[recipients[0]?.language ?? "es"];
-              const subject = variant === "a" ? block.subject : block.subjectB;
+              // Each variant has a subject per language the campaign is
+              // written in; every recipient was dealt one of hers.
+              const subject = variantSubjects(campaign, variant).join(" · ");
               return (
                 <div key={variant}>
                   <p className="text-petroleum-400 text-xs uppercase">
