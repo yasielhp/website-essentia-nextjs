@@ -527,7 +527,10 @@
             "generic": "No se ha podido registrar el reembolso."
           }
         },
-        "unverified": "Figura pagada {amount} con el pedido {order}, pero no consta el cobro de Redsys en el historial. Compruébalo en el portal de Redsys antes de devolver nada."
+        "unverified": "Figura pagada {amount} con el pedido {order}, pero no consta el cobro de Redsys en el historial. Compruébalo en el portal de Redsys antes de devolver nada.",
+        "duplicate": "Pago duplicado: {amount} · pedido {order}",
+        "duplicateOwed": "Reembolso pendiente: {amount}. La reserva ya estaba pagada y cuenta una sola vez: devuelve este segundo cobro en el portal de Redsys con su número de pedido.",
+        "duplicateRefunded": "Devuelto."
       }
     },
     "paymentStatus": {

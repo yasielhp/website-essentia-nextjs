@@ -527,7 +527,10 @@
             "generic": "The refund could not be recorded."
           }
         },
-        "unverified": "It shows as paid {amount} with order {order}, but no Redsys charge is recorded in its history. Check it in the Redsys portal before returning anything."
+        "unverified": "It shows as paid {amount} with order {order}, but no Redsys charge is recorded in its history. Check it in the Redsys portal before returning anything.",
+        "duplicate": "Duplicate payment: {amount} · order {order}",
+        "duplicateOwed": "Refund pending: {amount}. The booking was already paid and counts once: return this second charge in the Redsys portal with its order number.",
+        "duplicateRefunded": "Returned."
       }
     },
     "paymentStatus": {

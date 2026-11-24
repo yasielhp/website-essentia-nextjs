@@ -8,6 +8,7 @@ import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import { readRefundContext } from "@/lib/bookings/refunds";
 import {
   REFUNDED,
+  duplicateRefunds,
   markableEur,
   onlinePayment,
   refundPatch,
@@ -60,6 +61,11 @@ const markSchema = z
       .max(100_000)
       .refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6),
     note: z.string().trim().max(500).optional(),
+    /** A duplicate payment's own order: marks THAT payment as returned. */
+    duplicateOrderId: z
+      .string()
+      .regex(/^[0-9A-Za-z]{4,12}$/)
+      .optional(),
   })
   .strict();
 
@@ -77,7 +83,12 @@ const markSchema = z
  */
 export async function markBookingRefunded(
   accessToken: string | null,
-  input: { bookingId: string; amountEur: number; note?: string },
+  input: {
+    bookingId: string;
+    amountEur: number;
+    note?: string;
+    duplicateOrderId?: string;
+  },
 ): Promise<{ error: MarkRefundError | null }> {
   let actor;
   try {
@@ -97,6 +108,39 @@ export async function markBookingRefunded(
   // Without the history, what was paid and already returned is unknown.
   if (!ctx.historyRead) return { error: "failed" };
   const { booking, entries } = ctx;
+
+  // A duplicate payment: returned on its own order, whatever the booking's
+  // state, and the booking is not touched (it never counted that money).
+  if (parsed.data.duplicateOrderId) {
+    const duplicate = duplicateRefunds(entries).find(
+      (d) => d.orderId === parsed.data.duplicateOrderId,
+    );
+    if (!duplicate || duplicate.owedEur <= 0) {
+      return { error: "nothing_to_refund" };
+    }
+    if (Math.round(amountEur * 100) > Math.round(duplicate.owedEur * 100)) {
+      return { error: "exceeds" };
+    }
+    await recordBookingEvent({
+      bookingId,
+      channel: "payment",
+      event: REFUNDED,
+      actorId: actor.userId,
+      actorRole: actor.role as BookingEventActorRole,
+      summary:
+        `Reembolso hecho · ${formatPrice(amountEur, "es")} · pedido ${duplicate.orderId} · pago duplicado` +
+        (note ? ` · ${note}` : ""),
+      providerId: duplicate.orderId,
+      payload: {
+        amountEur,
+        orderId: duplicate.orderId,
+        note,
+        duplicate: true,
+      },
+    });
+    return { error: null };
+  }
+
   if (booking.status !== "cancelled") return { error: "not_cancelled" };
 
   const online = onlinePayment(booking, entries);

@@ -27,6 +27,11 @@ export function RefundCard({
 }) {
   const t = useTranslations("dashboard.bookings.detail.refund");
   const [open, setOpen] = useState(false);
+  // The duplicate payment being marked as returned, by its order.
+  const [openDuplicate, setOpenDuplicate] = useState<string | null>(null);
+  const markingDuplicate = view.duplicates.find(
+    (d) => d.orderId === openDuplicate,
+  );
   const price = (eur: number) => formatPrice(eur, locale);
   const { state } = view;
 
@@ -77,6 +82,35 @@ export function RefundCard({
         </div>
       </div>
 
+      {/* Second payments for a booking already paid: each owed back on its
+      own order, apart from the booking's own money. */}
+      {view.duplicates.map((d) => (
+        <div
+          key={d.orderId}
+          className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"
+        >
+          <p className="text-sm font-semibold text-amber-900">
+            {t("duplicate", { amount: price(d.amountEur), order: d.orderId })}
+          </p>
+          <p className="mt-1 text-xs text-amber-800">
+            {d.owedEur > 0
+              ? t("duplicateOwed", { amount: price(d.owedEur) })
+              : t("duplicateRefunded")}
+          </p>
+          {view.canMarkDuplicates && d.owedEur > 0 && (
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setOpenDuplicate(d.orderId)}
+              >
+                {t("mark")}
+              </Button>
+            </div>
+          )}
+        </div>
+      ))}
+
       {view.canMark && (
         <div className="mt-4">
           <Button variant="outline" size="md" onClick={() => setOpen(true)}>
@@ -97,6 +131,22 @@ export function RefundCard({
           onClose={() => setOpen(false)}
           onRecorded={() => {
             setOpen(false);
+            notifySuccess(t("done"));
+            onRecorded();
+          }}
+        />
+      )}
+      {markingDuplicate && (
+        <MarkRefundedDialog
+          bookingId={bookingId}
+          amountEur={markingDuplicate.owedEur}
+          maxEur={markingDuplicate.owedEur}
+          orderId={markingDuplicate.orderId}
+          duplicateOrderId={markingDuplicate.orderId}
+          locale={locale}
+          onClose={() => setOpenDuplicate(null)}
+          onRecorded={() => {
+            setOpenDuplicate(null);
             notifySuccess(t("done"));
             onRecorded();
           }}

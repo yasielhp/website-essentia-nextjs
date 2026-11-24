@@ -156,6 +156,7 @@ describe("fetchBookingRefund", () => {
       refundableEur: 100,
       canMark: true,
       duplicates: [],
+      canMarkDuplicates: true,
     });
   });
 
@@ -299,5 +300,101 @@ describe("markBookingRefunded", () => {
     writeMatches = false;
     expect(await mark({})).toEqual({ error: "conflict" });
     expect(recorded).toEqual([]);
+  });
+});
+
+describe("markBookingRefunded, a duplicate payment", () => {
+  const Y = "790098299999";
+  const dupEntries = () => [
+    {
+      event: "paid",
+      actor_role: "system",
+      provider_id: "790098209516",
+      payload: { amountEur: 100 },
+      created_at: "2026-07-01T10:00:00Z",
+    },
+    {
+      event: "duplicate",
+      actor_role: "system",
+      provider_id: Y,
+      payload: { amountEur: 100, orderId: Y, duplicate: true },
+      created_at: "2026-07-01T10:05:00Z",
+    },
+    {
+      event: "refund_owed",
+      actor_role: "system",
+      provider_id: Y,
+      payload: { amountEur: 100, orderId: Y, duplicate: true },
+      created_at: "2026-07-01T10:05:01Z",
+    },
+  ];
+
+  beforeEach(() => {
+    // A confirmed booking, paid once, with a second payment to return.
+    bookingRow = { ...bookingRow, status: "confirmed" };
+    entries = dupEntries();
+  });
+
+  test("the page lists it as owed, and the booking's own refund is untouched", async () => {
+    const view = await actions.fetchBookingRefund("token", "b-1");
+    expect(view?.duplicates).toEqual([
+      { orderId: Y, amountEur: 100, owedEur: 100 },
+    ]);
+    expect(view?.state).toEqual({ kind: "none" });
+    expect(view?.canMark).toBe(false);
+  });
+
+  test("marking it records the refund on its own order and never touches the booking", async () => {
+    const res = await mark({ duplicateOrderId: Y, note: "devuelto" });
+    expect(res).toEqual({ error: null });
+    expect(writes).toEqual([]);
+    expect(recorded[0]).toMatchObject({
+      event: "refunded",
+      providerId: Y,
+      payload: { amountEur: 100, orderId: Y, duplicate: true },
+    });
+    expect(String(recorded[0]!.summary)).toContain("pago duplicado");
+  });
+
+  test("once returned it is not owed any more, and cannot be marked twice", async () => {
+    entries = [
+      ...dupEntries(),
+      {
+        event: "refunded",
+        actor_role: "admin",
+        provider_id: Y,
+        payload: { amountEur: 100, orderId: Y, duplicate: true },
+        created_at: "2026-07-02T10:00:00Z",
+      },
+    ];
+    const view = await actions.fetchBookingRefund("token", "b-1");
+    expect(view?.duplicates).toEqual([
+      { orderId: Y, amountEur: 100, owedEur: 0 },
+    ]);
+    expect(await mark({ duplicateOrderId: Y })).toEqual({
+      error: "nothing_to_refund",
+    });
+  });
+
+  test("never more than the duplicate, and an order that is not one is refused", async () => {
+    expect(await mark({ duplicateOrderId: Y, amountEur: 150 })).toEqual({
+      error: "exceeds",
+    });
+    expect(await mark({ duplicateOrderId: "790098209516" })).toEqual({
+      error: "nothing_to_refund",
+    });
+    expect(await mark({ duplicateOrderId: "x;drop" })).toEqual({
+      error: "invalid",
+    });
+  });
+
+  test("administrators only", async () => {
+    actor = { userId: "u-2", role: "staff" };
+    expect(await mark({ duplicateOrderId: Y })).toEqual({
+      error: "unauthorized",
+    });
+    expect(
+      (await actions.fetchBookingRefund("token", "b-1"))?.canMarkDuplicates,
+    ).toBe(false);
   });
 });

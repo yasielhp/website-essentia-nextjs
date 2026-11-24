@@ -80,6 +80,8 @@ export type BookingRefundView = OnlinePayment & {
   canMark: boolean;
   /** Second payments for this booking, each owed back on its own order. */
   duplicates: DuplicateRefund[];
+  /** True for an administrator: a duplicate can be marked as returned. */
+  canMarkDuplicates: boolean;
 };
 
 /** Why marking a refund was refused (`markBookingRefunded`). */
@@ -404,5 +406,6 @@ export function refundView(
     refundableEur: markable,
     canMark: isAdmin && booking.status === "cancelled" && markable > 0,
     duplicates: duplicateRefunds(entries),
+    canMarkDuplicates: isAdmin,
   };
 }

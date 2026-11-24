@@ -22,6 +22,7 @@ export function MarkRefundedDialog({
   amountEur,
   maxEur,
   orderId,
+  duplicateOrderId,
   locale,
   onClose,
   onRecorded,
@@ -30,6 +31,8 @@ export function MarkRefundedDialog({
   amountEur: number;
   maxEur: number;
   orderId: string | null;
+  /** Set when what is returned is a DUPLICATE payment, under this order. */
+  duplicateOrderId?: string;
   locale: SupportedLocale;
   onClose: () => void;
   onRecorded: () => void;
@@ -67,6 +70,7 @@ export function MarkRefundedDialog({
       bookingId,
       amountEur: parsed,
       ...(note.trim() ? { note: note.trim() } : {}),
+      ...(duplicateOrderId ? { duplicateOrderId } : {}),
     });
     setSaving(false);
     if (result.error) {

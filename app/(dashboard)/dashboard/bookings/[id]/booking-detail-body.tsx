@@ -76,7 +76,8 @@ export function BookingDetailBody({
         {refund &&
           (refund.orderId ||
             refund.onlineEur > 0 ||
-            refund.unverifiedEur > 0) && (
+            refund.unverifiedEur > 0 ||
+            refund.duplicates.length > 0) && (
             <RefundCard
               bookingId={booking.id}
               view={refund}
