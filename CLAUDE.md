@@ -110,7 +110,7 @@ Two client modes:
 - PostgREST rejects an `or(...)` filter on an UPDATE (it reads the column as one of the table). Read the ids first, then update by id (`retryFailed` in `dispatch.ts` does).
 - Postgres does not replace a function whose argument list changed: `DROP FUNCTION IF EXISTS f(old signature)` before the `CREATE OR REPLACE` (as the `upsert_contact` migrations do).
 - Every new internal table gets `ENABLE ROW LEVEL SECURITY` and no policies: the service key bypasses RLS, and without it the anon key can read the table. Several older tables still lack it; see `docs/plans/2026-11-17-whatsapp-findings.md`.
-- **Written but NOT applied to the live database** (checked 2026-11-17): `20261117l` (`whatsapp_suppressed_phones`: until it exists no WhatsApp send goes out, and the audience says WhatsApp is not ready on the server), `20261117m` (RLS on `booking_events`) and `20261117n` (a guard on `profiles.email`). Each file says so in its first line; apply them by hand as above and verify.
+- `20261117l` (`whatsapp_suppressed_phones`) was applied to the live database on 2026-11-24 (table, RLS on, no policies, verified). **Written but NOT applied** (checked 2026-11-24): `20261117m` (RLS on `booking_events`) and `20261117n` (a guard on `profiles.email`). Each file says so in its first line; apply them by hand as above and verify.
 
 ### Booking Flow
 

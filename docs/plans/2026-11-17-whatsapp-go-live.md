@@ -42,21 +42,21 @@ Los hace quien administra la cuenta de Meta del centro. Los nombres de pantalla 
 
 Se aplican a mano a la única base viva (producción). Estado comprobado el 2026-11-17 con consultas de solo lectura.
 
-| Archivo (`insforge/migrations/`)                     | Qué hace                                                                                             | Estado en la BD viva                                |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `20261117a_whatsapp_consent_and_templates.sql`       | Consentimiento en `contacts`, tabla `whatsapp_templates`                                             | **Aplicada**                                        |
-| `20261117b_upsert_contact_whatsapp.sql`              | `upsert_contact` con el parámetro de WhatsApp                                                        | **Aplicada** (la función viva ya es la de `h`)      |
-| `20261117c_campaign_channel.sql`                     | `campaigns.channel`, `campaign_recipients.phone`, índice único por teléfono, `record_campaign_event` | **Aplicada**                                        |
-| `20261117e_whatsapp_templates_support.sql`           | `whatsapp_templates.unsupported_reason`                                                              | **Aplicada**                                        |
-| `20261117f_whatsapp_marketing_consent.sql`           | `whatsapp_marketing_opted_in_at` y `upsert_contact` con dos consentimientos                          | **Aplicada**                                        |
-| `20261117g_campaign_checks.sql`                      | Restricciones de canal y teléfono, `whatsapp_unreachable_at`                                         | **Aplicada**                                        |
-| `20261117h_whatsapp_optout_clears_other_consent.sql` | Tras una baja, activar un uso retira el otro                                                         | **Aplicada**                                        |
-| `20261117i_campaign_recipient_claim.sql`             | `campaign_recipients.claimed_at` (reclamo por fila)                                                  | **Aplicada**                                        |
-| `20261117j_message_templates.sql`                    | Tabla `message_templates` (mensajes editables)                                                       | **Aplicada**                                        |
-| `20261117k_booking_whatsapp_reminder.sql`            | `bookings.whatsapp_reminder_sent_at`                                                                 | **Aplicada. Columna obsoleta, sin uso** (ver 5.1)   |
-| `20261117l_whatsapp_suppressed_phones.sql`           | Lista de números que escribieron STOP o BAJA                                                         | **NO aplicada. Obligatoria antes de usar WhatsApp** |
-| `20261117m_booking_events_rls.sql`                   | Activa RLS en `booking_events`                                                                       | **NO aplicada. Decisión del usuario**               |
-| `20261117n_profiles_email_guard.sql`                 | Impide que quien no es admin cambie el `email` de su propio perfil (amplía `profiles_guard_role`)    | **NO aplicada. Decisión del usuario**               |
+| Archivo (`insforge/migrations/`)                     | Qué hace                                                                                             | Estado en la BD viva                                                   |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `20261117a_whatsapp_consent_and_templates.sql`       | Consentimiento en `contacts`, tabla `whatsapp_templates`                                             | **Aplicada**                                                           |
+| `20261117b_upsert_contact_whatsapp.sql`              | `upsert_contact` con el parámetro de WhatsApp                                                        | **Aplicada** (la función viva ya es la de `h`)                         |
+| `20261117c_campaign_channel.sql`                     | `campaigns.channel`, `campaign_recipients.phone`, índice único por teléfono, `record_campaign_event` | **Aplicada**                                                           |
+| `20261117e_whatsapp_templates_support.sql`           | `whatsapp_templates.unsupported_reason`                                                              | **Aplicada**                                                           |
+| `20261117f_whatsapp_marketing_consent.sql`           | `whatsapp_marketing_opted_in_at` y `upsert_contact` con dos consentimientos                          | **Aplicada**                                                           |
+| `20261117g_campaign_checks.sql`                      | Restricciones de canal y teléfono, `whatsapp_unreachable_at`                                         | **Aplicada**                                                           |
+| `20261117h_whatsapp_optout_clears_other_consent.sql` | Tras una baja, activar un uso retira el otro                                                         | **Aplicada**                                                           |
+| `20261117i_campaign_recipient_claim.sql`             | `campaign_recipients.claimed_at` (reclamo por fila)                                                  | **Aplicada**                                                           |
+| `20261117j_message_templates.sql`                    | Tabla `message_templates` (mensajes editables)                                                       | **Aplicada**                                                           |
+| `20261117k_booking_whatsapp_reminder.sql`            | `bookings.whatsapp_reminder_sent_at`                                                                 | **Aplicada. Columna obsoleta, sin uso** (ver 5.1)                      |
+| `20261117l_whatsapp_suppressed_phones.sql`           | Lista de números que escribieron STOP o BAJA                                                         | **Aplicada el 2026-11-24** (tabla con RLS y sin políticas, verificada) |
+| `20261117m_booking_events_rls.sql`                   | Activa RLS en `booking_events`                                                                       | **NO aplicada. Decisión del usuario**                                  |
+| `20261117n_profiles_email_guard.sql`                 | Impide que quien no es admin cambie el `email` de su propio perfil (amplía `profiles_guard_role`)    | **NO aplicada. Decisión del usuario**                                  |
 
 No existe la `d`: la tabla de mensajes editables salió como `j` porque `d` a `i` estaban ocupadas.
 
@@ -67,7 +67,7 @@ Las tablas `whatsapp_templates`, `message_templates`, `campaigns` y `campaign_re
 El CLI no admite `BEGIN`/`COMMIT`, y una cadena que empieza por un comentario `--` se toma como una opción y **no aplica nada** (responde "No rows returned" como si hubiera ido bien). Los archivos conservan comentarios y `BEGIN; … COMMIT;`, así que se quitan al enviarlos. Desde la raíz del repo:
 
 ```bash
-# 20261117l: obligatoria
+# 20261117l: ya aplicada el 2026-11-24 (no hace falta repetirla; es idempotente)
 npx -y @insforge/cli@latest db query "$(grep -v '^--' insforge/migrations/20261117l_whatsapp_suppressed_phones.sql | grep -v -E '^(BEGIN|COMMIT);$')"
 
 # 20261117m: solo si el usuario decide aplicarla (ver más abajo)

@@ -1,4 +1,4 @@
--- NOT APPLIED. The operator applies it when deploying.
+-- APPLIED to the live database on 2026-11-24 (table, RLS on, no policies, verified).
 --
 -- Phones that wrote STOP or BAJA to the centre's WhatsApp, kept by NUMBER.
 -- Consent lives on a contact, but the public booking form also writes the

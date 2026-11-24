@@ -82,10 +82,10 @@ Orden aproximado de importancia: del (v) al (iii) tocan privacidad o seguridad d
 **Mitigaciones.**
 
 1. **Nada sale sin una acción del centro o un pago.** La confirmación del equipo (o el pago online) es lo que dispara el primer WhatsApp; una reserva con datos ajenos no escribe a nadie por sí sola.
-2. **La lista de supresión por número** (`whatsapp_suppressed_phones`, migración `20261117l`, **sin aplicar**): si la persona a la que se escribe contesta STOP o BAJA, su **número** queda excluido para siempre, aunque otro formulario lo vuelva a meter. Falla cerrado. Protege a quien responde STOP, pero no evita el **primer** mensaje.
+2. **La lista de supresión por número** (`whatsapp_suppressed_phones`, migración `20261117l`, **aplicada el 2026-11-24**): si la persona a la que se escribe contesta STOP o BAJA, su **número** queda excluido para siempre, aunque otro formulario lo vuelva a meter. Falla cerrado. Protege a quien responde STOP, pero no evita el **primer** mensaje.
 3. **Contenido neutro de la plantilla**: una confirmación o un recordatorio de una cita no revela datos de salud ni nada sensible a quien lo reciba por error.
 
-> **Sin la migración `20261117l` aplicada no se debe activar nada de WhatsApp con clientas.** Con el diseño actual el consentimiento de los avisos de la cita se obtiene con un gesto obligatorio (aceptar los Términos) y sin comprobar el número; la lista de supresión es la única barrera que queda cuando alguien responde BAJA. Mientras no esté aplicada, todo envío a clientas y toda campaña de WhatsApp fallan cerrados y no salen mensajes. Es el estado correcto hasta que se aplique.
+> **La migración `20261117l` se aplicó el 2026-11-24.** Sin ella no se debía activar nada de WhatsApp con clientas. Con el diseño actual el consentimiento de los avisos de la cita se obtiene con un gesto obligatorio (aceptar los Términos) y sin comprobar el número; la lista de supresión es la única barrera que queda cuando alguien responde BAJA. Mientras no esté aplicada, todo envío a clientas y toda campaña de WhatsApp fallan cerrados y no salen mensajes. Es el estado correcto hasta que se aplique.
 
 **Mejora de fondo (decisión de producto).** Verificar la propiedad del número: un código de un solo uso (OTP) por WhatsApp o SMS, o una respuesta "SÍ" a un mensaje de utilidad, y no enviar más avisos hasta recibirla. Cuesta un mensaje por alta y requiere recibir respuestas entrantes (el webhook ya las recibe). Alternativa más barata: pedir el teléfono solo a clientas con cuenta verificada.
 
