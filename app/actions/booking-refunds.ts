@@ -52,7 +52,13 @@ export async function fetchBookingRefund(
 const markSchema = z
   .object({
     bookingId: z.string().uuid(),
-    amountEur: z.number().finite().positive().max(100_000),
+    // Whole cents: a fraction of one is refused, never rounded away.
+    amountEur: z
+      .number()
+      .finite()
+      .positive()
+      .max(100_000)
+      .refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6),
     note: z.string().trim().max(500).optional(),
   })
   .strict();

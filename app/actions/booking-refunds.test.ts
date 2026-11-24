@@ -204,6 +204,11 @@ describe("markBookingRefunded", () => {
     expect(String(recorded[0]!.summary)).toContain("parcial");
   });
 
+  test("whole cents go through, 99,99 € of 100 €", async () => {
+    expect(await mark({ amountEur: 99.99 })).toEqual({ error: null });
+    expect(writes[0]!.patch).toEqual({ amount_paid_eur: 0.01 });
+  });
+
   test("40 € then the last 60 €: the second records the 100 € returned in all", async () => {
     // After the first mark: the booking holds 60 €, the history has the 40 €.
     bookingRow = { ...bookingRow, amount_paid_eur: "60.00" };
@@ -281,6 +286,8 @@ describe("markBookingRefunded", () => {
 
   test("refuses what the schema does not allow", async () => {
     expect(await mark({ amountEur: -5 })).toEqual({ error: "invalid" });
+    expect(await mark({ amountEur: 10.005 })).toEqual({ error: "invalid" });
+    expect(await mark({ amountEur: Number.NaN })).toEqual({ error: "invalid" });
     expect(await mark({ bookingId: "b-1" })).toEqual({ error: "invalid" });
     expect(await mark({ extra: true })).toEqual({ error: "invalid" });
     expect(await mark({ note: "x".repeat(501) })).toEqual({ error: "invalid" });

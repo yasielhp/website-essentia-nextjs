@@ -9,6 +9,7 @@ import { getAccessToken } from "@/lib/client-session";
 import { markBookingRefunded } from "@/actions/booking-refunds";
 import type { MarkRefundError } from "@/lib/bookings/refund-rules";
 import { formatPrice, type SupportedLocale } from "@/utils/format";
+import { formatAmountInput, parseEuroAmount } from "@/utils/parse-amount";
 
 /**
  * "Marcar como reembolsado": the confirmation that the money was returned in
@@ -35,7 +36,9 @@ export function MarkRefundedDialog({
 }) {
   const t = useTranslations("dashboard.bookings.detail.refund.dialog");
   const tCommon = useTranslations("dashboard.common");
-  const [amount, setAmount] = useState(String(amountEur));
+  const [amount, setAmount] = useState(() =>
+    formatAmountInput(amountEur, locale),
+  );
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<MarkRefundError | null>(null);
@@ -49,14 +52,15 @@ export function MarkRefundedDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const parsed = Number(amount.replace(",", "."));
+  // "1.000" is a thousand euros, "100,5" a hundred and fifty cents.
+  const parsed = parseEuroAmount(amount);
   const valid =
-    Number.isFinite(parsed) &&
+    parsed !== null &&
     parsed > 0 &&
     Math.round(parsed * 100) <= Math.round(maxEur * 100);
 
   async function handleConfirm() {
-    if (!valid) return;
+    if (!valid || parsed === null) return;
     setSaving(true);
     setError(null);
     const result = await markBookingRefunded(getAccessToken(), {
