@@ -127,7 +127,7 @@ function StorySection() {
 
           {/* The rest of the story, full width under the photo */}
           <div className="flex flex-col gap-6">
-            {(["p3", "p4", "p5"] as const).map((key) => (
+            {(["p4", "p5"] as const).map((key) => (
               <p key={key} className="text-petroleum-500 leading-relaxed">
                 {t(key)}
               </p>
