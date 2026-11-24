@@ -1,7 +1,7 @@
 "use server";
 
 import { getAdminClient } from "@/lib/insforge-admin";
-import { CANCELLATION_WINDOW_HOURS } from "@/constants/booking";
+import { isOutsideCancellationWindow } from "@/lib/bookings/cancellation-window";
 import type { CancellableBooking } from "@/types/booking";
 import { sendEmail } from "@/emails/send";
 import { bookingCancelledEmail } from "@/emails/templates/booking-cancelled";
@@ -30,13 +30,6 @@ type Row = {
   staff_id: string | null;
   service_tiers: { label: string | null } | null;
 };
-
-/** Hours between now and the start of the session; negative once it has begun. */
-function hoursUntil(date: string | null, time: string | null): number {
-  if (!date) return -1;
-  const start = new Date(`${date.slice(0, 10)}T${time ?? "00:00"}:00`);
-  return (start.getTime() - Date.now()) / 3_600_000;
-}
 
 /**
  * Reads the booking behind a cancellation link.
@@ -69,7 +62,7 @@ export async function fetchCancellableBooking(
     firstName: booking.first_name,
     cancellable:
       booking.status !== "cancelled" &&
-      hoursUntil(booking.date, booking.time) >= CANCELLATION_WINDOW_HOURS,
+      isOutsideCancellationWindow(booking.date, booking.time),
     alreadyCancelled: booking.status === "cancelled",
   };
 }
@@ -104,7 +97,8 @@ export async function cancelBookingByToken(
   const booking = (data as Row[] | null)?.[0];
   if (!booking) return { ok: false, reason: "not_found" };
   if (booking.status === "cancelled") return { ok: false, reason: "already" };
-  if (hoursUntil(booking.date, booking.time) < CANCELLATION_WINDOW_HOURS) {
+  // In the Canaries' own time, winter and summer: the server's clock is UTC.
+  if (!isOutsideCancellationWindow(booking.date, booking.time)) {
     return { ok: false, reason: "too_late" };
   }
 
