@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { getAccessToken } from "@/lib/client-session";
 import { renderCampaignPreview } from "@/actions/campaigns";
 import type { CampaignLocale, CampaignLocaleContent } from "@/types/campaign";
+import { shownPreview, type RenderedPreview } from "./preview-state";
 
 /**
  * The email as it will look, drawn by the same template that sends it.
@@ -12,6 +13,10 @@ import type { CampaignLocale, CampaignLocaleContent } from "@/types/campaign";
  * Rendered on the server and shown in a sandboxed iframe: the HTML is ours,
  * but an iframe keeps the email's styles from bleeding into the dashboard and
  * the dashboard's from bleeding into the email.
+ *
+ * What was drawn is kept with its language, and only the preview of the
+ * language on screen is shown: right after a switch it says "loading" until
+ * the new one arrives, never the other language's email for half a second.
  */
 export function EmailPreview({
   content,
@@ -21,7 +26,8 @@ export function EmailPreview({
   locale: CampaignLocale;
 }) {
   const t = useTranslations("dashboard.campaigns.content");
-  const [html, setHtml] = useState<string | null>(null);
+  const [rendered, setRendered] = useState<RenderedPreview>(null);
+  const html = shownPreview(rendered, locale);
   const [width, setWidth] = useState<"mobile" | "desktop">("desktop");
 
   const contentKey = JSON.stringify(content);
@@ -35,7 +41,9 @@ export function EmailPreview({
       )
         .catch(() => ({ ok: false as const, error: "generic" }))
         .then((result) => {
-          if (!cancelled && "html" in result) setHtml(result.html);
+          if (!cancelled && "html" in result) {
+            setRendered({ locale, html: result.html });
+          }
         });
     }, 500);
     return () => {
