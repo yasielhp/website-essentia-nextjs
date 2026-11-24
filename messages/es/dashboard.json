@@ -1477,7 +1477,17 @@
       "staffHeading": "Personal",
       "discount": "Descuento online",
       "discountSaving": "Reservar por la web ahorra {amount} €: {centre} € en el centro, {web} € online.",
-      "colorTaken": "Ese color ya lo usa {label}. Elige otro para no confundirlos en el calendario."
+      "colorTaken": "Ese color ya lo usa {label}. Elige otro para no confundirlos en el calendario.",
+      "errors": {
+        "unauthenticated": "Tu sesión ha caducado. Vuelve a iniciar sesión y guarda de nuevo.",
+        "forbidden": "Solo una persona administradora puede cambiar un tipo de sesión.",
+        "invalid": "Revisa los datos: la duración son minutos enteros, y los precios no pueden ser negativos ni llevar más de dos decimales.",
+        "notFound": "Este tipo de sesión ya no existe. Cierra y recarga la página.",
+        "colorTaken": "Ese color ya lo usa otro tipo de sesión. Elige otro.",
+        "failed": "No se pudo guardar. Inténtalo de nuevo.",
+        "staff": "Se guardaron la duración, los precios y el color, pero no el personal. Vuelve a guardar.",
+        "timeout": "El servidor no respondió a tiempo y no sabemos si se guardó. Recarga la página y comprueba el tipo de sesión antes de volver a intentarlo."
+      }
     },
     "payments": {
       "heading": "Pagos de reservas",

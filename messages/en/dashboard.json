@@ -1477,7 +1477,17 @@
       "staffHeading": "Staff",
       "discount": "Online discount",
       "discountSaving": "Booking online saves {amount} €: {centre} € at the centre, {web} € online.",
-      "colorTaken": "{label} already uses that colour. Pick another so the calendar stays readable."
+      "colorTaken": "{label} already uses that colour. Pick another so the calendar stays readable.",
+      "errors": {
+        "unauthenticated": "Your session has expired. Sign in again and save once more.",
+        "forbidden": "Only an administrator can change a session type.",
+        "invalid": "Check the details: the duration is whole minutes, and prices cannot be negative or have more than two decimals.",
+        "notFound": "This session type no longer exists. Close this and reload the page.",
+        "colorTaken": "Another session type already uses that colour. Pick another.",
+        "failed": "Could not save. Please try again.",
+        "staff": "The duration, prices and colour were saved, but the staff were not. Save again.",
+        "timeout": "The server did not answer in time and we cannot tell whether it was saved. Reload the page and check the session type before trying again."
+      }
     },
     "payments": {
       "heading": "Booking payments",

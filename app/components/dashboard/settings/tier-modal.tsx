@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef, useReducer } from "react";
 import { useTranslations } from "next-intl";
-import { refreshTierPrices } from "@/actions/tier-prices";
+import { saveSessionType } from "@/actions/session-types";
 import { getAccessToken } from "@/lib/client-session";
 import { insforge } from "@/lib/insforge";
-import type { ModalState } from "@/types/settings";
+import type { ModalState, SessionTypeSaveError } from "@/types/settings";
 import { IconX } from "@/components/ui/icons";
 import { TierFields } from "./tier-fields";
 import { discountFromPrices, formReducer } from "./tier-form-state";
+import { saveWithin, tierPayload } from "./tier-save";
 
 // ─── Component ────────────────────────────────────────────────
 
@@ -122,8 +123,12 @@ export function TierModal({
 
   const colorClash = takenColors[form.color.toLowerCase()] ?? null;
 
-  const [ops, setOps] = useState({ saving: false });
-  const { saving } = ops;
+  const [ops, setOps] = useState<{
+    saving: boolean;
+    /** Why the last save did not go through; a key of `errors`. */
+    error: SessionTypeSaveError | null;
+  }>({ saving: false, error: null });
+  const { saving, error } = ops;
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -140,59 +145,38 @@ export function TierModal({
   }, [onClose]);
 
   async function handleSave() {
-    if (colorClash) return;
-    setOps((o) => ({ ...o, saving: true }));
-    const payload = {
-      duration_minutes:
-        form.duration !== "" ? parseInt(form.duration, 10) : null,
-      // `price_eur` is the amount the public booking flow charges; it was
-      // never written from here, so editing prices left the website on the
-      // seeded figure.
-      price_eur: form.priceWeb !== "" ? parseFloat(form.priceWeb) : null,
-      price_center_eur:
-        form.priceCenter !== "" ? parseFloat(form.priceCenter) : null,
-      price_suite_eur:
-        form.priceSuite !== "" ? parseFloat(form.priceSuite) : null,
-      color: form.color || null,
-      active: form.active,
-    };
+    if (colorClash || saving) return;
 
-    if (modal.tier) {
-      const tierId = modal.tier.id;
-      await insforge.database
-        .from("service_tiers")
-        .update(payload)
-        .eq("id", tierId);
+    const tier = modal.tier;
+    if (tier) {
+      setOps({ saving: true, error: null });
 
-      // Replace the assignments wholesale: the set is small and a diff would
-      // buy nothing but a chance to leave a stale row behind.
-      if (staffLoadedRef.current) {
-        await insforge.database
-          .from("staff_tiers")
-          .delete()
-          .eq("tier_id", tierId);
+      // ONE call saves it all, on the server and as an administrator: the
+      // session type, who performs it, and the word to the public site that
+      // its prices changed. Nothing is written from the browser, where the
+      // table could be written by anyone holding the public key.
+      //
+      // The assignments go only once they have been read (see
+      // `staffLoadedRef`): `null` leaves them as they are.
+      const result = await saveWithin(() =>
+        saveSessionType(
+          getAccessToken(),
+          tier.id,
+          tierPayload(form, staffLoadedRef.current ? staffIds : null),
+        ),
+      );
+
+      // Whatever happened, the modal leaves "Saving…": `saveWithin` always
+      // answers, also when the server does not. A save that failed keeps the
+      // modal open with what was typed and says why.
+      if (!result.ok) {
+        setOps({ saving: false, error: result.error });
+        return;
       }
-      if (staffLoadedRef.current && staffIds.length > 0) {
-        await insforge.database.from("staff_tiers").insert(
-          // The position in the list is the position in the booking form.
-          staffIds.map((staff_id, index) => ({
-            staff_id,
-            tier_id: tierId,
-            sort_order: index,
-          })),
-        );
-      }
-
-      // The public site keeps the prices of the session types for five
-      // minutes, and so do the pages that print them. It is told now, so the
-      // new price (or a session type just switched off) shows on the very next
-      // visit. If that cannot be done the save still stands: the site catches
-      // up when the five minutes pass.
-      await refreshTierPrices(getAccessToken()).catch(() => undefined);
     }
 
     await onSaved(modal.serviceId);
-    setOps((o) => ({ ...o, saving: false }));
+    setOps({ saving: false, error: null });
     onClose();
   }
 
@@ -228,6 +212,12 @@ export function TierModal({
           staffIds={staffIds}
           onStaffChange={setStaffIds}
         />
+
+        {error && (
+          <p role="alert" className="px-6 pb-4 text-sm text-red-600">
+            {t(`errors.${error}`)}
+          </p>
+        )}
 
         {/* Footer */}
         <div className="border-sand-100 flex items-center justify-between border-t px-6 py-4">
