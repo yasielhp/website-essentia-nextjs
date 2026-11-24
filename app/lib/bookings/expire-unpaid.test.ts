@@ -73,3 +73,30 @@ describe("isExpiredUnpaid", () => {
     ).toBe(false);
   });
 });
+
+describe("isExpiredUnpaid, counted from the last time the payment was opened", () => {
+  it("a booking started 40 minutes ago whose payment opened 10 minutes ago is not released", () => {
+    expect(
+      isExpiredUnpaid(
+        { ...base, created_at: minutesAgo(40) },
+        now,
+        minutesAgo(10),
+      ),
+    ).toBe(false);
+  });
+
+  it("released 30 minutes after the last checkout", () => {
+    expect(
+      isExpiredUnpaid(
+        { ...base, created_at: minutesAgo(90) },
+        now,
+        minutesAgo(31),
+      ),
+    ).toBe(true);
+  });
+
+  it("with no checkout, or an unreadable one, the booking's own age decides", () => {
+    expect(isExpiredUnpaid(base, now, null)).toBe(true);
+    expect(isExpiredUnpaid(base, now, "not a date")).toBe(true);
+  });
+});

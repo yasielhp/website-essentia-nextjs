@@ -16,16 +16,34 @@ export type ExpirableBooking = {
   created_at: string | null;
 };
 
+/** The later of two instants, ignoring what is missing or unreadable. */
+function latest(...values: (string | null | undefined)[]): number | null {
+  const times = values
+    .map((v) => (v ? new Date(v).getTime() : Number.NaN))
+    .filter((t) => !Number.isNaN(t));
+  return times.length > 0 ? Math.max(...times) : null;
+}
+
 /**
  * True for a web booking that is still `pending`, has taken no money — the bank
  * never answered, or refused the card — and is older than the expiry window.
+ *
+ * The window runs from the LAST time its payment was opened (`lastCheckoutAt`,
+ * the newest `payment/checkout` entry of its history) when there is one, not
+ * from when the form started the booking: a visitor who took twenty minutes
+ * over the calendar and then went to the bank must not lose the hour while
+ * she is typing her card.
  *
  * Requiring `payment_mode` keeps this away from bookings made before deposits,
  * which waited unpaid for the centre to confirm them and are not abandoned.
  * Bookings from the dashboard are never touched: they are `confirmed` and made
  * by staff.
  */
-export function isExpiredUnpaid(booking: ExpirableBooking, now: Date): boolean {
+export function isExpiredUnpaid(
+  booking: ExpirableBooking,
+  now: Date,
+  lastCheckoutAt: string | null = null,
+): boolean {
   if (booking.status !== "pending") return false;
   if (
     booking.payment_status !== "pending" &&
@@ -43,7 +61,7 @@ export function isExpiredUnpaid(booking: ExpirableBooking, now: Date): boolean {
     return false;
   }
   if (!booking.created_at) return false;
-  const created = new Date(booking.created_at).getTime();
-  if (Number.isNaN(created)) return false;
-  return now.getTime() - created > UNPAID_EXPIRY_MS;
+  const since = latest(booking.created_at, lastCheckoutAt);
+  if (since === null) return false;
+  return now.getTime() - since > UNPAID_EXPIRY_MS;
 }

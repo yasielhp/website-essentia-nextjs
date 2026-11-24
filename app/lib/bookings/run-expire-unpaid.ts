@@ -30,9 +30,38 @@ export async function expireUnpaidBookings(
     .in("payment_mode", ["deposit", "full"])
     .lt("created_at", cutoff);
 
-  const candidates = (
-    (data ?? []) as (ExpirableBooking & { id: string })[]
-  ).filter((row) => isExpiredUnpaid(row, now));
+  const rows = (data ?? []) as (ExpirableBooking & { id: string })[];
+  if (rows.length === 0) return { expired: [] };
+
+  // When each one's payment was last opened: the window runs from there.
+  // Unreadable, nothing is released this time (a client may be at the bank);
+  // the next run decides.
+  const { data: opened, error: openedError } = await db
+    .from("booking_events")
+    .select("booking_id, created_at")
+    .in(
+      "booking_id",
+      rows.map((r) => r.id),
+    )
+    .eq("channel", "payment")
+    .eq("event", "checkout");
+  if (openedError) {
+    console.error("[expire-unpaid] checkout history unreadable:", openedError);
+    return { expired: [] };
+  }
+  const lastCheckout = new Map<string, string>();
+  for (const e of (opened ?? []) as {
+    booking_id: string;
+    created_at: string;
+  }[]) {
+    const seen = lastCheckout.get(e.booking_id);
+    if (!seen || e.created_at > seen)
+      lastCheckout.set(e.booking_id, e.created_at);
+  }
+
+  const candidates = rows.filter((row) =>
+    isExpiredUnpaid(row, now, lastCheckout.get(row.id) ?? null),
+  );
 
   const expired: string[] = [];
   for (const { id } of candidates) {
