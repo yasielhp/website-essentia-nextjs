@@ -40,8 +40,9 @@ export async function generateMetadata({
       default: "Essentia — Longevity Center & Social Wellness Club in Tenerife",
       template: "%s | Essentia",
     },
+    // What the centre offers today, for a page with no description of its own.
     description:
-      "Longevity center & social wellness club in Tenerife. Science-backed protocols, medical therapies, and an exclusive community for a longer life.",
+      "Wellness centre in Santa Cruz de Tenerife: manual therapies, therapeutic facials and IV therapy at Rambla de Santa Cruz, 83. Book online.",
     openGraph: {
       siteName: "Essentia Wellness Club",
       locale: locale === "es" ? "es_ES" : "en_US",
@@ -128,27 +129,21 @@ function buildSchemaOrg(locale: string) {
         ],
         priceRange: "€€€",
         medicalSpecialty: isEs
-          ? ["Medicina Preventiva", "Medicina Regenerativa"]
-          : ["Preventive Medicine", "Regenerative Medicine"],
+          ? ["Medicina Preventiva"]
+          : ["Preventive Medicine"],
+        // What can be booked today, and nothing that is only announced: the
+        // hyperbaric chamber, regenerative medicine, contrast and red light
+        // therapy are "coming soon" pages (`UNLAUNCHED_ROUTES`).
         availableService: isEs
           ? [
-              {
-                "@type": "MedicalTherapy",
-                name: "Terapia de Oxígeno Hiperbárico",
-              },
-              { "@type": "MedicalTherapy", name: "Terapia Intravenosa" },
-              { "@type": "MedicalTherapy", name: "Medicina Regenerativa" },
-              { "@type": "MedicalTherapy", name: "Terapia de Contraste" },
-              { "@type": "MedicalTherapy", name: "Terapia de Luz Roja" },
               { "@type": "MedicalTherapy", name: "Terapias Manuales" },
+              { "@type": "MedicalTherapy", name: "Faciales Terapéuticos" },
+              { "@type": "MedicalTherapy", name: "Terapia IV" },
             ]
           : [
-              { "@type": "MedicalTherapy", name: "Hyperbaric Oxygen Therapy" },
-              { "@type": "MedicalTherapy", name: "Intravenous Therapy" },
-              { "@type": "MedicalTherapy", name: "Regenerative Medicine" },
-              { "@type": "MedicalTherapy", name: "Contrast Therapy" },
-              { "@type": "MedicalTherapy", name: "Red Light Therapy" },
               { "@type": "MedicalTherapy", name: "Manual Therapies" },
+              { "@type": "MedicalTherapy", name: "Therapeutic Facials" },
+              { "@type": "MedicalTherapy", name: "IV Therapy" },
             ],
       },
     ],

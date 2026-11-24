@@ -141,3 +141,72 @@ describe("the description of a treatment's page, as a search result shows it", (
     }
   });
 });
+
+describe("the home and Wellness pages say what the centre offers today", () => {
+  const read = (path: string) =>
+    JSON.parse(
+      readFileSync(join(import.meta.dir, "../../messages", path), "utf8"),
+    ) as { meta: { title: string; description: string } };
+  const PAGES = {
+    "es home": read("es/home.json").meta,
+    "en home": read("en/home.json").meta,
+    "es wellness": read("es/wellness.json").meta,
+    "en wellness": read("en/wellness.json").meta,
+  };
+  /** What the owner listed on 2026-11-24 as not offered. */
+  const NOT_OFFERED =
+    /contrast|contraste|breath|respiraci|red light|luz roja|regenerat|exclusiv|hiperb|hyperb/i;
+
+  test("within the limits, and naming the centre's address", () => {
+    for (const [page, meta] of Object.entries(PAGES)) {
+      expect(`${page}: ${meta.title.length <= META_TITLE_MAX}`).toBe(
+        `${page}: true`,
+      );
+      expect(
+        `${page}: ${meta.description.length <= META_DESCRIPTION_MAX}`,
+      ).toBe(`${page}: true`);
+      expect(meta.description).toContain("Rambla de Santa Cruz, 83");
+      expect(meta.description).toContain("Santa Cruz de Tenerife");
+    }
+  });
+
+  test("with nothing that is not offered", () => {
+    for (const [page, meta] of Object.entries(PAGES)) {
+      expect(`${page}: ${NOT_OFFERED.test(meta.description)}`).toBe(
+        `${page}: false`,
+      );
+    }
+  });
+
+  test("and the schema.org of every page lists only what can be booked", () => {
+    const layout = readFileSync(
+      join(import.meta.dir, "../(site)/[locale]/layout.tsx"),
+      "utf8",
+    );
+    const graph = layout.slice(
+      layout.indexOf("function buildSchemaOrg"),
+      layout.indexOf("export default"),
+    );
+    expect(graph).not.toMatch(
+      /name: "[^"]*(Hyperbaric|Hiperb|Regenerat|Contrast|Contraste|Red Light|Luz Roja)/,
+    );
+    expect(graph).not.toMatch(
+      /"(Regenerative Medicine|Medicina Regenerativa)"/,
+    );
+    for (const service of [
+      "Manual Therapies",
+      "Therapeutic Facials",
+      "IV Therapy",
+      "Terapias Manuales",
+      "Faciales Terapéuticos",
+      "Terapia IV",
+    ]) {
+      expect(graph).toContain(`name: "${service}"`);
+    }
+    const fallback = layout.slice(
+      layout.indexOf("description:"),
+      layout.indexOf("openGraph:"),
+    );
+    expect(fallback).not.toMatch(NOT_OFFERED);
+  });
+});
