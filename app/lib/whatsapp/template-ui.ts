@@ -91,6 +91,33 @@ export function latestSync(
   return latest;
 }
 
+/** How long ago the copy was brought, in the unit a person would say it in. */
+export type SyncAge =
+  | { kind: "justNow" }
+  | { kind: "ago"; value: number; unit: "minute" | "hour" | "day" };
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/**
+ * Whole minutes under an hour, whole hours under a day, whole days after that,
+ * each rounded DOWN (3 min 40 s is "3 min": the line never says more time has
+ * passed than has). Under a minute, or a moment in the future (the browser's
+ * clock a little behind the server's), is "a moment ago". Pure.
+ */
+export function syncAge(syncMs: number, nowMs: number): SyncAge {
+  const age = nowMs - syncMs;
+  if (age < MINUTE_MS) return { kind: "justNow" };
+  if (age < HOUR_MS) {
+    return { kind: "ago", value: Math.floor(age / MINUTE_MS), unit: "minute" };
+  }
+  if (age < DAY_MS) {
+    return { kind: "ago", value: Math.floor(age / HOUR_MS), unit: "hour" };
+  }
+  return { kind: "ago", value: Math.floor(age / DAY_MS), unit: "day" };
+}
+
 /**
  * Whether a row deserves a "last synced" note: Meta may have deleted it.
  *

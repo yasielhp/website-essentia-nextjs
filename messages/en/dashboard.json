@@ -2212,7 +2212,9 @@
       "intro": "Meta reviews every template before it can be sent, and a WhatsApp campaign can only use approved templates. A review takes anywhere from minutes to days.",
       "autoSync": {
         "updating": "Updating from Meta…",
-        "updated": "Updated from Meta: {date}",
+        "updated": "Updated {ago}",
+        "justNow": "Updated a moment ago",
+        "exact": "Updated from Meta: {date}",
         "failed": "The update from Meta failed. What you see is the last saved copy."
       },
       "new": "New template",

@@ -65,13 +65,18 @@ export function WhatsAppTemplatesSettings() {
   const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
   return (
     <div>
-      <div className="mb-4 flex h-10 items-center justify-between gap-4">
-        <h2 className="font-display text-petroleum-700 text-xl">
-          {t("heading")}
-        </h2>
+      {/* The button, and under it when the copy was brought from Meta, sit at
+          the right of the title; where the header is too narrow they wrap under
+          it and stay right-aligned. */}
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="flex h-10 items-center">
+          <h2 className="font-display text-petroleum-700 text-xl">
+            {t("heading")}
+          </h2>
+        </div>
         <div
           ref={setActionsSlot}
-          className="flex shrink-0 items-center gap-3"
+          className="ml-auto flex shrink-0 flex-col items-end"
         />
       </div>
       <LoadWhenVisible

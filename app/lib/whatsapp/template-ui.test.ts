@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   hasStaleSync,
   latestSync,
+  syncAge,
   nextTemplateName,
   statusTone,
   TEMPLATE_STATUSES,
@@ -103,5 +104,61 @@ describe("hasStaleSync", () => {
     expect(
       hasStaleSync({ ...base, meta_id: null }, Date.parse(T1), false),
     ).toBe(false);
+  });
+});
+
+describe("syncAge: how long ago the copy was brought from Meta", () => {
+  const NOW = Date.parse("2026-11-24T12:00:00.000Z");
+  const ago = (ms: number) => syncAge(NOW - ms, NOW);
+  const SECOND = 1000;
+  const MINUTE = 60 * SECOND;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+
+  test("under a minute is 'a moment ago'", () => {
+    expect(ago(0)).toEqual({ kind: "justNow" });
+    expect(ago(59 * SECOND)).toEqual({ kind: "justNow" });
+  });
+
+  test("from a minute, whole minutes, rounded down, up to an hour", () => {
+    expect(ago(MINUTE)).toEqual({ kind: "ago", value: 1, unit: "minute" });
+    expect(ago(3 * MINUTE + 40 * SECOND)).toEqual({
+      kind: "ago",
+      value: 3,
+      unit: "minute",
+    });
+    expect(ago(59 * MINUTE + 59 * SECOND)).toEqual({
+      kind: "ago",
+      value: 59,
+      unit: "minute",
+    });
+  });
+
+  test("from an hour, whole hours, up to a day", () => {
+    expect(ago(HOUR)).toEqual({ kind: "ago", value: 1, unit: "hour" });
+    expect(ago(2 * HOUR + 59 * MINUTE)).toEqual({
+      kind: "ago",
+      value: 2,
+      unit: "hour",
+    });
+    expect(ago(23 * HOUR + 59 * MINUTE)).toEqual({
+      kind: "ago",
+      value: 23,
+      unit: "hour",
+    });
+  });
+
+  test("from a day, whole days", () => {
+    expect(ago(DAY)).toEqual({ kind: "ago", value: 1, unit: "day" });
+    expect(ago(3 * DAY + 5 * HOUR)).toEqual({
+      kind: "ago",
+      value: 3,
+      unit: "day",
+    });
+    expect(ago(45 * DAY)).toEqual({ kind: "ago", value: 45, unit: "day" });
+  });
+
+  test("a sync that looks like the future (the browser's clock is a little behind) is 'a moment ago', never a negative age", () => {
+    expect(syncAge(NOW + 5 * MINUTE, NOW)).toEqual({ kind: "justNow" });
   });
 });

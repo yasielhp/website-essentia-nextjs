@@ -2212,7 +2212,9 @@
       "intro": "Meta revisa cada plantilla antes de que se pueda enviar, y una campaña de WhatsApp solo puede usar plantillas aprobadas. La revisión tarda de minutos a días.",
       "autoSync": {
         "updating": "Actualizando desde Meta…",
-        "updated": "Actualizado desde Meta: {date}",
+        "updated": "Actualizado {ago}",
+        "justNow": "Actualizado hace un momento",
+        "exact": "Actualizado desde Meta: {date}",
         "failed": "No se pudo actualizar desde Meta. Lo que ves es lo último guardado."
       },
       "new": "Nueva plantilla",

@@ -51,10 +51,10 @@ describe("the two cards of Messages in Settings", () => {
     expect(whatsapp).not.toContain("<dialog");
   });
 
-  test("the WhatsApp card keeps a place at the right of its heading for the New template button", () => {
+  test("the WhatsApp card keeps a place at the right of its heading for the button and the line under it, which wrap under the title when narrow", () => {
     const html = render(<WhatsAppTemplatesSettings />);
     expect(html).toMatch(
-      /<div class="[^"]*justify-between[^"]*"><h2[^>]*>Plantillas de WhatsApp<\/h2><div class="[^"]*shrink-0[^"]*"><\/div><\/div>/,
+      /<div class="[^"]*flex-wrap[^"]*justify-between[^"]*"><div class="[^"]*h-10[^"]*"><h2[^>]*>Plantillas de WhatsApp<\/h2><\/div><div class="[^"]*ml-auto[^"]*flex-col[^"]*items-end[^"]*"><\/div><\/div>/,
     );
   });
 

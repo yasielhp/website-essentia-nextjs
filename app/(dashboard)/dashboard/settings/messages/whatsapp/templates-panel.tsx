@@ -11,10 +11,12 @@ import {
 } from "@/actions/whatsapp-templates";
 import { getAccessToken } from "@/lib/client-session";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
+import { useNow } from "@/hooks/use-now";
 import { shouldAutoSync } from "@/lib/whatsapp/auto-sync";
 import { latestSync } from "@/lib/whatsapp/template-ui";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import { useActionToast } from "./action-error";
+import { SyncStamp } from "./sync-stamp";
 import { TemplateDetail } from "./template-detail";
 import { TemplateForm } from "./template-form";
 import { TemplateTable } from "./template-table";
@@ -75,6 +77,8 @@ export function TemplatesPanel({
   const t = useTranslations("dashboard.messages.whatsapp");
   const locale = useDashboardLocale();
   const showError = useActionToast();
+  // Redrawn every minute, so "3 min ago" stays true.
+  const now = useNow();
 
   const [{ templates, configured, loading, failed }, dispatch] = useReducer(
     listReducer,
@@ -159,20 +163,24 @@ export function TemplatesPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, failed, configured, lastSync]);
 
+  // The button, and under it, small and muted, when the copy was last brought
+  // from Meta (it brings itself). Right-aligned together, wherever they are drawn.
   const actions = (
-    <Button className="gap-2" onClick={() => setForm(null)}>
-      <IconPlus />
-      {t("new")}
-    </Button>
+    <div className="flex flex-col items-end gap-1">
+      <Button className="gap-2" onClick={() => setForm(null)}>
+        <IconPlus />
+        {t("new")}
+      </Button>
+      {configured &&
+        (syncing ? (
+          <p role="status" className="text-petroleum-400 text-xs">
+            {t("autoSync.updating")}
+          </p>
+        ) : (
+          lastSync !== null && <SyncStamp at={lastSync} now={now} />
+        ))}
+    </div>
   );
-  const updatedAt =
-    lastSync === null
-      ? null
-      : new Intl.DateTimeFormat(locale === "es" ? "es-ES" : "en-GB", {
-          dateStyle: "medium",
-          timeStyle: "short",
-          timeZone: "Atlantic/Canary",
-        }).format(lastSync);
 
   return (
     <div>
@@ -180,14 +188,6 @@ export function TemplatesPanel({
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-petroleum-400 max-w-full text-sm">{t("intro")}</p>
-          {/* When the copy was last brought from Meta; it brings itself. */}
-          {configured && (syncing || updatedAt) && (
-            <p role="status" className="text-petroleum-400 mt-1 text-xs">
-              {syncing
-                ? t("autoSync.updating")
-                : t("autoSync.updated", { date: updatedAt ?? "" })}
-            </p>
-          )}
         </div>
         {actionsSlot === undefined && (
           <div className="flex max-w-full flex-wrap gap-3">{actions}</div>
