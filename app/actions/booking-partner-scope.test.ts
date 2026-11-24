@@ -414,6 +414,22 @@ describe("the history lines of a desk booking", () => {
 });
 
 describe("a partner edits only while the session is more than 23 h 59 min away (Canary time)", () => {
+  const editPayload = () => ({
+    service_id: "manual-therapies",
+    service_title: "Manual Therapies",
+    tier_id: null,
+    duration: "50 min",
+    date: "2099-08-20",
+    time: "11:00",
+    location: "centro",
+    location_address: null,
+    notes: "moved",
+    first_name: "Ana",
+    last_name: "García",
+    email: "ana@example.com",
+    phone: null,
+    status: "confirmed",
+  });
   const edit = (id: string) =>
     draft.updateBookingByAdmin("token", id, {
       service_id: "manual-therapies",
@@ -452,6 +468,40 @@ describe("a partner edits only while the session is more than 23 h 59 min away (
     // inside the window.
     Object.assign(tables.bookings[0]!, canaryIn(2 * HOUR));
     expect(await edit(MINE)).toEqual({ error: "partner_window" });
+  });
+
+  test("nor may she move one of hers INTO the last 24 hours", async () => {
+    const soon = canaryIn(2 * HOUR);
+    expect(
+      await draft.updateBookingByAdmin("token", MINE, {
+        ...editPayload(),
+        date: soon.date,
+        time: soon.time,
+      }),
+    ).toEqual({ error: "partner_window" });
+    expect(tables.bookings[0]!.notes).toBeUndefined();
+  });
+
+  test("what the edit screen does not send is refused before anything is read, for anybody", async () => {
+    role = "admin";
+    for (const over of [
+      { time: "9am" },
+      { time: "25:00" },
+      { date: "2099-02-31" },
+      { status: "hacked" },
+      { payment_status: "free" },
+      { amount_paid_eur: -5 },
+      { partner_id: SOMEONE },
+      { created_by_role: "admin" },
+    ]) {
+      expect(
+        await draft.updateBookingByAdmin("token", MINE, {
+          ...editPayload(),
+          ...over,
+        } as never),
+      ).toEqual({ error: "invalid" });
+    }
+    expect(tables.bookings[0]!.notes).toBeUndefined();
   });
 
   test("a booking with no day is editable, as on her screen", async () => {

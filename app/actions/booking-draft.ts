@@ -22,6 +22,7 @@ import { cancelErasesOnlinePayment } from "@/lib/bookings/refund-rules";
 import { settleBonusOnCancel } from "@/lib/bonuses/settle";
 import { isSlotTaken, SLOT_TAKEN } from "@/lib/bookings/slot-taken";
 import { bookingAccess, partnerMayEdit } from "@/lib/bookings/booking-access";
+import { readEditPayload } from "@/lib/bookings/edit-payload";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -468,7 +469,7 @@ const PARTNER_WINDOW = "partner_window";
 export async function updateBookingByAdmin(
   accessToken: string | null,
   bookingId: string,
-  payload: UpdateBookingPayload,
+  input: UpdateBookingPayload,
   options?: { refundLate?: boolean; bonusReturnLate?: boolean },
 ): Promise<{ error: string | null }> {
   let actor: AuthContext;
@@ -480,6 +481,10 @@ export async function updateBookingByAdmin(
   }
 
   if (!bookingId) return { error: "Falta el identificador de la reserva." };
+  // What the edit screen sends, checked before anything is read: an hour
+  // `HH:MM`, a status of its own, no key the screen does not send.
+  const payload = readEditPayload(input);
+  if (!payload) return { error: "invalid" };
 
   // A partner edits her own bookings and nobody else's, as her screens show
   // her only those. With the browser's key that was the database's rule
@@ -501,9 +506,12 @@ export async function updateBookingByAdmin(
               : "failed",
     };
   }
+  // And the day and hour it is moved to: a partner cannot bring one of hers
+  // into the last 24 hours either.
   if (
     actor.role === "partner" &&
-    !partnerMayEdit(access.booking.date, access.booking.time)
+    (!partnerMayEdit(access.booking.date, access.booking.time) ||
+      !partnerMayEdit(payload.date, payload.time))
   ) {
     return { error: PARTNER_WINDOW };
   }

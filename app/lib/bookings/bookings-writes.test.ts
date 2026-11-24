@@ -255,11 +255,16 @@ describe("the doors that write instead of the browser", () => {
     const edit = read("app/actions/booking-draft.ts");
     expect({
       // The partner's 24 hours, on the Canary clock, in the edit.
-      window: /actor\.role === "partner" &&\s*!partnerMayEdit\(/.test(edit),
+      window:
+        /actor\.role === "partner" &&\s*\(!partnerMayEdit\(access\.booking\.date, access\.booking\.time\) \|\|\s*!partnerMayEdit\(payload\.date, payload\.time\)\)/.test(
+          edit,
+        ),
+      // What the screen sends, checked first.
+      checked: edit.includes("readEditPayload(input)"),
       deleteIsNotHers: edit.includes(
         'requireRole(accessToken, ["admin", "staff"])',
       ),
-    }).toEqual({ window: true, deleteIsNotHers: true });
+    }).toEqual({ window: true, checked: true, deleteIsNotHers: true });
   });
 
   test("every write that can put a booking on a professional's hour says 'taken' in words", () => {

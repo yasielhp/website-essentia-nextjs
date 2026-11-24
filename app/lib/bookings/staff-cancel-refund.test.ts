@@ -164,15 +164,22 @@ beforeEach(() => {
   rpcCalls = 0;
   refundContext = null;
   actor = { userId: "u-1", role: "admin" };
+  // Everything the edit screen sends, as it sends it.
   before = {
     status: "confirmed",
     date: "2026-07-15",
     time: "10:00",
     service_id: "svc",
     service_title: "Manual Therapies",
+    tier_id: null,
+    duration: "60 min",
+    location: "centro",
+    location_address: null,
+    notes: null,
     first_name: "Ana",
     last_name: "García",
     email: "ana@example.test",
+    phone: null,
   };
   bookingRow = {
     id: BOOKING,
@@ -239,6 +246,7 @@ describe("the dashboard's save", () => {
     // before it (Canary time): the server refuses anything else.
     actor = { userId: "u-3", role: "partner" };
     bookingRow = { ...bookingRow, partner_id: "u-3", date: "2099-07-15" };
+    before = { ...before, date: "2099-07-15" };
     await save({ status: "cancelled" }, { refundLate: true });
     expect(settled[1]?.teamRefundsLate).toBe(false);
   });
@@ -342,6 +350,7 @@ describe("a bonus session cancelled by the team", () => {
     expect(bonusSettled[0]?.teamReturnsLate).toBe(true);
     actor = { userId: "u-3", role: "partner" };
     bookingRow = { ...bookingRow, partner_id: "u-3", date: "2099-07-15" };
+    before = { ...before, date: "2099-07-15" };
     await save({ status: "cancelled" }, { bonusReturnLate: true });
     expect(bonusSettled[1]?.teamReturnsLate).toBe(false);
   });

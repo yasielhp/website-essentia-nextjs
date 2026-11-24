@@ -1,5 +1,6 @@
 "use client";
 
+import { partnerMayEdit } from "@/lib/bookings/partner-window";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -30,13 +31,13 @@ import type {
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-function canPartnerEdit(date: string | null, time: string | null): boolean {
-  if (!date || !time) return true;
-  const [h, m] = time.split(":").map(Number) as [number, number];
-  const [y, mo, d] = date.split("-").map(Number) as [number, number, number];
-  const appt = new Date(y, mo - 1, d, h, m);
-  return appt.getTime() - Date.now() > (23 * 60 + 59) * 60 * 1000;
-}
+/**
+ * Whether a partner may still edit this booking: the server's own rule
+ * (`partnerMayEdit`, more than 23 h 59 min before, on the Canary clock), so
+ * the button and the refusal agree whatever the browser's time zone.
+ */
+const canPartnerEdit = (date: string | null, time: string | null) =>
+  partnerMayEdit(date, time);
 
 /** Falls back to the website badge for a role we have no styling for. */
 

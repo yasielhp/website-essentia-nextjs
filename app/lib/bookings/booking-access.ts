@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import type { AuthContext } from "@/lib/auth-guard";
-import { hoursUntilSession } from "./cancellation-window";
+import { partnerMayEdit, PARTNER_EDIT_MIN_MINUTES } from "./partner-window";
+
+export { partnerMayEdit, PARTNER_EDIT_MIN_MINUTES };
 
 /**
  * Which booking a member of the team may act on, from the server.
@@ -33,27 +35,6 @@ export function mayActOnBooking(
     return typeof partnerId === "string" && partnerId === actor.userId;
   }
   return false;
-}
-
-/**
- * How long before the session a partner may still edit it: more than 23 hours
- * and 59 minutes, the rule her screen has always applied (`canPartnerEdit` on
- * the booking's page and on its edit screen).
- */
-export const PARTNER_EDIT_MIN_MINUTES = 23 * 60 + 59;
-
-/**
- * Whether a partner may still edit a booking that starts at `date` + `time`,
- * counted on the Canary wall clock (`hoursUntilSession`), never the server's.
- * A booking with no day or no hour is editable, as on her screen.
- */
-export function partnerMayEdit(
-  date: string | null | undefined,
-  time: string | null | undefined,
-  now: number = Date.now(),
-): boolean {
-  if (!date || !time) return true;
-  return hoursUntilSession(date, time, now) * 60 > PARTNER_EDIT_MIN_MINUTES;
 }
 
 export type AccessibleBooking = {
