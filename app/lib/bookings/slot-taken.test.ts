@@ -20,6 +20,19 @@ describe("isSlotTaken", () => {
     ).toBe(true);
   });
 
+  test("or in the details or the hint, where some wrappers put it", () => {
+    expect(
+      isSlotTaken({
+        message: "Request failed",
+        details:
+          'Key (staff_id, booking_slot(date, "time", duration)) conflicts with existing key: bookings_no_overlap',
+      }),
+    ).toBe(true);
+    expect(isSlotTaken({ hint: "bookings_no_overlap" })).toBe(true);
+    // The code alone, with nothing else.
+    expect(isSlotTaken({ code: "23P01" })).toBe(true);
+  });
+
   test("any other refusal is not a taken hour", () => {
     for (const error of [
       { code: "23505", message: "duplicate key value" },

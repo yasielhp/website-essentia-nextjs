@@ -105,6 +105,12 @@
 --   SELECT booking_slot(DATE '2026-12-01', '10:00', '50 min');
 --   -- expected: ["2026-12-01 10:00:00","2026-12-01 10:50:00")
 --
+-- ROLLING THE CODE BACK with this applied (to `main`, or any deploy from
+-- before this branch) is the dangerous direction: the old Redsys webhook reads
+-- the refusal of a payment whose hour was taken as "not applied" and the
+-- money goes UNRECORDED, and the old forms show Postgres' words. Drop the
+-- constraint FIRST (below), then roll the code back.
+--
 -- Rollback:
 --   ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_no_overlap;
 --   DROP FUNCTION IF EXISTS booking_slot(date, text, text);

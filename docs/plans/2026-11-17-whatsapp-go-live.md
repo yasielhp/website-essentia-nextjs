@@ -166,7 +166,7 @@ Hoy una usuaria con sesión puede reescribir el `email` de **su propio** perfil 
 
 **Después de aplicarlas:** hacer una reserva de prueba en `/booking` como invitada hasta la pantalla de pago (y cancelarla allí), crear y editar una reserva en el panel, y comprobar que la cuenta de una clienta sigue listando sus reservas. Para la segunda: crear en el panel una reserva para una profesional a la misma hora que otra suya y comprobar el mensaje «Este profesional ya tiene otra reserva a esa hora».
 
-**Vuelta atrás:** está al final de cada archivo. Volver al código anterior con la primera aplicada deja el formulario público sin poder reservar: deshacerla antes.
+**Vuelta atrás:** está al final de cada archivo. Volver al código anterior con la primera aplicada deja el formulario público sin poder reservar: deshacerla antes. **Con `20261124_bookings_no_overlap` aplicada, NO volver al código anterior sin quitar antes la restricción** (`ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_no_overlap;`): el webhook de Redsys antiguo trata como «no aplicado» el pago de una reserva cuya hora ya ocupa otra y ese pago **queda sin registrar**.
 
 **Lo que hay hoy en los datos:** un par de reservas confirmadas ya se solapa (2026-09-23, la misma profesional, 16:30 y 17:00 de 45 minutos). La restricción cubre las reservas desde el 2026-11-24, así que ese par no impide aplicarla.
 

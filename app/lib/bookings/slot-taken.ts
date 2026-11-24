@@ -21,10 +21,21 @@ export const SLOT_TAKEN = "slot_taken";
 /** The name of the constraint, as the migration creates it. */
 export const NO_OVERLAP_CONSTRAINT = "bookings_no_overlap";
 
-/** Whether a database error is the professional's hour being taken. */
+/**
+ * Whether a database error is the professional's hour being taken: Postgres'
+ * code for an exclusion violation, or the constraint's name wherever PostgREST
+ * or a wrapper put it (the message, the details, the hint).
+ */
 export function isSlotTaken(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
-  const { code, message } = error as { code?: unknown; message?: unknown };
+  const { code, message, details, hint } = error as {
+    code?: unknown;
+    message?: unknown;
+    details?: unknown;
+    hint?: unknown;
+  };
   if (code === "23P01") return true;
-  return typeof message === "string" && message.includes(NO_OVERLAP_CONSTRAINT);
+  return [message, details, hint].some(
+    (text) => typeof text === "string" && text.includes(NO_OVERLAP_CONSTRAINT),
+  );
 }
