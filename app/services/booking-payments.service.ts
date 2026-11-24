@@ -48,7 +48,7 @@ export async function handleBookingPaid(
       // handed an id and an amount, and the row knows which Redsys order paid
       // it. That column is still called `stripe_session_id` for historical
       // reasons.
-      "first_name, last_name, email, service_title, date, time, duration, price_eur, amount_paid_eur, payment_status, status, stripe_session_id, contact_id, staff_id",
+      "first_name, last_name, email, service_title, date, time, duration, price_eur, amount_paid_eur, payment_status, status, stripe_session_id, balance_settled_method, contact_id, staff_id",
     )
     .eq("id", bookingId)
     .single();
@@ -69,7 +69,7 @@ export async function handleBookingPaid(
     Number.isFinite(amountCents) && amountCents > 0 ? amountCents / 100 : 0;
   if (orderId) {
     const arrival = judgeArrival(
-      booking as { payment_status: string | null; amount_paid_eur: number },
+      booking as Parameters<typeof judgeArrival>[0],
       await paymentEntries(bookingId),
       orderId,
     );
@@ -99,45 +99,54 @@ export async function handleBookingPaid(
 
   // Conditioned on the amount read above: two notifications arriving together
   // both pass the event check, and only one of them may add the money.
+  // "First payment wins", in ONE statement: the booking is marked paid only
+  // while it is still unpaid (state and amount as read), and the order that
+  // paid it is written with it (`stripe_session_id`), so whoever loses can
+  // tell which order won.
   const { data: applied } = await adminClient.database
     .from("bookings")
     .update({
       payment_status: paymentStatus,
       amount_paid_eur: paidEur,
       status: "confirmed",
+      ...(orderId ? { stripe_session_id: orderId } : {}),
     })
     .eq("id", bookingId)
     .eq("amount_paid_eur", Number(booking.amount_paid_eur ?? 0))
+    .in("payment_status", ["pending", "failed"])
     .select("id");
   if (((applied ?? []) as unknown[]).length === 0) {
-    // Another notification added money in between. If it was ANOTHER order,
-    // this one is a duplicate; the same order arriving twice at once is a
-    // retry, and is left alone. Judged again on what is now recorded.
+    // Another notification paid it between our read and our write. Judged
+    // again on the booking as it now is: paid under ANOTHER order, this one is
+    // a duplicate (recorded, owed back, the office told, exactly as when they
+    // arrive one after the other); paid under THIS order, a retry.
     if (orderId) {
       const { data: now } = await adminClient.database
         .from("bookings")
-        .select("payment_status, amount_paid_eur")
+        .select(
+          "payment_status, amount_paid_eur, stripe_session_id, balance_settled_method",
+        )
         .eq("id", bookingId)
         .maybeSingle();
       const again = judgeArrival(
-        (now ?? booking) as {
-          payment_status: string | null;
-          amount_paid_eur: number;
-        },
+        (now ?? booking) as Parameters<typeof judgeArrival>[0],
         await paymentEntries(bookingId),
         orderId,
       );
-      if (again.kind === "duplicate" && again.firstOrderId) {
+      if (again.kind === "duplicate") {
         await recordDuplicatePayment({
           bookingId,
           orderId,
           amountEur: received,
           firstOrderId: again.firstOrderId,
         });
-      } else if (again.kind !== "retry") {
-        console.warn("[handleBookingPaid] concurrent payment left alone", {
+      } else if (again.kind === "apply") {
+        // Still unpaid and yet not written: the booking changed some other
+        // way. Loud, so the money is looked for.
+        console.error("[handleBookingPaid] payment not applied", {
           bookingId,
           orderId,
+          amountCents,
         });
       }
     }

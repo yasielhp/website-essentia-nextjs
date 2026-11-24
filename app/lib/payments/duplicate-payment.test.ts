@@ -61,3 +61,30 @@ describe("judgeArrival", () => {
     ).toEqual({ kind: "apply" });
   });
 });
+
+describe("judgeArrival, before the winner's entry is written", () => {
+  const paidUnder = (order: string, extra: Record<string, unknown> = {}) => ({
+    payment_status: "paid",
+    amount_paid_eur: 130,
+    stripe_session_id: order,
+    balance_settled_method: null,
+    ...extra,
+  });
+
+  it("the order the update wrote, arriving again, is a retry", () => {
+    expect(judgeArrival(paidUnder(X), [], X)).toEqual({ kind: "retry" });
+  });
+
+  it("another order is a duplicate of the one the update wrote", () => {
+    expect(judgeArrival(paidUnder(X), [], Y)).toEqual({
+      kind: "duplicate",
+      firstOrderId: X,
+    });
+  });
+
+  it("a booking paid at the desk under an old checkout's order is not taken for that order's payment", () => {
+    expect(
+      judgeArrival(paidUnder(Y, { balance_settled_method: "cash" }), [], Y),
+    ).toEqual({ kind: "duplicate", firstOrderId: null });
+  });
+});

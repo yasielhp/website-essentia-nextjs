@@ -262,11 +262,23 @@ describe("payment: handleBookingPaid", () => {
     expect(calls[0]!.emailsSentBefore).toBe(1);
   });
 
-  test("a deposit and then the balance: the second payment sends the email but not the WhatsApp", async () => {
+  test("an old deposit booking paid online again (a page from before 2026-11-24, a new order) is a duplicate to refund: no client email, no WhatsApp", async () => {
+    // Since 2026-11-24 the checkout opens nothing on a booking that holds
+    // money, so a second order can only come from a page opened before.
+    paymentStatus = "deposit_paid";
+    amountPaid = 20;
+    await handleBookingPaid("b-1", 2500, "ord-2");
+    expect(bookingUpdates).toBe(0);
+    expect(sent.filter((m) => m.to === "ana@example.test")).toHaveLength(0);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("the deposit's own order notified again is a retry: nothing at all", async () => {
     paymentStatus = "deposit_paid";
     amountPaid = 20;
     await handleBookingPaid("b-1", 2500);
-    expect(sent).toHaveLength(1);
+    expect(bookingUpdates).toBe(0);
+    expect(sent).toHaveLength(0);
     expect(calls).toHaveLength(0);
   });
 

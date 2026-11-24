@@ -30,20 +30,48 @@ let history: (PaymentEntry & { channel: string })[] = [];
 let updates: Record<string, unknown>[] = [];
 let sent: { to: string; subject: string; html: string }[] = [];
 
+/**
+ * When set, the first `count` reads of the booking each take a snapshot and
+ * wait until all of them have read: two webhooks that both pass the read
+ * before either writes.
+ */
+let barrier: {
+  count: number;
+  reads: number;
+  open: () => void;
+  opened: Promise<void>;
+} | null = null;
+function holdReads(count: number) {
+  let open = () => {};
+  const opened = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  barrier = { count, reads: 0, open, opened };
+}
+
 function chain(table: string): unknown {
   let patch: Record<string, unknown> | null = null;
   const filters: [string, unknown][] = [];
-  const result = () => {
+  const within: [string, unknown[]][] = [];
+  const result = (): unknown => {
     if (table === "bookings") {
       if (patch) {
-        const matches = filters.every(([col, v]) => {
-          if (col === "id") return true;
-          return Number(booking[col] ?? 0) === Number(v);
-        });
+        const matches =
+          filters.every(([col, v]) => {
+            if (col === "id") return true;
+            return Number(booking[col] ?? 0) === Number(v);
+          }) && within.every(([col, list]) => list.includes(booking[col]));
         if (!matches) return { data: [], error: null };
         updates.push(patch);
         Object.assign(booking, patch);
         return { data: [{ id: "b-1" }], error: null };
+      }
+      if (barrier && barrier.reads < barrier.count) {
+        const snapshot = { ...booking };
+        const gate = barrier;
+        gate.reads += 1;
+        if (gate.reads === gate.count) gate.open();
+        return gate.opened.then(() => ({ data: snapshot, error: null }));
       }
       return { data: { ...booking }, error: null };
     }
@@ -73,6 +101,12 @@ function chain(table: string): unknown {
       if (prop === "eq") {
         return (col: string, v: unknown) => {
           filters.push([col, v]);
+          return proxy;
+        };
+      }
+      if (prop === "in") {
+        return (col: string, list: unknown[]) => {
+          within.push([col, list]);
           return proxy;
         };
       }
@@ -190,6 +224,7 @@ beforeEach(() => {
   history = [];
   updates = [];
   sent = [];
+  barrier = null;
 });
 
 const payments = (event: string) =>
@@ -334,5 +369,55 @@ describe("the first payment, as before", () => {
   test("without an order passed, the booking's own order is used", async () => {
     await handleBookingPaid("b-1", 13000);
     expect(payments("paid")[0]!.provider_id).toBe(Y);
+  });
+});
+
+describe("two orders authorised at the same moment", () => {
+  test("both pass the read before either writes: one pays, the other is a duplicate, never only a log", async () => {
+    holdReads(2);
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    await Promise.all([
+      handleBookingPaid("b-1", 13000, X),
+      handleBookingPaid("b-1", 13000, Y),
+    ]);
+    quiet.mockRestore();
+
+    // The booking was written once, by the winner, with its order.
+    expect(updates).toHaveLength(1);
+    const winner = booking.stripe_session_id as string;
+    const loser = winner === X ? Y : X;
+    expect(booking).toMatchObject({
+      payment_status: "paid",
+      amount_paid_eur: 130,
+    });
+    expect(payments("paid")).toHaveLength(1);
+    expect(payments("paid")[0]!.provider_id).toBe(winner);
+
+    // The loser: recorded, owed back on its own order, the office told.
+    expect(payments("duplicate")).toHaveLength(1);
+    expect(payments("duplicate")[0]).toMatchObject({
+      provider_id: loser,
+      payload: { orderId: loser, firstOrderId: winner, duplicate: true },
+    });
+    expect(payments("refund_owed")[0]).toMatchObject({
+      provider_id: loser,
+      payload: { amountEur: 130, duplicate: true },
+    });
+    expect(office()).toHaveLength(1);
+    expect(office()[0]!.html).toContain(loser);
+    expect(office()[0]!.html).toContain(`con el pedido ${winner}`);
+  });
+
+  test("the SAME order twice at once is a retry: paid once, nothing owed, nobody told", async () => {
+    holdReads(2);
+    await Promise.all([
+      handleBookingPaid("b-1", 13000, X),
+      handleBookingPaid("b-1", 13000, X),
+    ]);
+    expect(updates).toHaveLength(1);
+    expect(payments("paid")).toHaveLength(1);
+    expect(payments("duplicate")).toEqual([]);
+    expect(payments("refund_owed")).toEqual([]);
+    expect(office()).toEqual([]);
   });
 });
