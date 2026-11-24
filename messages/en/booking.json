@@ -184,7 +184,11 @@
     },
     "contactNote": "A confirmation has been sent to your email.",
     "contactNoteWithPhone": "A confirmation has been sent to your email and to <phone>{phoneValue}</phone>.",
-    "cta": "Back to home"
+    "cta": "Back to home",
+    "alreadyPaid": {
+      "heading": "This booking is already paid.",
+      "body": "No new charge was made. Your appointment is confirmed and the payment confirmation was already sent to your email."
+    }
   },
   "requested": {
     "heading": "Request received.",

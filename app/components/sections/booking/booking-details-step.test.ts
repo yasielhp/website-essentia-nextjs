@@ -421,6 +421,38 @@ describe("confirmBooking: the last gate before the payment", () => {
     expect(body.bookingId).toBe("booking-new");
   });
 
+  test("a booking paid already opens no new charge, sends no 'received' and says it is paid", async () => {
+    globalThis.fetch = ((...args: unknown[]) => {
+      calls.push({ name: "fetch", args });
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            error: "Booking is already paid",
+            code: "already_paid",
+          }),
+          { status: 409 },
+        ),
+      );
+    }) as unknown as typeof fetch;
+    const result = await confirm(DETAILS, true);
+    await settle();
+    expect(result).toEqual({ kind: "alreadyPaid" });
+    expect(names()).not.toContain("notifyBooking");
+  });
+
+  test("any other refusal of the checkout (a booking released) is still 'unpaid'", async () => {
+    globalThis.fetch = ((...args: unknown[]) => {
+      calls.push({ name: "fetch", args });
+      return Promise.resolve(
+        new Response(JSON.stringify({ error: "Booking is no longer open" }), {
+          status: 409,
+        }),
+      );
+    }) as unknown as typeof fetch;
+    const result = await confirm(DETAILS, true);
+    expect(result).toEqual({ kind: "unpaid" });
+  });
+
   test("a database that could not answer changes nothing: it goes on to the payment as it always did", async () => {
     promotion = { promoted: false, reason: "failed" };
     const result = await confirm(DETAILS);

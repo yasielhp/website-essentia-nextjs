@@ -227,6 +227,11 @@ export type ConfirmResult =
   | { kind: "alreadyConfirmed" }
   /** Hand over to Redsys with this form. */
   | { kind: "redsys"; formData: RedsysFormData }
+  /**
+   * The booking is paid already (a second tab, the back button after paying):
+   * no new charge was opened, and she is shown it as paid.
+   */
+  | { kind: "alreadyPaid" }
   /** Payment could not be started; the booking stands and is chased later. */
   | { kind: "unpaid" };
 
@@ -365,6 +370,15 @@ export async function confirmBooking({
       phone: details.phone || undefined,
     }),
   });
+
+  // Paid already: the checkout opened nothing, and the visitor is told it is
+  // paid rather than sent to the "unpaid" page.
+  if (res.status === 409) {
+    const body = (await res.json().catch(() => null)) as {
+      code?: string;
+    } | null;
+    if (body?.code === "already_paid") return { kind: "alreadyPaid" };
+  }
 
   // The booking is already saved. If the payment session cannot be opened the
   // visitor is not sent back into the form; the unpaid booking is released by

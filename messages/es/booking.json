@@ -184,7 +184,11 @@
     },
     "contactNote": "Se ha enviado una confirmación a tu correo electrónico.",
     "contactNoteWithPhone": "Se ha enviado una confirmación a tu correo electrónico y al <phone>{phoneValue}</phone>.",
-    "cta": "Volver al inicio"
+    "cta": "Volver al inicio",
+    "alreadyPaid": {
+      "heading": "Esta reserva ya está pagada.",
+      "body": "No se ha hecho ningún cargo nuevo. Tu cita está confirmada y la confirmación del pago ya se envió a tu correo."
+    }
   },
   "requested": {
     "heading": "Solicitud recibida.",

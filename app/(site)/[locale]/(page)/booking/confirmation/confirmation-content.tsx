@@ -15,6 +15,9 @@ export function ConfirmationContent() {
   const dateStr = searchParams.get("date");
   const time = searchParams.get("time") ?? "";
   const phone = searchParams.get("phone") ?? "";
+  // Reached from the form when the booking turned out to be paid already: no
+  // new charge was made, and the page says so instead of "processed".
+  const alreadyPaid = searchParams.get("already") === "paid";
 
   // Only the date portion, so the day never shifts with the UTC offset.
   const dateIso = dateStr?.split("T")[0];
@@ -35,10 +38,10 @@ export function ConfirmationContent() {
         {/* Heading */}
         <div className="mb-8 text-center">
           <h1 className="font-display text-petroleum-700 text-3xl md:text-4xl">
-            {t("heading")}
+            {alreadyPaid ? t("alreadyPaid.heading") : t("heading")}
           </h1>
           <p className="text-petroleum-400 mt-3 leading-relaxed text-balance">
-            {t("body")}
+            {alreadyPaid ? t("alreadyPaid.body") : t("body")}
           </p>
         </div>
 

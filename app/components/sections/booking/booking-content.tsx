@@ -16,6 +16,7 @@ import {
   manualTherapyTreatments,
 } from "@/data/services-data";
 import { buildSteps } from "@/utils/calendar-helpers";
+import { localDateStr } from "@/utils/format";
 import {
   clearStorage,
   draftEmail,
@@ -385,6 +386,19 @@ function BookingContentInner() {
 
     if (result.kind === "redsys") {
       setRedsysForm(result.formData);
+      return;
+    }
+
+    // Paid already (another tab, the back button after paying): the page that
+    // says so, with the booking, and no new charge.
+    if (result.kind === "alreadyPaid") {
+      push(
+        `/booking/confirmation?already=paid&service=${encodeURIComponent(selectedService.title)}` +
+          (selectedDate
+            ? `&date=${encodeURIComponent(localDateStr(selectedDate))}`
+            : "") +
+          (selectedTime ? `&time=${encodeURIComponent(selectedTime)}` : ""),
+      );
       return;
     }
 
