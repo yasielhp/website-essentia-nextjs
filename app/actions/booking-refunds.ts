@@ -12,6 +12,7 @@ import {
   onlinePayment,
   refundPatch,
   refundView,
+  refundedEur,
   suspectedOnline,
   type BookingRefundView,
   type MarkRefundError,
@@ -103,7 +104,7 @@ export async function markBookingRefunded(
     return { error: "exceeds" };
   }
 
-  const patch = refundPatch(booking, amountEur);
+  const patch = refundPatch(booking, amountEur, refundedEur(entries));
   const whole = "payment_status" in patch;
   const { data, error } = await getAdminClient()
     .database.from("bookings")

@@ -176,7 +176,10 @@ describe("markBookingRefunded", () => {
     const res = await mark({ note: "devuelto el 25" });
     expect(res).toEqual({ error: null });
     expect(writes).toHaveLength(1);
-    expect(writes[0]!.patch).toEqual({ payment_status: "refunded" });
+    expect(writes[0]!.patch).toEqual({
+      payment_status: "refunded",
+      amount_paid_eur: 100,
+    });
     expect(writes[0]!.filters).toEqual([
       ["id", "6f1c1f5e-2a4b-4c39-9d1e-3b2f1a0c9e11"],
       ["status", "cancelled"],
@@ -199,6 +202,27 @@ describe("markBookingRefunded", () => {
     expect(res).toEqual({ error: null });
     expect(writes[0]!.patch).toEqual({ amount_paid_eur: 60 });
     expect(String(recorded[0]!.summary)).toContain("parcial");
+  });
+
+  test("40 € then the last 60 €: the second records the 100 € returned in all", async () => {
+    // After the first mark: the booking holds 60 €, the history has the 40 €.
+    bookingRow = { ...bookingRow, amount_paid_eur: "60.00" };
+    entries = [
+      ...entries,
+      {
+        event: "refunded",
+        actor_role: "admin",
+        provider_id: "790098209516",
+        payload: { amountEur: 40 },
+        created_at: "2026-07-11T10:00:00Z",
+      },
+    ];
+    const res = await mark({ amountEur: 60 });
+    expect(res).toEqual({ error: null });
+    expect(writes[0]!.patch).toEqual({
+      payment_status: "refunded",
+      amount_paid_eur: 100,
+    });
   });
 
   test("never more than is left to return", async () => {

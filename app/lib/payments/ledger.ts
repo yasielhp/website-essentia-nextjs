@@ -61,6 +61,21 @@ export function bookingMoney(r: LedgerBooking): LedgerMoney {
   };
 }
 
+/**
+ * The money a booking still holds: what was paid, less what was returned. A
+ * part refund already lowered `amount_paid_eur`; a refunded booking holds
+ * nothing (its `amount_paid_eur` is then the total returned, which is what
+ * the ledger's "refunded" row shows).
+ */
+export function heldEur(b: {
+  payment_status: string | null;
+  amount_paid_eur?: number | string | null;
+}): number {
+  if (b.payment_status === "refunded") return 0;
+  const paid = Number(b.amount_paid_eur ?? 0);
+  return Number.isFinite(paid) && paid > 0 ? paid : 0;
+}
+
 /** The headline numbers of a list of ledger rows. */
 export function ledgerTotals(
   rows: { status: string | null; amount: number | null; owed?: number }[],

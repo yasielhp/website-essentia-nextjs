@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { bookingMoney, ledgerTotals } from "@/lib/payments/ledger";
+import { bookingMoney, heldEur, ledgerTotals } from "@/lib/payments/ledger";
 import {
   cancelErasesOnlinePayment,
   onlinePayment,
@@ -272,7 +272,7 @@ describe("the latest word on the refund decides", () => {
 describe("refundPatch and the ledger", () => {
   it("returning everything makes the booking refunded and takes it out of income", () => {
     const patch = refundPatch(paidOnline, 100);
-    expect(patch).toEqual({ payment_status: "refunded" });
+    expect(patch).toEqual({ payment_status: "refunded", amount_paid_eur: 100 });
     const row = {
       ...paidOnline,
       price_eur: 100,
@@ -297,7 +297,34 @@ describe("refundPatch and the ledger", () => {
   it("works in cents, so 99,99 € of 99,99 € is everything", () => {
     expect(refundPatch({ amount_paid_eur: "99.99" }, 99.99)).toEqual({
       payment_status: "refunded",
+      amount_paid_eur: 99.99,
     });
+  });
+
+  it("40 € and then the last 60 €: the refunded row says 100 €, and nothing is income", () => {
+    const first = refundPatch(paidOnline, 40);
+    expect(first).toEqual({ amount_paid_eur: 60 });
+    const afterFirst = { ...paidOnline, ...first };
+    // The second mark knows what the first returned (the history's entries).
+    const second = refundPatch(afterFirst, 60, 40);
+    expect(second).toEqual({
+      payment_status: "refunded",
+      amount_paid_eur: 100,
+    });
+    const money = bookingMoney({ ...afterFirst, price_eur: 100, ...second });
+    expect(money).toMatchObject({ status: "refunded", amount: 100 });
+    expect(ledgerTotals([money]).revenue).toBe(0);
+    expect(heldEur({ ...afterFirst, ...second })).toBe(0);
+  });
+
+  it("the money a booking still holds: a part refund keeps the rest, a refund nothing", () => {
+    expect(heldEur({ ...paidOnline, amount_paid_eur: 60 })).toBe(60);
+    expect(heldEur({ payment_status: "refunded", amount_paid_eur: 100 })).toBe(
+      0,
+    );
+    expect(heldEur({ payment_status: "pending", amount_paid_eur: null })).toBe(
+      0,
+    );
   });
 });
 

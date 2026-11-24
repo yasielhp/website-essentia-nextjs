@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { formatMediumDate, formatPrice } from "@/utils/format";
+import { heldEur } from "@/lib/payments/ledger";
 import {
   LocationBadge,
   SourceBadge,
@@ -189,8 +190,9 @@ export function TransactionsSection({
     })),
   ].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 
+  // Money returned is not money paid: a refunded booking holds nothing.
   const paidTotal =
-    bookings.reduce((sum, b) => sum + Number(b.amount_paid_eur ?? 0), 0) +
+    bookings.reduce((sum, b) => sum + heldEur(b), 0) +
     bonuses.reduce((sum, b) => sum + b.priceEur, 0);
 
   return (

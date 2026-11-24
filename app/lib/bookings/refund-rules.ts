@@ -292,20 +292,34 @@ export function refundState(
     : { kind: "none" };
 }
 
+/** Everything already marked as returned on the booking, in euros. */
+export function refundedEur(entries: PaymentEntry[]): number {
+  return refundedCents(entries) / 100;
+}
+
 /**
- * The write that records `amountEur` as returned. All of it: the booking
- * becomes `refunded` and keeps its amount, so the ledger shows the row as a
- * refund and stops counting it as income. Part of it: the booking keeps the
- * rest as income (its `amount_paid_eur` goes down) and stays as it was.
+ * The write that records `amountEur` as returned. Part of it: the booking
+ * keeps the rest as income (its `amount_paid_eur` goes down to what it still
+ * holds) and its state stays. The rest of it: the booking becomes `refunded`,
+ * which the ledger stops counting as income, and `amount_paid_eur` becomes the
+ * TOTAL returned (`alreadyRefundedEur`, the earlier partial refunds, plus this
+ * one), so the ledger's "refunded" row says 100 € after 40 € and 60 €, not the
+ * last 60 €.
  */
 export function refundPatch(
   booking: Pick<RefundBooking, "amount_paid_eur">,
   amountEur: number,
-): { payment_status: "refunded" } | { amount_paid_eur: number } {
+  alreadyRefundedEur = 0,
+):
+  | { payment_status: "refunded"; amount_paid_eur: number }
+  | { amount_paid_eur: number } {
   const paid = toCents(Number(booking.amount_paid_eur ?? 0));
   const back = toCents(amountEur);
   return back >= paid
-    ? { payment_status: "refunded" }
+    ? {
+        payment_status: "refunded",
+        amount_paid_eur: (toCents(alreadyRefundedEur) + back) / 100,
+      }
     : { amount_paid_eur: (paid - back) / 100 };
 }
 
