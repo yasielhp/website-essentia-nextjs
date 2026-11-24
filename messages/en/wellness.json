@@ -70,19 +70,23 @@
     "manualTherapiesCards": {
       "espira": {
         "title": "Espira",
-        "description": "Relaxing massage focused on the upper body — neck, shoulders, cervical area and back. It closes with craniofacial work to settle the nervous system and bring back calm, lightness and presence."
+        "description": "Relaxing massage focused on the upper body — neck, shoulders, cervical area and back. It closes with craniofacial work to settle the nervous system and bring back calm, lightness and presence.",
+        "metaDescription": "Relaxing massage for the upper body: neck, shoulders, cervical area and back, closing with craniofacial work to settle the nervous system."
       },
       "pulse": {
         "title": "Pulse",
-        "description": "Deep tissue therapeutic massage, made to ease knots, reduce muscular stiffness and give the body back its mobility when rest alone no longer shifts the tension."
+        "description": "Deep tissue therapeutic massage, made to ease knots, reduce muscular stiffness and give the body back its mobility when rest alone no longer shifts the tension.",
+        "metaDescription": "Deep tissue therapeutic massage to ease knots, reduce muscular stiffness and restore mobility when rest alone no longer shifts the tension."
       },
       "drenaje-linfatico": {
         "title": "Integrative Lymphatic Drainage — Essentia Method",
-        "description": "The Método Essentia brings together precision, rhythm and a therapist's eye to follow processes of inflammation, fluid retention and heaviness, building a greater sense of lightness and balance."
+        "description": "The Método Essentia brings together precision, rhythm and a therapist's eye to follow processes of inflammation, fluid retention and heaviness, building a greater sense of lightness and balance.",
+        "metaDescription": "Lymphatic drainage with the Essentia Method: precision, rhythm and a therapist's eye to follow inflammation, fluid retention and heaviness."
       },
       "essentia-active": {
         "title": "Essentia Active",
-        "description": "Recovery massage for tired or overloaded legs. Made to ease heaviness, bring back lightness and look after legs under physical strain."
+        "description": "Recovery massage for tired or overloaded legs. Made to ease heaviness, bring back lightness and look after legs under physical strain.",
+        "metaDescription": "Recovery massage for tired or overloaded legs. Made to ease heaviness, bring back lightness and look after legs under physical strain."
       },
       "nurtura": {
         "title": "Nurtura",
@@ -98,11 +102,13 @@
       },
       "soma": {
         "title": "Soma",
-        "description": "Full-body deep tissue massage, aimed at persistent tension, muscular stiffness and overloaded areas, working towards mobility and a sense of release."
+        "description": "Full-body deep tissue massage, aimed at persistent tension, muscular stiffness and overloaded areas, working towards mobility and a sense of release.",
+        "metaDescription": "Full-body deep tissue massage, aimed at persistent tension, muscular stiffness and overloaded areas, working towards mobility and a sense of release."
       },
       "lume": {
         "title": "Lume",
-        "description": "A full-body multisensory experience combining massage, craniofacial work and foot reflexology to bring a deep disconnection and carry the body towards calm, rest and balance."
+        "description": "A full-body multisensory experience combining massage, craniofacial work and foot reflexology to bring a deep disconnection and carry the body towards calm, rest and balance.",
+        "metaDescription": "A full-body multisensory experience: massage, craniofacial work and foot reflexology for deep disconnection, calm, rest and balance."
       },
       "alure-duo": {
         "title": "Alure Duo",

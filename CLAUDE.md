@@ -92,7 +92,7 @@ public/
 
 ### i18n
 
-Every page under `app/[locale]/(page)/` exports `generateMetadata` using `getTranslations()` from the page's namespace (`messages/en/<page>.json` / `messages/es/<page>.json`). The `meta.title` and `meta.description` keys drive SEO. **Title max 65 chars, description max 155 chars.**
+Every page under `app/[locale]/(page)/` exports `generateMetadata` using `getTranslations()` from the page's namespace (`messages/en/<page>.json` / `messages/es/<page>.json`). The `meta.title` and `meta.description` keys drive SEO. **Title max 65 chars, description max 155 chars.** A treatment's own page (manual therapies, facials, IV protocols) takes its title and description from its card in the translations; a card whose description runs past 155 in either language carries a shorter `metaDescription` in both, read first by the page, and the card keeps its own text. `app/lib/seo.test.ts` fails if a title or a description of a treatment page is over its limit.
 
 ### Database (Insforge SDK)
 

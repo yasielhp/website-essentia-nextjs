@@ -70,19 +70,23 @@
     "manualTherapiesCards": {
       "espira": {
         "title": "Espira",
-        "description": "Masaje relajante enfocado en la parte superior del cuerpo, especialmente cuello, hombros, cervicales y espalda. Finaliza con masaje cráneo-facial para relajar el sistema nervioso y devolver calma, ligereza y presencia."
+        "description": "Masaje relajante enfocado en la parte superior del cuerpo, especialmente cuello, hombros, cervicales y espalda. Finaliza con masaje cráneo-facial para relajar el sistema nervioso y devolver calma, ligereza y presencia.",
+        "metaDescription": "Masaje relajante de cuello, hombros, cervicales y espalda, con cierre cráneo-facial para calmar el sistema nervioso y devolver ligereza y presencia."
       },
       "pulse": {
         "title": "Pulse",
-        "description": "Masaje terapéutico de tejido profundo, diseñado para aliviar contracturas, reducir rigidez muscular y devolver movilidad al cuerpo cuando la tensión ya no cede solo con descanso."
+        "description": "Masaje terapéutico de tejido profundo, diseñado para aliviar contracturas, reducir rigidez muscular y devolver movilidad al cuerpo cuando la tensión ya no cede solo con descanso.",
+        "metaDescription": "Masaje terapéutico de tejido profundo para aliviar contracturas, reducir la rigidez muscular y devolver movilidad cuando el descanso ya no basta."
       },
       "drenaje-linfatico": {
         "title": "Drenaje Linfático Integrativo — Método Essentia",
-        "description": "El Método Essentia combina precisión, ritmo y mirada terapéutica para acompañar procesos de inflamación, retención y pesadez corporal, favoreciendo una mayor sensación de ligereza y equilibrio."
+        "description": "El Método Essentia combina precisión, ritmo y mirada terapéutica para acompañar procesos de inflamación, retención y pesadez corporal, favoreciendo una mayor sensación de ligereza y equilibrio.",
+        "metaDescription": "Drenaje linfático con el Método Essentia: precisión, ritmo y mirada terapéutica para acompañar inflamación, retención de líquidos y pesadez corporal."
       },
       "essentia-active": {
         "title": "Essentia Active",
-        "description": "Masaje de recuperación enfocado en piernas cansadas o sobrecargadas. Ideal para aliviar la sensación de pesadez, favorecer la ligereza y acompañar piernas sometidas a esfuerzo físico."
+        "description": "Masaje de recuperación enfocado en piernas cansadas o sobrecargadas. Ideal para aliviar la sensación de pesadez, favorecer la ligereza y acompañar piernas sometidas a esfuerzo físico.",
+        "metaDescription": "Masaje de recuperación para piernas cansadas o sobrecargadas: alivia la pesadez, favorece la ligereza y acompaña las piernas tras el esfuerzo físico."
       },
       "nurtura": {
         "title": "Nurtura",
@@ -98,11 +102,13 @@
       },
       "soma": {
         "title": "Soma",
-        "description": "Masaje de tejido profundo de cuerpo completo, orientado a trabajar tensiones persistentes, rigidez muscular y zonas de sobrecarga, favoreciendo movilidad y sensación de liberación corporal."
+        "description": "Masaje de tejido profundo de cuerpo completo, orientado a trabajar tensiones persistentes, rigidez muscular y zonas de sobrecarga, favoreciendo movilidad y sensación de liberación corporal.",
+        "metaDescription": "Masaje de tejido profundo de cuerpo completo para tensiones persistentes, rigidez muscular y sobrecargas, que favorece la movilidad y la liberación."
       },
       "lume": {
         "title": "Lume",
-        "description": "Experiencia multisensorial de cuerpo completo que combina masaje, cráneo-facial y reflexología podal para inducir una desconexión profunda y acompañar al cuerpo hacia un estado de calma, descanso y equilibrio."
+        "description": "Experiencia multisensorial de cuerpo completo que combina masaje, cráneo-facial y reflexología podal para inducir una desconexión profunda y acompañar al cuerpo hacia un estado de calma, descanso y equilibrio.",
+        "metaDescription": "Experiencia multisensorial de cuerpo completo: masaje, cráneo-facial y reflexología podal para una desconexión profunda, calma, descanso y equilibrio."
       },
       "alure-duo": {
         "title": "Alure Duo",

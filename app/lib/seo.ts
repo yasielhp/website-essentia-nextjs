@@ -67,6 +67,9 @@ export function medicalTherapySchema({
 /** The longest a page title may be before a search result cuts it. */
 export const META_TITLE_MAX = 65;
 
+/** The longest a page description may be before a search result cuts it. */
+export const META_DESCRIPTION_MAX = 155;
+
 /**
  * The title of a treatment's page: its name and the family it belongs to
  * (`Espira | Terapias Manuales · Essentia`). A name long enough to push that

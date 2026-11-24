@@ -35,9 +35,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = t.has(`${cardKey}.title`)
     ? t(`${cardKey}.title`)
     : facial.title;
-  const description = t.has(`${cardKey}.description`)
-    ? t(`${cardKey}.description`)
-    : facial.description;
+  // A card's description can run past what a search result shows; where it
+  // does, the card carries a shorter one written for this.
+  const description = t.has(`${cardKey}.metaDescription`)
+    ? t(`${cardKey}.metaDescription`)
+    : t.has(`${cardKey}.description`)
+      ? t(`${cardKey}.description`)
+      : facial.description;
 
   return {
     title: { absolute: `${title} | ${t("facialMetaSuffix")}` },

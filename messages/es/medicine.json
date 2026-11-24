@@ -216,37 +216,44 @@
       "essentia-iv-signature": {
         "title": "Essentia IV Signature",
         "meta": "DRENAJE + IV THERAPY",
-        "description": "Drenaje Linfático Integrativo — Método Essentia combinado con una fórmula específica desarrollada junto a VitalDrip con NAD+, magnesio, vitamina C y L-carnitina."
+        "description": "Drenaje Linfático Integrativo — Método Essentia combinado con una fórmula específica desarrollada junto a VitalDrip con NAD+, magnesio, vitamina C y L-carnitina.",
+        "metaDescription": "Drenaje Linfático Integrativo — Método Essentia con una fórmula desarrollada junto a VitalDrip: NAD+, magnesio, vitamina C y L-carnitina."
       },
       "power-drip": {
         "title": "Power Drip",
         "meta": "45–60 MIN",
-        "description": "Protocolo intravenoso orientado a momentos de baja energía, jornadas exigentes o mayor desgaste. Combina vitaminas del grupo B, B12, aminoácidos y magnesio para acompañar vitalidad y recuperación."
+        "description": "Protocolo intravenoso orientado a momentos de baja energía, jornadas exigentes o mayor desgaste. Combina vitaminas del grupo B, B12, aminoácidos y magnesio para acompañar vitalidad y recuperación.",
+        "metaDescription": "Protocolo intravenoso para momentos de baja energía o mayor desgaste: vitaminas del grupo B, B12, aminoácidos y magnesio para acompañar la vitalidad."
       },
       "immunity-drip": {
         "title": "Immunity Drip",
         "meta": "45–60 MIN",
-        "description": "Protocolo con vitamina C, zinc, vitaminas del grupo B y glutatión, diseñado como apoyo nutricional en periodos de mayor exigencia y para acompañar el funcionamiento normal del sistema inmunitario."
+        "description": "Protocolo con vitamina C, zinc, vitaminas del grupo B y glutatión, diseñado como apoyo nutricional en periodos de mayor exigencia y para acompañar el funcionamiento normal del sistema inmunitario.",
+        "metaDescription": "Vitamina C, zinc, vitaminas del grupo B y glutatión: apoyo nutricional en periodos exigentes y para el funcionamiento normal del sistema inmunitario."
       },
       "nirvana-drip": {
         "title": "Nirvana Drip",
         "meta": "45–60 MIN",
-        "description": "Protocolo centrado en relajación y bienestar durante periodos de estrés o descanso deficiente. Combina magnesio, vitaminas del grupo B y triptófano para acompañar calma y recuperación."
+        "description": "Protocolo centrado en relajación y bienestar durante periodos de estrés o descanso deficiente. Combina magnesio, vitaminas del grupo B y triptófano para acompañar calma y recuperación.",
+        "metaDescription": "Protocolo de relajación y bienestar para periodos de estrés o mal descanso: magnesio, vitaminas del grupo B y triptófano para acompañar la calma."
       },
       "stress-balance": {
         "title": "Stress Balance",
         "meta": "45–60 MIN",
-        "description": "Protocolo pensado para momentos de estrés, tensión mental o descanso insuficiente. Combina magnesio, vitaminas B, vitamina C, glicina y zinc para acompañar relajación y bienestar."
+        "description": "Protocolo pensado para momentos de estrés, tensión mental o descanso insuficiente. Combina magnesio, vitaminas B, vitamina C, glicina y zinc para acompañar relajación y bienestar.",
+        "metaDescription": "Protocolo para momentos de estrés, tensión mental o descanso insuficiente: magnesio, vitaminas B, vitamina C, glicina y zinc para acompañar la calma."
       },
       "beauty-hair-glow": {
         "title": "Beauty & Hair Glow",
         "meta": "45–60 MIN",
-        "description": "Protocolo enfocado en el cuidado de piel y cabello desde dentro. Combina biotina, zinc, vitamina C, glutatión y aminoácidos seleccionados dentro de una experiencia orientada al bienestar estético."
+        "description": "Protocolo enfocado en el cuidado de piel y cabello desde dentro. Combina biotina, zinc, vitamina C, glutatión y aminoácidos seleccionados dentro de una experiencia orientada al bienestar estético.",
+        "metaDescription": "Cuidado de piel y cabello desde dentro: biotina, zinc, vitamina C, glutatión y aminoácidos seleccionados, en una experiencia de bienestar estético."
       },
       "vitamin-c": {
         "title": "Vitamina C",
         "meta": "45–60 MIN",
-        "description": "Protocolo intravenoso de alta concentración en vitamina C, orientado al apoyo antioxidante y al bienestar general. Una opción específica que debe seleccionarse siempre tras valoración sanitaria individual."
+        "description": "Protocolo intravenoso de alta concentración en vitamina C, orientado al apoyo antioxidante y al bienestar general. Una opción específica que debe seleccionarse siempre tras valoración sanitaria individual.",
+        "metaDescription": "Protocolo intravenoso de alta concentración en vitamina C para apoyo antioxidante y bienestar general, siempre tras valoración sanitaria individual."
       },
       "nad-plus": {
         "title": "NAD+",
@@ -256,22 +263,26 @@
       "resurrection-drip": {
         "title": "Resurrection Drip",
         "meta": "45–60 MIN",
-        "description": "Protocolo de hidratación y recuperación pensado para momentos de mayor desgaste. Combina solución salina, vitaminas del grupo B, vitamina C, magnesio y zinc para acompañar la rehidratación."
+        "description": "Protocolo de hidratación y recuperación pensado para momentos de mayor desgaste. Combina solución salina, vitaminas del grupo B, vitamina C, magnesio y zinc para acompañar la rehidratación.",
+        "metaDescription": "Protocolo de hidratación y recuperación para momentos de mayor desgaste: solución salina, vitaminas del grupo B, vitamina C, magnesio y zinc."
       },
       "body-drip": {
         "title": "Body Drip",
         "meta": "45–60 MIN",
-        "description": "Protocolo con complejo MIC, vitaminas del grupo B y ácido alfa lipoico, planteado desde una mirada metabólica y corporal para complementar objetivos de bienestar y composición corporal."
+        "description": "Protocolo con complejo MIC, vitaminas del grupo B y ácido alfa lipoico, planteado desde una mirada metabólica y corporal para complementar objetivos de bienestar y composición corporal.",
+        "metaDescription": "Complejo MIC, vitaminas del grupo B y ácido alfa lipoico, desde una mirada metabólica, para complementar objetivos de bienestar y composición corporal."
       },
       "fit-drip": {
         "title": "Fit Drip",
         "meta": "45–60 MIN",
-        "description": "Protocolo pensado para actividad física, recuperación y periodos de mayor exigencia. Combina aminoácidos esenciales, vitaminas del grupo B, magnesio y calcio para acompañar hidratación y recuperación."
+        "description": "Protocolo pensado para actividad física, recuperación y periodos de mayor exigencia. Combina aminoácidos esenciales, vitaminas del grupo B, magnesio y calcio para acompañar hidratación y recuperación.",
+        "metaDescription": "Protocolo para actividad física y recuperación: aminoácidos esenciales, vitaminas del grupo B, magnesio y calcio para acompañar la hidratación."
       },
       "calm-drip": {
         "title": "Calm Drip",
         "meta": "45–60 MIN",
-        "description": "Protocolo orientado al descanso y la relajación, especialmente en periodos de mayor estrés. Combina triptófano, magnesio, glutatión y aminoácidos esenciales para acompañar calma y recuperación."
+        "description": "Protocolo orientado al descanso y la relajación, especialmente en periodos de mayor estrés. Combina triptófano, magnesio, glutatión y aminoácidos esenciales para acompañar calma y recuperación.",
+        "metaDescription": "Protocolo para el descanso y la relajación en periodos de estrés: triptófano, magnesio, glutatión y aminoácidos esenciales para acompañar la calma."
       }
     },
     "metaSuffix": "Essentia Medicine",
