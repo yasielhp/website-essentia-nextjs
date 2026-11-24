@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:messages": "python3 scripts/check-dashboard-messages.py",
+    "build:llms": "bun scripts/build-llms.ts",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {

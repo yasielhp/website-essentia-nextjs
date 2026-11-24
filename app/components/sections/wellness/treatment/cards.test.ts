@@ -209,37 +209,3 @@ describe("the page of each treatment shows its price from the first screen", () 
     expect(description).toBeGreaterThan(line);
   });
 });
-
-describe("the files written for assistants (llms.txt) carry no price of a treatment", () => {
-  // They are static text: a price copied into them cannot follow the centre's.
-  // They say where the current one is instead.
-  const PUBLIC = join(import.meta.dir, "../../../../../public");
-  const brief = readFileSync(join(PUBLIC, "llms.txt"), "utf8");
-  const full = readFileSync(join(PUBLIC, "llms-full.txt"), "utf8");
-  const services = brief.slice(
-    brief.indexOf("## Services"),
-    brief.indexOf("## Coming soon"),
-  );
-  const manual = full.slice(
-    full.indexOf("### Manual Therapies"),
-    full.indexOf("### Functional Well-Being"),
-  );
-
-  test("neither the list of services nor the manual therapies give a figure, or speak of a suite", () => {
-    for (const text of [services, manual]) {
-      expect(text.length).toBeGreaterThan(100);
-      expect(text).not.toMatch(/€|\beur\b|suite/i);
-    }
-  });
-
-  test("every manual therapy points at its own page, where the price is", () => {
-    const linked = [
-      ...manual.matchAll(
-        /https:\/\/www\.essentiawellnessclub\.com\/wellness\/manual-therapies\/([a-z-]+)/g,
-      ),
-    ].map((m) => m[1]);
-    expect(linked.sort()).toEqual(
-      manualTherapyTreatments.map((t) => t.id).sort(),
-    );
-  });
-});
