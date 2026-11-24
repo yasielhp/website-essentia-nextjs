@@ -7,6 +7,7 @@ import {
   mock,
   test,
 } from "bun:test";
+import { TIER_PRICES_CACHE_TAG } from "@/lib/treatments/prices";
 
 /**
  * The cached read the pages and the agent tools share, run for real with
@@ -102,7 +103,7 @@ describe("listPublicTierPrices", () => {
     expect(prices.TIER_PRICES_REVALIDATE_SECONDS).toBe(300);
     expect(kept?.options).toEqual({
       revalidate: prices.TIER_PRICES_REVALIDATE_SECONDS,
-      tags: [prices.TIER_PRICES_CACHE_TAG],
+      tags: [TIER_PRICES_CACHE_TAG],
     });
     expect(kept?.keyParts).toEqual(["tier-prices"]);
   });

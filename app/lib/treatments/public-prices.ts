@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { insforgePublic } from "@/lib/insforge-public";
-import type { TierPrice } from "@/lib/treatments/prices";
+import { TIER_PRICES_CACHE_TAG, type TierPrice } from "@/lib/treatments/prices";
 import { readTierPrices } from "@/lib/treatments/read-prices";
 
 /**
@@ -11,12 +11,12 @@ import { readTierPrices } from "@/lib/treatments/read-prices";
  * does and a search engine reads it) and what the agent tools answer with.
  *
  * Kept for five minutes: the pages are prerendered, and a price the centre
- * changes from the dashboard is on the site within that time, with no deploy.
+ * changes is on the site within that time, with no deploy. Saving a session
+ * type in Settings does not wait for it: it drops the tag (`refreshTierPrices`),
+ * and with it every prerendered page that printed these prices. The five
+ * minutes are for a change made some other way (straight in the database).
  * The pages that print these also declare the same `revalidate` themselves.
  */
-
-/** Drop this tag (`revalidateTag`) to show a changed price at once. */
-export const TIER_PRICES_CACHE_TAG = "tier-prices";
 
 /** How long a read is kept. The pages' own `revalidate` repeats this figure. */
 export const TIER_PRICES_REVALIDATE_SECONDS = 300;

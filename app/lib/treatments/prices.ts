@@ -11,6 +11,14 @@ import type { SupportedLocale } from "@/utils/format";
  * disagree. Pure: the read is `listPublicTierPrices`.
  */
 
+/**
+ * The tag the site keeps these prices under (`listPublicTierPrices`). Dropping
+ * it (`refreshTierPrices`) is what shows a changed price at once. Here, and not
+ * beside the cached read, so the action that drops it does not load the
+ * database client to learn a word.
+ */
+export const TIER_PRICES_CACHE_TAG = "tier-prices";
+
 /** One session type on sale: its name, how long it lasts and what it costs. */
 export type TierPrice = {
   label: string;

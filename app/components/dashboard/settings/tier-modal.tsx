@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useReducer } from "react";
 import { useTranslations } from "next-intl";
+import { refreshTierPrices } from "@/actions/tier-prices";
+import { getAccessToken } from "@/lib/client-session";
 import { insforge } from "@/lib/insforge";
 import type { ModalState } from "@/types/settings";
 import { IconX } from "@/components/ui/icons";
@@ -180,6 +182,13 @@ export function TierModal({
           })),
         );
       }
+
+      // The public site keeps the prices of the session types for five
+      // minutes, and so do the pages that print them. It is told now, so the
+      // new price (or a session type just switched off) shows on the very next
+      // visit. If that cannot be done the save still stands: the site catches
+      // up when the five minutes pass.
+      await refreshTierPrices(getAccessToken()).catch(() => undefined);
     }
 
     await onSaved(modal.serviceId);
