@@ -121,6 +121,7 @@
         "submit": "Confirmar inscripción",
         "submitting": "Comprobando…"
       },
+      "error": "No hemos podido completar tu inscripción. Inténtalo de nuevo en unos minutos.",
       "dataProtection": {
         "heading": "Información de protección de datos",
         "controller": "Responsable del tratamiento:",
@@ -251,6 +252,7 @@
         "submit": "Confirmar inscripción",
         "submitting": "Comprobando…"
       },
+      "error": "No hemos podido completar tu inscripción. Inténtalo de nuevo en unos minutos.",
       "dataProtection": {
         "heading": "Información de protección de datos",
         "controller": "Responsable del tratamiento:",

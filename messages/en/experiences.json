@@ -121,6 +121,7 @@
         "submit": "Confirm registration",
         "submitting": "Checking…"
       },
+      "error": "We could not complete your registration. Please try again in a few minutes.",
       "dataProtection": {
         "heading": "Data protection information",
         "controller": "Data controller:",
@@ -251,6 +252,7 @@
         "submit": "Confirm registration",
         "submitting": "Checking…"
       },
+      "error": "We could not complete your registration. Please try again in a few minutes.",
       "dataProtection": {
         "heading": "Data protection information",
         "controller": "Data controller:",

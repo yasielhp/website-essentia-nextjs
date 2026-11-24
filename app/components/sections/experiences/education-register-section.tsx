@@ -11,6 +11,11 @@ import { Checkbox } from "@components/ui/input";
 import { Accordion } from "@components/ui/accordion";
 import { contact } from "@/constants/contact";
 import { insforge } from "@/lib/insforge";
+import { getAccessToken } from "@/lib/client-session";
+import {
+  registerAccountForEvent,
+  registerGuestForEvent,
+} from "@/actions/event-registration";
 import { useAuth } from "@/components/auth-provider";
 import { useLocale, useTranslations } from "next-intl";
 import { EmailInput } from "@/components/ui/email-input";
@@ -43,6 +48,8 @@ type RegisterState = {
   checking: boolean;
   consent: boolean;
   consentError: string | undefined;
+  /** The server did not register her (refused, or did not answer). */
+  submitError: string | undefined;
   form: FormFields;
 };
 
@@ -54,6 +61,7 @@ type RegisterAction =
   | { type: "SUBMIT_MEMBER_BLOCKER" }
   | { type: "CONFIRM_START" }
   | { type: "CONFIRM_SUCCESS" }
+  | { type: "REGISTER_FAILED"; error: string }
   | { type: "SET_CONSENT"; value: boolean }
   | { type: "SET_CONSENT_ERROR"; error: string }
   | { type: "SET_FIELD"; field: keyof FormFields; value: string };
@@ -68,15 +76,22 @@ function registerReducer(
     case "SET_STAGE":
       return { ...state, stage: action.stage };
     case "SUBMIT_START":
-      return { ...state, checking: true };
+      return { ...state, checking: true, submitError: undefined };
     case "SUBMIT_SUCCESS":
       return { ...state, checking: false, stage: "success" };
     case "SUBMIT_MEMBER_BLOCKER":
       return { ...state, checking: false, stage: "member-blocker" };
     case "CONFIRM_START":
-      return { ...state, loading: true };
+      return { ...state, loading: true, submitError: undefined };
     case "CONFIRM_SUCCESS":
       return { ...state, loading: false, stage: "success" };
+    case "REGISTER_FAILED":
+      return {
+        ...state,
+        checking: false,
+        loading: false,
+        submitError: action.error,
+      };
     case "SET_CONSENT":
       return { ...state, consent: action.value, consentError: undefined };
     case "SET_CONSENT_ERROR":
@@ -96,6 +111,7 @@ const initialState: RegisterState = {
   checking: false,
   consent: false,
   consentError: undefined,
+  submitError: undefined,
   form: { firstName: "", lastName: "", email: "", phone: "" },
 };
 
@@ -269,6 +285,7 @@ type GuestFormProps = {
   form: FormFields;
   consent: boolean;
   consentError: string | undefined;
+  submitError: string | undefined;
   checking: boolean;
   onField: (field: keyof FormFields, value: string) => void;
   onConsent: (value: boolean) => void;
@@ -279,6 +296,7 @@ function GuestRegistrationForm({
   form,
   consent,
   consentError,
+  submitError,
   checking,
   onField,
   onConsent,
@@ -391,6 +409,12 @@ function GuestRegistrationForm({
           {checking ? td("submitting") : td("submit")}
         </Button>
 
+        {submitError && (
+          <p role="alert" className="text-sm text-red-600">
+            {submitError}
+          </p>
+        )}
+
         {/* Información RGPD art. 13 */}
         <Accordion className="border-sand-500 rounded-2xl border px-6">
           <Accordion.Header iconClassName="text-petroleum-400">
@@ -441,8 +465,16 @@ function EducationRegisterContent() {
   const t = useTranslations("experiences.education.register");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [state, dispatch] = useReducer(registerReducer, initialState);
-  const { session, stage, loading, checking, consent, consentError, form } =
-    state;
+  const {
+    session,
+    stage,
+    loading,
+    checking,
+    consent,
+    consentError,
+    submitError,
+    form,
+  } = state;
 
   useEffect(() => {
     const id = get("id");
@@ -523,39 +555,40 @@ function EducationRegisterContent() {
     }
     dispatch({ type: "SUBMIT_START" });
 
-    const { data: roleData } = await insforge.database.rpc("check_email_role", {
-      p_email: form.email,
-    });
+    // One call, on the server: whether the address is a member's, her
+    // contact and her registration (`registerGuestForEvent`).
+    const result = await registerGuestForEvent({
+      kind: "education",
+      eventId: session?.id ?? "",
+      email: form.email,
+      firstName: form.firstName,
+      lastName: form.lastName,
+      phone: form.phone,
+      language: locale === "es" ? "es" : "en",
+    }).catch(() => ({ ok: false as const, error: "failed" as const }));
 
-    if (roleData === "member") {
+    if (result.ok) {
+      dispatch({ type: "SUBMIT_SUCCESS" });
+    } else if (result.error === "member") {
       dispatch({ type: "SUBMIT_MEMBER_BLOCKER" });
-      return;
+    } else {
+      dispatch({ type: "REGISTER_FAILED", error: t("error") });
     }
-
-    const { data: contactId } = await insforge.database.rpc("upsert_contact", {
-      p_email: form.email,
-      p_first_name: form.firstName,
-      p_last_name: form.lastName,
-      p_phone: form.phone,
-      p_language: locale,
-    });
-
-    await insforge.database.rpc("register_for_education", {
-      p_session_id: session?.id ?? "",
-      p_contact_id: (contactId as string) ?? undefined,
-    });
-
-    dispatch({ type: "SUBMIT_SUCCESS" });
   };
 
   const handleConfirm = async () => {
     if (!user || !session) return;
     dispatch({ type: "CONFIRM_START" });
-    await insforge.database.rpc("register_for_education", {
-      p_session_id: session.id,
-      p_user_id: user.id,
-    });
-    dispatch({ type: "CONFIRM_SUCCESS" });
+    // Her own account, the one her token proves on the server.
+    const result = await registerAccountForEvent(getAccessToken(), {
+      kind: "education",
+      eventId: session.id,
+    }).catch(() => ({ ok: false as const, error: "failed" as const }));
+    if (result.ok) {
+      dispatch({ type: "CONFIRM_SUCCESS" });
+    } else {
+      dispatch({ type: "REGISTER_FAILED", error: t("error") });
+    }
   };
 
   return (
@@ -614,12 +647,18 @@ function EducationRegisterContent() {
                   >
                     {loading ? t("confirm.submitting") : t("confirm.submit")}
                   </Button>
+                  {submitError && (
+                    <p role="alert" className="text-sm text-red-600">
+                      {submitError}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <GuestRegistrationForm
                   form={form}
                   consent={consent}
                   consentError={consentError}
+                  submitError={submitError}
                   checking={checking}
                   onField={(field, value) =>
                     dispatch({ type: "SET_FIELD", field, value })
