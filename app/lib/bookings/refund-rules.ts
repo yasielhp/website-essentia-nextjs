@@ -160,6 +160,46 @@ export function refundOnCancel(input: {
   return { owed: false, reason: "late" };
 }
 
+/**
+ * What the edit screen recorded as the team's choice: true when the refund is
+ * owed. At least 24 hours before (as the screen measured it, when "Cancelada"
+ * was chosen) it is owed and the screen said so; inside them, the box. Sent to
+ * the server as `refundLate`, so a save a few seconds past the 24 hours still
+ * records what the person was shown.
+ */
+export function teamChoiceOnSave(input: {
+  refundableEur: number;
+  shownInAdvance: boolean;
+  ticked: boolean;
+}): boolean {
+  if (!(input.refundableEur > 0)) return false;
+  return input.shownInAdvance || input.ticked;
+}
+
+/**
+ * Whether a dashboard save that cancels would also take away the money a
+ * refund is owed on: the payment set back to unpaid, or its amount lowered.
+ * Such a save is refused: the money paid online is returned and recorded with
+ * "Marcar como reembolsado", never by editing the payment.
+ */
+export function cancelErasesOnlinePayment(
+  booking: RefundBooking,
+  entries: PaymentEntry[],
+  payload: { payment_status?: string | null; amount_paid_eur?: number | null },
+): boolean {
+  if (refundableEur(booking, entries, onlinePayment(booking, entries)) <= 0) {
+    return false;
+  }
+  const lowersStatus =
+    payload.payment_status !== undefined &&
+    !["paid", "deposit_paid"].includes(payload.payment_status ?? "");
+  const lowersAmount =
+    payload.amount_paid_eur !== undefined &&
+    toCents(Number(payload.amount_paid_eur ?? 0)) <
+      toCents(Number(booking.amount_paid_eur ?? 0));
+  return lowersStatus || lowersAmount;
+}
+
 /** Cents already marked as returned. */
 function refundedCents(entries: PaymentEntry[]): number {
   return entries

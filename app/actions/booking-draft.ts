@@ -14,9 +14,11 @@ import type {
 import { formatPrice, parseIsoDate } from "@/utils/format";
 import { amountOwed } from "@/lib/payments/amounts";
 import {
+  readRefundContext,
   settleRefundOnCancel,
   withdrawRefundOnReactivation,
 } from "@/lib/bookings/refunds";
+import { cancelErasesOnlinePayment } from "@/lib/bookings/refund-rules";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -639,6 +641,9 @@ async function recordBookingEdit(
   await recordBookingEvents(entries);
 }
 
+/** The answer to a save that cancels and also undoes an online payment. */
+const REFUND_PAYMENT_CONFLICT = "refund_payment_conflict";
+
 /**
  * Full booking edit from the dashboard. Staff only.
  *
@@ -663,6 +668,25 @@ export async function updateBookingByAdmin(
   }
 
   if (!bookingId) return { error: "Falta el identificador de la reserva." };
+
+  // A save that cancels AND sets the payment back (to "Pendiente", or a lower
+  // amount) would wipe the online payment before the refund owed on it is
+  // recorded. Read before writing, and refused: the money paid online goes
+  // back through "Marcar como reembolsado".
+  if (
+    payload.status === "cancelled" &&
+    (payload.payment_status !== undefined ||
+      payload.amount_paid_eur !== undefined)
+  ) {
+    const ctx = await readRefundContext(bookingId);
+    if (
+      ctx &&
+      ctx.booking.status !== "cancelled" &&
+      cancelErasesOnlinePayment(ctx.booking, ctx.entries, payload)
+    ) {
+      return { error: REFUND_PAYMENT_CONFLICT };
+    }
+  }
 
   const db = getAdminClient().database;
 

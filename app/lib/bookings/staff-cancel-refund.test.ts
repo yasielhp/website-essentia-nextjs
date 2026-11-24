@@ -22,6 +22,9 @@ type Settle = Parameters<typeof import("./refunds").settleRefundOnCancel>[0];
 
 let settled: Settle[] = [];
 let withdrawn: string[] = [];
+let rpcCalls = 0;
+/** What `readRefundContext` answers before a save that cancels. */
+let refundContext: unknown = null;
 let actor = { userId: "u-1", role: "admin" };
 let before: Record<string, unknown> = {};
 let bookingRow: Record<string, unknown> = {};
@@ -75,7 +78,10 @@ beforeAll(async () => {
     getAdminClient: () => ({
       database: {
         from: (t: string) => chain(t),
-        rpc: () => Promise.resolve({ data: before, error: null }),
+        rpc: () => {
+          rpcCalls += 1;
+          return Promise.resolve({ data: before, error: null });
+        },
       },
     }),
   }));
@@ -100,6 +106,7 @@ beforeAll(async () => {
         hoursBefore: 48,
       };
     },
+    readRefundContext: async () => refundContext,
     withdrawRefundOnReactivation: async (input: { bookingId: string }) => {
       withdrawn.push(input.bookingId);
     },
@@ -138,6 +145,8 @@ afterAll(() => {
 beforeEach(() => {
   settled = [];
   withdrawn = [];
+  rpcCalls = 0;
+  refundContext = null;
   actor = { userId: "u-1", role: "admin" };
   before = {
     status: "confirmed",
@@ -227,6 +236,72 @@ describe("the dashboard's save", () => {
     before = { ...before, status: "cancelled" };
     await save({ status: "cancelled" });
     expect(settled).toEqual([]);
+  });
+});
+
+describe("a save that cancels and also undoes the online payment", () => {
+  const paidOnline = () => {
+    refundContext = {
+      booking: {
+        id: "b-1",
+        status: "confirmed",
+        payment_status: "paid",
+        payment_mode: "full",
+        amount_paid_eur: "100.00",
+        stripe_session_id: "790098209516",
+        balance_settled_method: null,
+      },
+      entries: [
+        {
+          event: "paid",
+          actor_role: "system",
+          provider_id: "790098209516",
+          payload: { amountEur: 100 },
+          created_at: "2026-07-01T10:00:00Z",
+        },
+      ],
+    };
+  };
+
+  test("is refused before anything is written, with a code the screen translates", async () => {
+    paidOnline();
+    const res = await save({
+      status: "cancelled",
+      payment_status: "pending",
+      amount_paid_eur: 0,
+    });
+    expect(res).toEqual({ error: "refund_payment_conflict" });
+    expect(rpcCalls).toBe(0);
+    expect(settled).toEqual([]);
+  });
+
+  test("cancelling with the payment left as it is goes through and settles the refund", async () => {
+    paidOnline();
+    const res = await save({ status: "cancelled" });
+    expect(res).toEqual({ error: null });
+    expect(rpcCalls).toBe(1);
+    expect(settled).toHaveLength(1);
+  });
+
+  test("a booking with no online payment may be cancelled and set to unpaid", async () => {
+    refundContext = {
+      booking: {
+        id: "b-1",
+        status: "confirmed",
+        payment_status: "paid",
+        payment_mode: "none",
+        amount_paid_eur: "100.00",
+        stripe_session_id: null,
+        balance_settled_method: "cash",
+      },
+      entries: [],
+    };
+    const res = await save({
+      status: "cancelled",
+      payment_status: "pending",
+      amount_paid_eur: 0,
+    });
+    expect(res).toEqual({ error: null });
   });
 });
 

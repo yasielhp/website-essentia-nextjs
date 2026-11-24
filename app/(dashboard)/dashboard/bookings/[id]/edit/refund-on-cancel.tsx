@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/utils/format";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
@@ -21,6 +20,7 @@ export function RefundOnCancel({
   view,
   date,
   time,
+  seenAt,
   refundLate,
   onChange,
   disabled,
@@ -29,21 +29,24 @@ export function RefundOnCancel({
   /** The session as it was saved, not as the form may have moved it. */
   date: string | null;
   time: string;
+  /**
+   * When "Cancelada" was chosen: the screen judges the 24 hours at that
+   * moment, and the save records what it showed (`teamChoiceOnSave`).
+   */
+  seenAt: number;
   refundLate: boolean;
   onChange: (value: boolean) => void;
   disabled: boolean;
 }) {
   const t = useTranslations("dashboard.bookings.edit.refund");
   const locale = useDashboardLocale();
-  // Read once: the answer must not change under the person while they read it.
-  const [now] = useState(() => Date.now());
 
   if (!view || view.refundableEur <= 0) return null;
   const amount = formatPrice(view.refundableEur, locale);
 
   return (
     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-      {isOutsideCancellationWindow(date, time, now) ? (
+      {isOutsideCancellationWindow(date, time, seenAt) ? (
         <p className="text-petroleum-700 text-sm">
           {t("inAdvance", { amount })}
         </p>

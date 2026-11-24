@@ -1,12 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { bookingMoney, ledgerTotals } from "@/lib/payments/ledger";
 import {
+  cancelErasesOnlinePayment,
   onlinePayment,
   refundOnCancel,
   refundPatch,
   refundState,
   refundView,
   refundableEur,
+  teamChoiceOnSave,
   type PaymentEntry,
   type RefundBooking,
 } from "./refund-rules";
@@ -295,5 +297,84 @@ describe("refundPatch and the ledger", () => {
     expect(refundPatch({ amount_paid_eur: "99.99" }, 99.99)).toEqual({
       payment_status: "refunded",
     });
+  });
+});
+
+describe("teamChoiceOnSave: what the edit screen showed is what is recorded", () => {
+  it("shown as owed (24 hours or more when chosen): sent as a refund, ticked or not", () => {
+    expect(
+      teamChoiceOnSave({
+        refundableEur: 100,
+        shownInAdvance: true,
+        ticked: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("inside the 24 hours: the box decides", () => {
+    expect(
+      teamChoiceOnSave({
+        refundableEur: 100,
+        shownInAdvance: false,
+        ticked: false,
+      }),
+    ).toBe(false);
+    expect(
+      teamChoiceOnSave({
+        refundableEur: 100,
+        shownInAdvance: false,
+        ticked: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("nothing paid online: nothing to choose", () => {
+    expect(
+      teamChoiceOnSave({
+        refundableEur: 0,
+        shownInAdvance: true,
+        ticked: true,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("cancelErasesOnlinePayment", () => {
+  const entries = [redsysPaid(100)];
+  const open = { ...paidOnline, status: "confirmed" };
+
+  it("a save that sets the payment back to unpaid, or lowers it, would erase it", () => {
+    expect(
+      cancelErasesOnlinePayment(open, entries, {
+        payment_status: "pending",
+        amount_paid_eur: 0,
+      }),
+    ).toBe(true);
+    expect(
+      cancelErasesOnlinePayment(open, entries, {
+        payment_status: "paid",
+        amount_paid_eur: 50,
+      }),
+    ).toBe(true);
+  });
+
+  it("leaving the payment as it is, or raising it, erases nothing", () => {
+    expect(cancelErasesOnlinePayment(open, entries, {})).toBe(false);
+    expect(
+      cancelErasesOnlinePayment(open, entries, {
+        payment_status: "paid",
+        amount_paid_eur: 100,
+      }),
+    ).toBe(false);
+  });
+
+  it("a booking with nothing paid online has nothing to erase", () => {
+    expect(
+      cancelErasesOnlinePayment(
+        { ...open, stripe_session_id: null, payment_status: "pending" },
+        [],
+        { payment_status: "pending" },
+      ),
+    ).toBe(false);
   });
 });

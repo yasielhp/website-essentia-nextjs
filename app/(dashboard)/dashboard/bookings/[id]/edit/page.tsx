@@ -7,7 +7,11 @@ import { notifySuccess } from "@/lib/feedback";
 import { getAccessToken } from "@/lib/client-session";
 import { deleteBooking } from "@/actions/booking-draft";
 import { fetchBookingRefund } from "@/actions/booking-refunds";
-import type { BookingRefundView } from "@/lib/bookings/refund-rules";
+import {
+  teamChoiceOnSave,
+  type BookingRefundView,
+} from "@/lib/bookings/refund-rules";
+import { isOutsideCancellationWindow } from "@/lib/bookings/cancellation-window";
 import { useDynamicBreadcrumb } from "@/context/breadcrumb-context";
 import { useRole } from "@/context/role-context";
 import { DeleteDialog } from "./delete-dialog";
@@ -132,6 +136,9 @@ export default function EditBookingPage() {
   // people who answer for it; a partner gets nothing back.
   const [refundView, setRefundView] = useState<BookingRefundView | null>(null);
   const [refundLate, setRefundLate] = useState(false);
+  // When "Cancelada" was chosen: the screen says "refund owed" or offers the
+  // box as of that moment, and the save records what it said.
+  const [cancelSeenAt, setCancelSeenAt] = useState<number | null>(null);
   useEffect(() => {
     if (role !== "admin" && role !== "staff") return;
     let cancelled = false;
@@ -193,14 +200,28 @@ export default function EditBookingPage() {
       id,
       draft,
       originalRef.current,
-      { refundLate: cancelling && refundLate },
+      {
+        refundLate:
+          cancelling &&
+          teamChoiceOnSave({
+            refundableEur: refundView?.refundableEur ?? 0,
+            // Nothing shown (no moment recorded) is nothing promised.
+            shownInAdvance:
+              cancelSeenAt !== null &&
+              isOutsideCancellationWindow(origDate, origTime, cancelSeenAt),
+            ticked: refundLate,
+          }),
+      },
     );
     dispatchAsync({ type: "SUBMIT_END" });
 
     if (saveError) {
       dispatchAsync({
         type: "SET_ERROR",
-        payload: saveError || t("errors.saveFailed"),
+        payload:
+          saveError === "refund_payment_conflict"
+            ? t("errors.refundPaymentConflict")
+            : saveError || t("errors.saveFailed"),
       });
       return;
     }
@@ -243,15 +264,19 @@ export default function EditBookingPage() {
           {/* ── 1. Status ── */}
           <StatusSection
             status={status}
-            onChange={(s) =>
-              dispatchForm({ type: "SET_FIELD", field: "status", value: s })
-            }
+            onChange={(s) => {
+              if (s === "cancelled" && status !== "cancelled") {
+                setCancelSeenAt(Date.now());
+              }
+              dispatchForm({ type: "SET_FIELD", field: "status", value: s });
+            }}
           />
-          {cancelling && (
+          {cancelling && cancelSeenAt !== null && (
             <RefundOnCancel
               view={refundView}
               date={origDate}
               time={origTime}
+              seenAt={cancelSeenAt}
               refundLate={refundLate}
               onChange={setRefundLate}
               disabled={submitting}
