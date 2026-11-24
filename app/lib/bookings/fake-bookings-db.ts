@@ -10,6 +10,11 @@
  * `draft` and `cancelled`, with a professional, a day from 2026-11-24 on and
  * an hour) cannot overlap another of the same professional; the write is
  * refused with the database's `23P01`, as the real one is.
+ *
+ * Of the functions of the database it knows one, `promote_contact_to_client`,
+ * as its SQL is: a contact with no status or a `lead` becomes a `client`, any
+ * other is left alone. Every call is kept in `rpcs`; any other function is
+ * answered with an error, as PostgREST answers one it does not have.
  */
 
 import { chainDb, type Query, type Step } from "@/lib/campaigns/fake-db";
@@ -126,8 +131,13 @@ export function fakeBookingsDb(
     /** Runs just before an UPDATE of `bookings` lands. */
     beforeUpdate?: () => void;
   } = {},
-): { db: ReturnType<typeof chainDb>["db"]; log: Query[] } {
-  return chainDb((table, chain) => {
+): {
+  db: ReturnType<typeof chainDb>["db"];
+  log: Query[];
+  rpcs: { name: string; args: Row }[];
+} {
+  const rpcs: { name: string; args: Row }[] = [];
+  const built = chainDb((table, chain) => {
     const kind = kindOf(chain);
     if (kind !== "delete" && options.fail?.({ table, kind })) {
       return { data: null, error: { message: "boom" } };
@@ -185,4 +195,17 @@ export function fakeBookingsDb(
       error: null,
     };
   });
+  const rpc = async (name: string, args: Row) => {
+    rpcs.push({ name, args });
+    if (name !== "promote_contact_to_client") {
+      return { data: null, error: { message: `no function ${name}` } };
+    }
+    for (const row of tables.contacts) {
+      if (row.id !== args.p_contact_id) continue;
+      if (row.status == null || row.status === "lead") row.status = "client";
+    }
+    return { data: null, error: null };
+  };
+  Object.assign(built.db, { rpc });
+  return { ...built, rpcs };
 }

@@ -21,8 +21,11 @@ import type { DetailsState } from "@/types";
  * the real `booking-submit` (the browser's side) calling the real server
  * actions of `app/actions/public-booking.ts`, with only the edges replaced:
  * the database (an in-memory copy that keeps the rule of
- * `bookings_no_overlap`), the browser's client (which now only touches the
- * contact), the session check, the history, the emails and the checkout.
+ * `bookings_no_overlap`, with the contact functions answered as the database
+ * would), the session check, the history, the emails and the checkout. The
+ * browser's client is replaced by one that throws: the form reaches the
+ * database only through the server's actions, the contact's included
+ * (`app/actions/public-contact.ts`).
  *
  * What it shows: a guest still books exactly as before, and the booking the
  * server writes is the one she chose, priced by the server; and when another
@@ -41,6 +44,10 @@ const CONTACT_B = "66666666-6666-4666-8666-666666666666";
 process.env.BOOKING_CLAIM_SECRET ??= "test-booking-claim-secret";
 
 type Call = { name: string; args: unknown[] };
+type Rpc = (
+  name: string,
+  args: Record<string, unknown>,
+) => Promise<{ data: unknown; error: unknown }>;
 /** The browser's cookie of claims (`draft-claim.ts`), as the actions keep it. */
 let jar: string | null = null;
 let calls: Call[] = [];
@@ -56,6 +63,7 @@ const real = {
   guard: { ...(await import("@/lib/auth-guard")) },
   record: { ...(await import("@/lib/booking-events/record")) },
   publicBooking: { ...(await import("@/actions/public-booking")) },
+  publicContact: { ...(await import("@/actions/public-contact")) },
   visitor: { ...(await import("@/lib/bookings/visitor")) },
   availability: { ...(await import("@/actions/availability")) },
 };
@@ -63,26 +71,13 @@ const real = {
 let submit: typeof import("./booking-submit");
 
 beforeAll(async () => {
-  // The browser's client: the contact functions and nothing else. It has no
-  // `from`, so a write of a table from the browser would throw here.
+  // The browser's client: nothing at all. A read, a write or a function
+  // called with the browser's key would throw here.
+  const noBrowserClient = () => {
+    throw new Error("the browser's database client was used");
+  };
   mock.module("@/lib/insforge", () => ({
-    insforge: {
-      database: {
-        rpc: (name: string, args: Record<string, unknown>) => {
-          calls.push({ name: `rpc:${name}`, args: [args] });
-          if (name === "check_email_role") {
-            return Promise.resolve({ data: "lead", error: null });
-          }
-          if (name === "upsert_contact") {
-            return Promise.resolve({
-              data: contactFor[String(args.p_email)] ?? null,
-              error: null,
-            });
-          }
-          return Promise.resolve({ data: null, error: null });
-        },
-      },
-    },
+    insforge: { database: { from: noBrowserClient, rpc: noBrowserClient } },
   }));
   mock.module("@/lib/client-session", () => ({
     ...real.session,
@@ -101,7 +96,26 @@ beforeAll(async () => {
   }));
   mock.module("@/lib/insforge-admin", () => ({
     ...real.admin,
-    getAdminClient: () => ({ database: fakeBookingsDb(tables).db }),
+    getAdminClient: () => {
+      const { db } = fakeBookingsDb(tables);
+      const promote = (db as unknown as { rpc: Rpc }).rpc;
+      // The contact functions, called with the SERVICE key by the contact's
+      // action; the promotion as its SQL does it (`fakeBookingsDb`).
+      const rpc: Rpc = (name, args) => {
+        calls.push({ name: `rpc:${name}`, args: [args] });
+        if (name === "check_email_role") {
+          return Promise.resolve({ data: "lead", error: null });
+        }
+        if (name === "upsert_contact") {
+          return Promise.resolve({
+            data: contactFor[String(args.p_email)] ?? null,
+            error: null,
+          });
+        }
+        return promote(name, args);
+      };
+      return { database: Object.assign(db, { rpc }) };
+    },
   }));
   mock.module("@/lib/auth-guard", () => ({
     ...real.guard,
@@ -132,6 +146,7 @@ beforeAll(async () => {
   }));
   // The real actions, whatever another test file left registered.
   mock.module("@/actions/public-booking", () => real.publicBooking);
+  mock.module("@/actions/public-contact", () => real.publicContact);
   submit = await import("./booking-submit");
 });
 
@@ -278,6 +293,18 @@ describe("the public form, end to end, with the browser writing no booking", () 
     // And this browser holds the claim the checkout will ask for.
     expect(String(jar)).toContain(fakeId(1));
     expect(calls.filter((c) => c.name === "history")).toHaveLength(1);
+    // Her contact, written and asked about on the server (the role never
+    // reaches the browser), and made a client there once her booking exists.
+    expect(
+      calls.filter((c) => c.name.startsWith("rpc:")).map((c) => c.name),
+    ).toEqual([
+      "rpc:check_email_role",
+      "rpc:upsert_contact",
+      "rpc:promote_contact_to_client",
+    ]);
+    expect(tables.contacts.find((c) => c.id === CONTACT_A)?.status).toBe(
+      "client",
+    );
     // "Received" goes out once the payment is open.
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(calls.filter((c) => c.name === "notifyBooking")).toHaveLength(1);
@@ -292,6 +319,9 @@ describe("the public form, end to end, with the browser writing no booking", () 
     expect(calls.map((c) => c.name)).not.toContain("notifyBooking");
     expect(calls.map((c) => c.name)).not.toContain(
       "rpc:promote_contact_to_client",
+    );
+    expect(tables.contacts.find((c) => c.id === CONTACT_B)?.status).toBe(
+      undefined,
     );
     // Her draft is still hers, to pick another hour with.
     expect(tables.bookings.find((r) => r.id === saved.bookingId)).toMatchObject(

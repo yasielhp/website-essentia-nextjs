@@ -10,11 +10,12 @@ import {
 import type { DetailsState } from "@/types";
 
 /**
- * `saveDetailsStep`, run for real with the browser's database client and the
- * server actions replaced. What is under test is WHO gets written when the
- * visitor presses "next" on her details: the contact, the draft and the
- * consents, for a guest, for a member who chose to go on as a guest, and for a
- * signed-in client.
+ * `saveDetailsStep`, run for real with the server actions replaced. What is
+ * under test is WHO gets written when the visitor presses "next" on her
+ * details: the contact, the draft and the consents, for a guest, for a member
+ * who chose to go on as a guest, and for a signed-in client. The browser's
+ * database client is not used at all any more: every write, the contact's
+ * included, is a server action.
  *
  * Modules are put back afterwards: `mock.module` is process-wide.
  */
@@ -32,23 +33,34 @@ const record =
     return Promise.resolve(result);
   };
 
-const rpc = (name: string, args: unknown) => {
-  calls.push({ name: `rpc:${name}`, args: [args] });
-  if (name === "check_email_role") {
-    return Promise.resolve({ data: role, error: null });
+/**
+ * The contact's action, as the server answers it: "member" when asked to
+ * check an address that is a member's, the contact's id otherwise.
+ */
+let contactAnswer: "answer" | "failed" | "throws" = "answer";
+const savePublicContact = (input: { checkMember: boolean }) => {
+  calls.push({ name: "savePublicContact", args: [input] });
+  if (contactAnswer === "throws") return Promise.reject(new Error("network"));
+  if (contactAnswer === "failed") return Promise.resolve({ kind: "failed" });
+  if (input.checkMember && role === "member") {
+    return Promise.resolve({ kind: "member" });
   }
-  if (name === "upsert_contact") {
-    return Promise.resolve({ data: "contact-1", error: null });
-  }
-  return Promise.resolve({ data: null, error: null });
+  return Promise.resolve({ kind: "saved", contactId: "contact-1" });
 };
 
-// The browser client is not among them: it cannot be loaded without the
-// project's keys, which the tests deliberately do not have, so there is no real
-// module to keep or to put back.
+/**
+ * The browser's client, replaced by one that throws: nothing in the form may
+ * reach the database with the browser's key. It cannot be loaded for real
+ * without the project's keys, which the tests deliberately do not have, so
+ * there is no real module to keep or to put back.
+ */
+const noBrowserClient = () => {
+  throw new Error("the browser's database client was used");
+};
 const realFetch = globalThis.fetch;
 
 const real = {
+  publicContact: { ...(await import("@/actions/public-contact")) },
   session: { ...(await import("@/lib/client-session")) },
   publicBooking: { ...(await import("@/actions/public-booking")) },
   notifications: { ...(await import("@/actions/booking-notifications")) },
@@ -59,10 +71,14 @@ let saveDetailsStep: typeof import("./booking-submit").saveDetailsStep;
 let confirmBooking: typeof import("./booking-submit").confirmBooking;
 
 beforeAll(async () => {
-  // No `from`: the form writes no table from the browser any more. A call to
-  // it would throw here, and the test with it.
+  // No `from` and no `rpc`: the form writes nothing with the browser's key.
+  // A call to either would throw here, and the test with it.
   mock.module("@/lib/insforge", () => ({
-    insforge: { database: { rpc } },
+    insforge: { database: { from: noBrowserClient, rpc: noBrowserClient } },
+  }));
+  mock.module("@/actions/public-contact", () => ({
+    ...real.publicContact,
+    savePublicContact,
   }));
   mock.module("@/lib/client-session", () => ({
     ...real.session,
@@ -96,6 +112,7 @@ beforeAll(async () => {
 
 afterAll(() => {
   globalThis.fetch = realFetch;
+  mock.module("@/actions/public-contact", () => real.publicContact);
   mock.module("@/lib/client-session", () => real.session);
   mock.module("@/actions/public-booking", () => real.publicBooking);
   mock.module("@/actions/booking-notifications", () => real.notifications);
@@ -105,6 +122,7 @@ afterAll(() => {
 beforeEach(() => {
   calls = [];
   role = "lead";
+  contactAnswer = "answer";
   promotion = { kind: "promoted", bookingId: "booking-1" };
   // The checkout: refused, so a confirmation that gets that far ends "unpaid".
   globalThis.fetch = ((...args: unknown[]) => {
@@ -169,15 +187,21 @@ describe("saveDetailsStep, a guest", () => {
       bookingId: "booking-1",
     });
     expect(names()).toEqual([
-      "rpc:check_email_role",
-      "rpc:upsert_contact",
+      "savePublicContact",
       "savePublicDraft",
       "saveBookingConsents",
     ]);
-    expect(argsOf("rpc:upsert_contact")).toMatchObject({
-      p_email: "ana@example.com",
-      p_newsletter: true,
-      p_whatsapp_marketing: true,
+    // What the form has, and the member check, in ONE call: no role is
+    // asked for, and no consent but "news and offers".
+    expect(argsOf("savePublicContact")).toEqual({
+      email: "ana@example.com",
+      firstName: "Ana",
+      lastName: "García",
+      phone: "600000000",
+      language: "es",
+      gender: null,
+      marketing: true,
+      checkMember: true,
     });
     // What she chose and nothing else: no status, price or account.
     expect(draftSent()).toEqual({
@@ -218,8 +242,50 @@ describe("saveDetailsStep, a guest", () => {
     });
     await settle();
     expect(result).toEqual({ kind: "member" });
-    expect(names()).toEqual(["rpc:check_email_role"]);
+    expect(names()).toEqual(["savePublicContact"]);
   });
+});
+
+describe("saveDetailsStep, a contact the server could not write", () => {
+  test.each(["failed", "throws"] as const)(
+    "(%s) costs her nothing: the draft goes on with no contact, and her consents still go",
+    async (answer) => {
+      contactAnswer = answer;
+      const errors: unknown[][] = [];
+      const realError = console.error;
+      console.error = (...args: unknown[]) => void errors.push(args);
+      try {
+        const result = await saveDetailsStep({
+          user: null,
+          locale: "es",
+          draft: draft(),
+          contactId: null,
+          bookingId: null,
+        });
+        await settle();
+        expect(result).toEqual({
+          kind: "saved",
+          contactId: null,
+          bookingId: "booking-1",
+        });
+      } finally {
+        console.error = realError;
+      }
+      expect(names()).toEqual([
+        "savePublicContact",
+        "savePublicDraft",
+        "saveBookingConsents",
+      ]);
+      expect(draftSent().contactId).toBeNull();
+      // Said out loud, with the reason only: never her name or address.
+      expect(errors).toEqual([
+        [
+          "[booking] the contact could not be saved; the draft will have no contact:",
+          "failed",
+        ],
+      ]);
+    },
+  );
 });
 
 describe("saveDetailsStep, a booking picked up again", () => {
@@ -238,8 +304,7 @@ describe("saveDetailsStep, a booking picked up again", () => {
       bookingId: "booking-0",
     });
     expect(names()).toEqual([
-      "rpc:check_email_role",
-      "rpc:upsert_contact",
+      "savePublicContact",
       "savePublicDraft",
       "saveBookingConsents",
     ]);
@@ -265,14 +330,15 @@ describe("saveDetailsStep, a member who goes on as a guest", () => {
       bookingId: "booking-1",
     });
     expect(names()).toEqual([
-      "rpc:upsert_contact",
+      "savePublicContact",
       "savePublicDraft",
       "saveBookingConsents",
     ]);
-    // Her "news and offers" tick is not lost on the way.
-    expect(argsOf("rpc:upsert_contact")).toMatchObject({
-      p_newsletter: true,
-      p_whatsapp_marketing: true,
+    // Not asked again whether she is a member, and her "news and offers"
+    // tick is not lost on the way.
+    expect(argsOf("savePublicContact")).toMatchObject({
+      checkMember: false,
+      marketing: true,
     });
   });
 });
@@ -320,18 +386,18 @@ describe("saveDetailsStep, a signed-in client", () => {
       contactId: "contact-1",
       bookingId: "booking-1",
     });
-    // No member notice for somebody who is already signed in.
     expect(names()).toEqual([
-      "rpc:upsert_contact",
+      "savePublicContact",
       "savePublicDraft",
       "saveBookingConsents",
     ]);
-    expect(argsOf("rpc:upsert_contact")).toMatchObject({
-      p_email: "ana@example.com",
-      p_first_name: "Ana",
-      p_phone: "600000000",
-      p_newsletter: true,
-      p_whatsapp_marketing: true,
+    // No member notice for somebody who is already signed in.
+    expect(argsOf("savePublicContact")).toMatchObject({
+      email: "ana@example.com",
+      firstName: "Ana",
+      phone: "600000000",
+      marketing: true,
+      checkMember: false,
     });
     expect(draftSent()).toMatchObject({ contactId: "contact-1" });
     expect(calls.find((c) => c.name === "savePublicDraft")?.args[0]).toBe(
@@ -378,11 +444,9 @@ describe("confirmBooking: the last gate before the payment", () => {
     const result = await confirm(DETAILS);
     await settle();
     expect(result).toEqual({ kind: "unpaid" });
-    expect(names()).toEqual([
-      "confirmPublicBooking",
-      "rpc:promote_contact_to_client",
-      "fetch",
-    ]);
+    // The contact becomes a client on the server, in the confirmation itself:
+    // the browser promotes nobody.
+    expect(names()).toEqual(["confirmPublicBooking", "fetch"]);
     // The token, and what she chose: the server decides status and price.
     const [token, sent] = calls[0]!.args as [unknown, Record<string, unknown>];
     expect(token).toBe("token");
@@ -430,7 +494,7 @@ describe("confirmBooking: the last gate before the payment", () => {
     const result = await confirm(DETAILS, true);
     await settle();
     expect(result).toEqual({ kind: "unpaid" });
-    expect(names()).toEqual(["rpc:promote_contact_to_client", "fetch"]);
+    expect(names()).toEqual(["fetch"]);
   });
 
   test("a draft that is not there any more is booked afresh by the server, and paid on its new id", async () => {
@@ -438,11 +502,7 @@ describe("confirmBooking: the last gate before the payment", () => {
     const result = await confirm(DETAILS);
     await settle();
     expect(result).toEqual({ kind: "unpaid" });
-    expect(names()).toEqual([
-      "confirmPublicBooking",
-      "rpc:promote_contact_to_client",
-      "fetch",
-    ]);
+    expect(names()).toEqual(["confirmPublicBooking", "fetch"]);
     const body = JSON.parse(
       (calls.at(-1)?.args[1] as { body: string }).body,
     ) as { bookingId: string };

@@ -49,6 +49,9 @@ import type { Visitor } from "./visitor";
  *      booking (`pending`, waiting for its payment), or a booking is written
  *      afresh when there is no draft any more.
  *
+ * The third also turns the contact of the booking into a client when it was a
+ * lead (`promoteToClient`), which the browser used to do with the public key.
+ *
  * The third checks the hour on the server: not past (Canary time), offered by
  * the professional's own schedule and free (`fetchAvailability`), and a
  * professional is always assigned (the one she chose, or the first free one
@@ -291,6 +294,40 @@ async function ownContact(
     return null;
   }
   return row.id;
+}
+
+/**
+ * A lead who books becomes a client: the contact this booking is linked to
+ * by its own address (`ownContact`), once THIS call has made the booking.
+ *
+ * Through `promote_contact_to_client` with the service key. The browser used
+ * to call it with the public key, which let anybody turn any contact into a
+ * client by its id; its EXECUTE is the service key's alone now (migration
+ * `20261124_revoke_public_definer_functions`). The function only ever
+ * promotes a lead: a member stays a member. A failure costs nothing but the
+ * status, so it is said in the log and the booking stands.
+ */
+async function promoteToClient(
+  db: Db,
+  contactId: string | null,
+): Promise<void> {
+  if (!contactId) return;
+  try {
+    const { error } = await db.rpc("promote_contact_to_client", {
+      p_contact_id: contactId,
+    });
+    if (error) {
+      console.error(
+        "[booking] promote_contact_to_client failed; the contact stays a lead:",
+        error,
+      );
+    }
+  } catch (err) {
+    console.error(
+      "[booking] promote_contact_to_client failed; the contact stays a lead:",
+      err,
+    );
+  }
 }
 
 const priceOf = (tier: TierRow | null): number | null => {
@@ -629,6 +666,10 @@ export async function confirmPublicBookingCore(
           .filter(Boolean)
           .join(" · "),
       });
+      await promoteToClient(
+        db,
+        await ownContact(db, input.contactId, input.email),
+      );
       return { kind: "promoted", bookingId: draftId };
     }
 
@@ -646,6 +687,7 @@ export async function confirmPublicBookingCore(
       );
       return { kind: "failed" };
     }
+    await promoteToClient(db, contactId);
     return { kind: "created", bookingId: written.id };
   } catch (err) {
     console.error("[booking] the booking could not be confirmed:", err);

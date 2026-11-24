@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   bookingForSomeoneElse,
-  contactConsentArgs,
+  marketingChoice,
   sendBookingConsents,
   type ConsentEffects,
 } from "./booking-consent";
@@ -31,20 +31,14 @@ function effects(over: Partial<ConsentEffects> = {}) {
   return { fx, calls, names: () => calls.map((c) => c.name) };
 }
 
-describe("contactConsentArgs", () => {
-  test("one ticked box turns on both the newsletter and WhatsApp marketing", () => {
-    expect(contactConsentArgs({ newsletter: true })).toEqual({
-      p_newsletter: true,
-      p_whatsapp_marketing: true,
-    });
+describe("marketingChoice", () => {
+  test("one ticked box is a yes, which the server turns into both the newsletter and WhatsApp marketing", () => {
+    expect(marketingChoice({ newsletter: true })).toBe(true);
   });
 
-  test("unticked is null for both, never false", () => {
+  test("unticked is null, never false", () => {
     for (const newsletter of [false, undefined]) {
-      expect(contactConsentArgs({ newsletter })).toEqual({
-        p_newsletter: null,
-        p_whatsapp_marketing: null,
-      });
+      expect(marketingChoice({ newsletter })).toBeNull();
     }
   });
 });

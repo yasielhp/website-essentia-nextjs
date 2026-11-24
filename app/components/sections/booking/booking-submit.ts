@@ -1,17 +1,17 @@
 "use client";
 
-import { insforge } from "@/lib/insforge";
 import { getAccessToken } from "@/lib/client-session";
 import {
   confirmPublicBooking,
   savePublicDraft,
   setPublicDraftTime,
 } from "@/actions/public-booking";
+import { savePublicContact } from "@/actions/public-contact";
 import { notifyBooking } from "@/actions/booking-notifications";
 import { saveBookingConsents } from "@/actions/whatsapp-consent";
 import {
   bookingForSomeoneElse,
-  contactConsentArgs,
+  marketingChoice,
   sendBookingConsents,
 } from "./booking-consent";
 import { bookingDetailsSchema, parseErrors } from "@/lib/schemas";
@@ -34,6 +34,14 @@ import type { RedsysFormData } from "./steps/payment-overlay";
  * takes only what the visitor chose and decides the status, the price, the
  * payment and the account from her verified session. The browser's key can
  * no longer write the table (migration `20261124_bookings_close_browser_writes`).
+ *
+ * Nor does anything here reach the database with the browser's key at all.
+ * The member check and the contact are a server action too
+ * (`app/actions/public-contact.ts`), and so is turning a lead into a client
+ * (the last step's own action does it): the functions they used,
+ * `check_email_role`, `upsert_contact` and `promote_contact_to_client`, are
+ * the service key's alone (migration
+ * `20261124_revoke_public_definer_functions`).
  */
 
 /** What the form knows by the time it can write anything. */
@@ -89,48 +97,44 @@ export async function saveDetailsStep({
   let resolvedContactId = contactId;
 
   // A signed-in client's own contact is written on the server, from her
-  // verified session. The browser writes the contact of a guest, and of the
-  // person a signed-in caller is booking FOR when the form carries another
-  // address than hers: that name and that phone are not the caller's, and
-  // must not land on her contact.
+  // verified session. The step has the server write the contact of a guest,
+  // and of the person a signed-in caller is booking FOR when the form carries
+  // another address than hers: that name and that phone are not the caller's,
+  // and must not land on her contact.
   const forSomeoneElse =
     user !== null && bookingForSomeoneElse(user.email, details.email);
 
   if (!user || forSomeoneElse) {
-    // Somebody who is signed in is not asked to sign in.
-    if (!user && !asGuest) {
-      const { data: roleData } = await insforge.database.rpc(
-        "check_email_role",
-        { p_email: details.email },
-      );
+    // One call, on the server: whether the address is a member's (somebody
+    // who is signed in is not asked to sign in, nor is a member who already
+    // chose to go on as a guest), and if not, her contact. The answer about
+    // the address is "member" or not, never its role.
+    const contact = await savePublicContact({
+      email: details.email,
+      firstName: details.firstName,
+      lastName: details.lastName,
+      phone: details.phone,
+      language: locale === "es" ? "es" : "en",
+      gender: details.gender || null,
+      // One box, both channels, `null` when unticked (see booking-consent.ts).
+      marketing: marketingChoice(details),
+      checkMember: !user && !asGuest,
+    }).catch(() => ({ kind: "failed" as const }));
 
-      if (roleData === "member") return { kind: "member" };
-    }
-
-    const { data: contactUuid, error: contactError } =
-      await insforge.database.rpc("upsert_contact", {
-        p_email: details.email,
-        p_first_name: details.firstName,
-        p_last_name: details.lastName,
-        p_phone: details.phone,
-        p_language: locale,
-        p_gender: details.gender || null,
-        // One box, both channels, `null` when unticked (see booking-consent.ts).
-        ...contactConsentArgs(details),
-      });
+    if (contact.kind === "member") return { kind: "member" };
 
     // Never swallow this. A failure here used to pass unnoticed and the draft
     // was written with no contact attached, which is how orphaned drafts — and
     // missing leads — accumulated. The booking still proceeds, because a
     // bookkeeping problem must not cost a customer their appointment, but it is
-    // recorded loudly enough to be found.
-    if (contactError || !contactUuid) {
-      console.error(
-        "[booking] upsert_contact failed; the draft will have no contact:",
-        contactError ?? "no id returned",
-      );
+    // recorded loudly enough to be found (the reason only, never her details).
+    if (contact.kind === "saved") {
+      resolvedContactId = contact.contactId;
     } else {
-      resolvedContactId = contactUuid as string;
+      console.error(
+        "[booking] the contact could not be saved; the draft will have no contact:",
+        contact.kind,
+      );
     }
   }
 
@@ -317,23 +321,6 @@ export async function confirmBooking({
       case "rate_limited":
       case "too_many_pending":
         return { kind: "busy" };
-    }
-  }
-
-  if (contactId) {
-    // Through a function, not a direct update: the open UPDATE policy this
-    // relied on let anyone rewrite any contact. It also only ever promotes a
-    // lead — the previous `.neq("status", "client")` still demoted a member to
-    // client the moment they booked.
-    const { error: promoteError } = await insforge.database.rpc(
-      "promote_contact_to_client",
-      { p_contact_id: contactId },
-    );
-    if (promoteError) {
-      console.error(
-        "[booking] promote_contact_to_client failed; the contact stays a lead:",
-        promoteError,
-      );
     }
   }
 

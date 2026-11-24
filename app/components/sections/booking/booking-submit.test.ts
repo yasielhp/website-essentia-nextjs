@@ -39,19 +39,16 @@ describe("saveDetailsStep and the consent writes", () => {
   });
 });
 
-describe("nothing in the form writes a booking from the browser", () => {
-  test("no table and no booking function is reached with the browser's key", () => {
+describe("nothing in the form reaches the database from the browser", () => {
+  test("no table and no function is reached with the browser's key, which is not even imported", () => {
     // The draft, its hour and the booking are the server's
-    // (`app/actions/public-booking.ts`); the browser's key keeps only the
-    // contact functions, which are not `bookings`.
+    // (`app/actions/public-booking.ts`), and so are the member check, the
+    // contact and its promotion to client (`app/actions/public-contact.ts`
+    // and the last step's own action).
     expect(SOURCE).not.toMatch(/\.from\(/);
-    for (const fn of [
-      "create_draft_booking",
-      "update_booking_datetime",
-      "confirm_booking",
-    ]) {
-      expect(SOURCE).not.toContain(fn);
-    }
+    expect(SOURCE).not.toMatch(/\.rpc\(/);
+    expect(SOURCE).not.toMatch(/from\s+["']@\/lib\/insforge["']/);
     expect(SOURCE).toContain('from "@/actions/public-booking"');
+    expect(SOURCE).toContain('from "@/actions/public-contact"');
   });
 });

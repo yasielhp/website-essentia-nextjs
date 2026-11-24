@@ -182,9 +182,9 @@ describe("readOwnMarketing", () => {
 describe("the booking after a STOP: the order is intentional", () => {
   /**
    * A client who sent BAJA and books again, in the order the form does it:
-   * 1. `upsert_contact` from the browser. With "news and offers" ticked it
-   *    clears the STOP and, because a STOP is global, withdraws the OTHER use
-   *    (the booking notices). `whatsappActivationPatch("marketing")` is that
+   * 1. `upsert_contact`, from the contact action (`savePublicContact`). With
+   *    "news and offers" ticked it clears the STOP and, because a STOP is
+   *    global, withdraws the OTHER use (the booking notices). `whatsappActivationPatch("marketing")` is that
    *    rule in TypeScript, kept in step with the SQL.
    * 2. `saveBookingConsents`, which stamps the notices on a contact
    *    with no consent and no STOP.

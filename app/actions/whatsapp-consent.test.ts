@@ -151,7 +151,8 @@ describe("saveBookingConsents", () => {
     expect(result).toEqual({ ok: true });
     expect(rows[0].whatsapp_opted_in_at).not.toBeNull();
     expect(rows[1].whatsapp_opted_in_at).toBeNull();
-    // A guest's contact is the browser's `upsert_contact`, not this action's.
+    // A guest's contact is the contact action's (`savePublicContact`), not
+    // this one's.
     expect(rpcs()).toEqual([]);
   });
 

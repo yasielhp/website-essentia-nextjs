@@ -26,16 +26,16 @@ import type {
  * `self-consent.test.ts`.
  */
 
-/** The consent parameters of `upsert_contact` for a guest. */
-export function contactConsentArgs(details: Pick<DetailsState, "newsletter">): {
-  p_newsletter: true | null;
-  p_whatsapp_marketing: true | null;
-} {
-  const ticked = details.newsletter === true;
-  return {
-    p_newsletter: ticked ? true : null,
-    p_whatsapp_marketing: ticked ? true : null,
-  };
+/**
+ * The "news and offers" choice a guest's contact is written with
+ * (`savePublicContact`): `true` when ticked, which turns on the newsletter and
+ * WhatsApp marketing together on the server (`upsert_contact`), and `null`
+ * when not, which touches neither. Never `false`.
+ */
+export function marketingChoice(
+  details: Pick<DetailsState, "newsletter">,
+): true | null {
+  return details.newsletter === true ? true : null;
 }
 
 /**

@@ -526,6 +526,69 @@ describe("the last step: the booking, and whether THIS call made it", () => {
   });
 });
 
+describe("the contact of the booking becomes a client, on the server", () => {
+  // `promote_contact_to_client`, called with the service key by the last step
+  // (the browser called it with the public key, for any id it liked).
+  const statusOf = (id: string) =>
+    tables.contacts.find((c) => c.id === id)?.status;
+
+  test("a lead whose draft is confirmed is a client; a member stays a member", async () => {
+    tables.bookings.push(draftRow());
+    tables.contacts[0]!.status = "lead";
+    expect(
+      (await actions.confirmPublicBooking(null, confirmation())).kind,
+    ).toBe("promoted");
+    expect(statusOf(CONTACT)).toBe("client");
+
+    tables.bookings.length = 0;
+    tables.bookings.push(draftRow());
+    tables.contacts[0]!.status = "member";
+    await actions.confirmPublicBooking(null, confirmation());
+    expect(statusOf(CONTACT)).toBe("member");
+  });
+
+  test("a booking written afresh does the same", async () => {
+    expect(
+      (
+        await actions.confirmPublicBooking(
+          null,
+          confirmation({ draftId: null }),
+        )
+      ).kind,
+    ).toBe("created");
+    expect(statusOf(CONTACT)).toBe("client");
+  });
+
+  test("a contact of ANOTHER address is nobody's to promote: the id alone is not enough", async () => {
+    tables.bookings.push(draftRow());
+    const answer = await actions.confirmPublicBooking(
+      null,
+      confirmation({ contactId: OTHERS_CONTACT }),
+    );
+    expect(answer.kind).toBe("promoted");
+    expect(statusOf(OTHERS_CONTACT)).toBeUndefined();
+    expect(statusOf(CONTACT)).toBeUndefined();
+  });
+
+  test("nothing confirmed, nobody promoted: an hour taken, a booking no longer a draft, a refusal", async () => {
+    tables.bookings.push(draftRow({ status: "confirmed" }));
+    expect(
+      (await actions.confirmPublicBooking(null, confirmation())).kind,
+    ).toBe("not_draft");
+    freeHours = {};
+    tables.bookings.length = 0;
+    tables.bookings.push(draftRow());
+    expect(
+      (await actions.confirmPublicBooking(null, confirmation())).kind,
+    ).toBe("slot_taken");
+    expect(
+      (await actions.confirmPublicBooking(null, { ...confirmation(), x: 1 }))
+        .kind,
+    ).toBe("invalid");
+    expect(statusOf(CONTACT)).toBeUndefined();
+  });
+});
+
 describe("the professional's hour, defended by the database", () => {
   const held = (over: Row = {}): Row => ({
     id: "held",
