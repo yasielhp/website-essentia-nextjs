@@ -20,6 +20,11 @@ export type ConditionFacts = {
 const DAY_MS = 86_400_000;
 
 /** Only Spanish is stored as a real preference; every other value means English. */
+// TODO(locale-null): a contact with no `preferred_language` (null) reads as
+// English here, for campaigns; the staff cancellation in
+// `app/lib/bookings/for-staff.ts` (the email to the client) reads the same
+// null as Spanish. Deliberately left as it is until the owner decides which
+// one wins.
 export function toLocale(language: string | null): CampaignLocale {
   return language === "es" ? "es" : "en";
 }

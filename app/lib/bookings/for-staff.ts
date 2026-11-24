@@ -398,6 +398,10 @@ export async function cancelBookingForStaff(
   const notified = { client: false, professional: false, calendar: false };
 
   if (booking.email && booking.date) {
+    // TODO(locale-null): no contact, or one with no `preferred_language`,
+    // reads as Spanish here; the campaigns read the same null as English
+    // (`toLocale` in `app/lib/campaigns/conditions.ts`). Deliberately left as
+    // it is until the owner decides which one wins.
     let locale: "en" | "es" = "es";
     if (booking.contact_id) {
       const { data: contact } = await db()
