@@ -6,6 +6,7 @@ import {
   minutesOf,
   priceOf,
   priceText,
+  textWithPrice,
   toTierPrices,
 } from "@/lib/treatments/prices";
 
@@ -280,5 +281,39 @@ describe("cardLines: the line of every card of a page, made on the server", () =
 
   test("a card with no length is not given a line: it keeps its own", () => {
     expect("kinea-signature" in lines()).toBe(false);
+  });
+});
+
+describe("textWithPrice: a line written for the treatment, and its price after it", () => {
+  // The IV protocols say their length in words ("45–60 min"), which is no
+  // single length to find a session type by: the name alone finds it.
+  const PRICES = [
+    tier("Power Drip", 60, 260),
+    tier("Soma", 60, 140),
+    tier("Soma", 90, 190),
+  ];
+
+  test("the price the treatment's name has goes after the line", () => {
+    expect(plain(textWithPrice("45–60 MIN", PRICES, "Power Drip", "es"))).toBe(
+      "45–60 MIN · 260 €",
+    );
+    expect(textWithPrice("45–60 MIN", PRICES, "power drip", "en")).toBe(
+      "45–60 MIN · €260",
+    );
+  });
+
+  test("not on sale, or with more than one price to its name, it is the line alone", () => {
+    expect(textWithPrice("45–60 MIN", PRICES, "Calm Drip", "es")).toBe(
+      "45–60 MIN",
+    );
+    expect(textWithPrice("60–90 MIN", PRICES, "Soma", "es")).toBe("60–90 MIN");
+    expect(textWithPrice("45–60 MIN", [], "Power Drip", "es")).toBe(
+      "45–60 MIN",
+    );
+  });
+
+  test("with no line of its own, the price alone, or nothing", () => {
+    expect(textWithPrice("", PRICES, "Power Drip", "en")).toBe("€260");
+    expect(textWithPrice("  ", PRICES, "Calm Drip", "en")).toBe("");
   });
 });

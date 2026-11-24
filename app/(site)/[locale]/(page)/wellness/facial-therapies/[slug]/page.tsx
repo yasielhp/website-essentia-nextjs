@@ -5,6 +5,14 @@ import { facialTreatments } from "@/data/services-data";
 import { ServiceDetailView } from "@components/sections/wellness/treatment/service-detail-view";
 import { breadcrumbSchema } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
+import { cardMeta } from "@/lib/treatments/prices";
+import { listPublicTierPrices } from "@/lib/treatments/public-prices";
+
+// The page prints the price of its session type, which the centre changes
+// from the dashboard: it is rebuilt at most every five minutes so a new price
+// shows without a deploy (and at once when Settings saves one). Same figure as
+// `TIER_PRICES_REVALIDATE_SECONDS`; Next needs it written here as a literal.
+export const revalidate = 300;
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
 
@@ -56,6 +64,18 @@ export default async function FacialDetailPage({ params }: Props) {
   if (!facial) notFound();
 
   const t = await getTranslations("wellness.pages");
+  // The same line as its card on the list, read on the server. A ritual with
+  // no length of its own (its card prints a line written for it) has none
+  // here: its session type is not on sale, so there is no price to show.
+  const prices = await listPublicTierPrices("facial-therapies");
+  const metaLine = facial.durations
+    ? cardMeta(
+        prices,
+        facial.title,
+        facial.durations,
+        locale === "es" ? "es" : "en",
+      )
+    : "";
 
   return (
     <>
@@ -77,6 +97,7 @@ export default async function FacialDetailPage({ params }: Props) {
         service={facial}
         bookingHref={`/booking?service=facial-therapies&treatment=${facial.id}`}
         backHref="/wellness/facial-therapies#treatments"
+        metaLine={metaLine}
       />
     </>
   );

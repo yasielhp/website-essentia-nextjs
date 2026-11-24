@@ -202,3 +202,21 @@ export function priceText(
   if (durations.length === 1) return priced[0]?.price ?? "";
   return priced.map((p) => `${p.duration}: ${p.price}`).join(", ");
 }
+
+/**
+ * A line written for the treatment (its length, in the words its card uses),
+ * followed by its price. For a treatment whose length is not one plain figure
+ * (`45–60 min`): there is no length to find a session type by, so the name
+ * alone finds it, under the same rule as a card with none (`priceOf`).
+ */
+export function textWithPrice(
+  text: string,
+  prices: readonly TierPrice[],
+  title: string,
+  locale: SupportedLocale,
+): string {
+  const price = priceOf(prices, title, null);
+  return [text.trim(), price === null ? "" : cardPrice(price, locale)]
+    .filter(Boolean)
+    .join(" · ");
+}

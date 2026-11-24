@@ -5,6 +5,14 @@ import { ivProtocols } from "@/data/services-data";
 import { ServiceDetailView } from "@components/sections/wellness/treatment/service-detail-view";
 import { breadcrumbSchema } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
+import { textWithPrice } from "@/lib/treatments/prices";
+import { listPublicTierPrices } from "@/lib/treatments/public-prices";
+
+// The page prints the price of its session type, which the centre changes
+// from the dashboard: it is rebuilt at most every five minutes so a new price
+// shows without a deploy (and at once when Settings saves one). Same figure as
+// `TIER_PRICES_REVALIDATE_SECONDS`; Next needs it written here as a literal.
+export const revalidate = 300;
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
 
@@ -56,6 +64,18 @@ export default async function IvProtocolPage({ params }: Props) {
   if (!protocol) notFound();
 
   const t = await getTranslations("medicine.pages");
+  // The line of its card on the list (its length, in words) and, after it,
+  // the price of its session type, read on the server. A protocol says its
+  // length as a range, so it is found by its name alone.
+  const tIv = await getTranslations({ locale, namespace: "medicine.iv" });
+  const metaKey = `protocols.${protocol.id}.meta`;
+  const prices = await listPublicTierPrices("intravenous-therapy");
+  const metaLine = textWithPrice(
+    tIv.has(metaKey) ? tIv(metaKey) : "",
+    prices,
+    protocol.title,
+    locale === "es" ? "es" : "en",
+  );
 
   return (
     <>
@@ -77,6 +97,7 @@ export default async function IvProtocolPage({ params }: Props) {
         service={protocol}
         bookingHref={`/booking?service=intravenous-therapy&treatment=${protocol.id}`}
         backHref="/medicine/intravenous-therapy#protocols"
+        metaLine={metaLine}
       />
     </>
   );

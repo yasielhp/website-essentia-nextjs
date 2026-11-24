@@ -28,6 +28,13 @@ type DetailProps = {
    * no bonus offer, because there would be nowhere to pay it.
    */
   bonusFamily?: BonusFamily;
+  /**
+   * The line under the title: how long it lasts and what it costs, as text
+   * the page made on the server from the session type (`cardMeta`), so the
+   * price is on the first screen and in the HTML. Empty, or left out, for a
+   * treatment with nothing to say there.
+   */
+  metaLine?: string;
 };
 
 // ─── Hero ─────────────────────────────────────────────────────
@@ -36,6 +43,7 @@ function ServiceHero({
   service,
   bookingHref,
   hasBonuses,
+  metaLine,
 }: DetailProps & { hasBonuses: boolean }) {
   const t = useTranslations("wellness.treatments.serviceDetail");
   const tBonus = useTranslations("bonus.offer");
@@ -78,6 +86,13 @@ function ServiceHero({
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
           {t(`${service.id}.title`)}
         </h1>
+        {/* Length and price, as on the treatment's card: on the first screen
+            rather than only in the list and in the booking form. */}
+        {metaLine && (
+          <p className="text-sand-100 mt-5 text-sm tracking-[0.2em] uppercase">
+            {metaLine}
+          </p>
+        )}
         <p className="text-sand-500 mx-auto mt-6 max-w-xl leading-relaxed text-balance">
           {t(`${service.id}.description`)}
         </p>
@@ -211,6 +226,7 @@ export function ServiceDetailView({
   bookingHref,
   backHref,
   bonusFamily,
+  metaLine,
 }: DetailProps) {
   // One read feeds the hero's button and the offer at the bottom.
   const plans = useBonusPlans(service.title, Boolean(bonusFamily));
@@ -221,6 +237,7 @@ export function ServiceDetailView({
         bookingHref={bookingHref}
         backHref={backHref}
         hasBonuses={plans.length > 0}
+        metaLine={metaLine}
       />
       <ServiceDetails
         service={service}

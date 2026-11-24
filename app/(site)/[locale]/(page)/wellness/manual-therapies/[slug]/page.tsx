@@ -5,6 +5,14 @@ import { manualTherapyTreatments } from "@/data/services-data";
 import { ServiceDetailView } from "@components/sections/wellness/treatment/service-detail-view";
 import { breadcrumbSchema, treatmentMetaTitle } from "@/lib/seo";
 import { withoutTierLabels } from "@/lib/treatments/match";
+import { cardMeta } from "@/lib/treatments/prices";
+import { listPublicTierPrices } from "@/lib/treatments/public-prices";
+
+// The page prints the price of its session type, which the centre changes
+// from the dashboard: it is rebuilt at most every five minutes so a new price
+// shows without a deploy (and at once when Settings saves one). Same figure as
+// `TIER_PRICES_REVALIDATE_SECONDS`; Next needs it written here as a literal.
+export const revalidate = 300;
 import { JsonLd } from "@/components/json-ld";
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
@@ -63,6 +71,15 @@ export default async function ManualTherapyDetailPage({ params }: Props) {
   // page: without the labels its session type has carried, which are for the
   // server to find it by and not for the page to show.
   const service = withoutTierLabels(found);
+  // The same line as its card on the list, read on the server. Never throws:
+  // with no price to show it is the length alone.
+  const prices = await listPublicTierPrices("manual-therapies");
+  const metaLine = cardMeta(
+    prices,
+    found.title,
+    found.durations,
+    locale === "es" ? "es" : "en",
+  );
 
   const t = await getTranslations("wellness.pages");
 
@@ -87,6 +104,7 @@ export default async function ManualTherapyDetailPage({ params }: Props) {
         bookingHref={`/booking?service=manual-therapies&treatment=${service.id}`}
         backHref="/wellness/manual-therapies#treatments"
         bonusFamily="manual-therapies"
+        metaLine={metaLine}
       />
     </>
   );

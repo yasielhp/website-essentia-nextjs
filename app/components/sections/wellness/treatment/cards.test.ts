@@ -117,3 +117,42 @@ describe("the pages that print prices are rebuilt as often as a price is kept", 
     });
   }
 });
+
+describe("the page of each treatment shows its price from the first screen", () => {
+  const SITE = join(import.meta.dir, "../../../../(site)/[locale]/(page)");
+  const KEPT_FOR = readFileSync(
+    join(import.meta.dir, "../../../../lib/treatments/public-prices.ts"),
+    "utf8",
+  ).match(/TIER_PRICES_REVALIDATE_SECONDS = (\d+);/)?.[1];
+  const VIEW = readFileSync(
+    join(import.meta.dir, "service-detail-view.tsx"),
+    "utf8",
+  );
+
+  for (const [path, service] of [
+    ["wellness/manual-therapies", "manual-therapies"],
+    ["wellness/facial-therapies", "facial-therapies"],
+    ["medicine/intravenous-therapy", "intravenous-therapy"],
+  ] as const) {
+    test(`${path}/[slug] reads the prices on the server and hands the view its line`, () => {
+      const source = readFileSync(join(SITE, path, "[slug]/page.tsx"), "utf8");
+      expect(source).toContain(`export const revalidate = ${KEPT_FOR};`);
+      expect(source).toContain(`await listPublicTierPrices("${service}")`);
+      expect(source).toMatch(/<ServiceDetailView[^>]*metaLine=\{metaLine\}/);
+    });
+  }
+
+  test("the view prints that line in the hero, between the title and the description, only when there is one", () => {
+    const hero = VIEW.slice(
+      VIEW.indexOf("function ServiceHero"),
+      VIEW.indexOf("function ServiceDetails"),
+    );
+    const title = hero.indexOf(".title`)");
+    const line = hero.indexOf("{metaLine}");
+    const description = hero.indexOf(".description`)");
+    expect(hero).toContain("{metaLine && (");
+    expect(title).toBeGreaterThan(-1);
+    expect(line).toBeGreaterThan(title);
+    expect(description).toBeGreaterThan(line);
+  });
+});
