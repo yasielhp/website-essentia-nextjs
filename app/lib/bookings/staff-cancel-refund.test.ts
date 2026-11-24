@@ -21,6 +21,7 @@ import {
 type Settle = Parameters<typeof import("./refunds").settleRefundOnCancel>[0];
 
 let settled: Settle[] = [];
+let withdrawn: string[] = [];
 let actor = { userId: "u-1", role: "admin" };
 let before: Record<string, unknown> = {};
 let bookingRow: Record<string, unknown> = {};
@@ -99,6 +100,9 @@ beforeAll(async () => {
         hoursBefore: 48,
       };
     },
+    withdrawRefundOnReactivation: async (input: { bookingId: string }) => {
+      withdrawn.push(input.bookingId);
+    },
   }));
   mock.module("@/lib/calendar-propagate", () => ({
     ...real.propagate,
@@ -133,6 +137,7 @@ afterAll(() => {
 
 beforeEach(() => {
   settled = [];
+  withdrawn = [];
   actor = { userId: "u-1", role: "admin" };
   before = {
     status: "confirmed",
@@ -222,6 +227,21 @@ describe("the dashboard's save", () => {
     before = { ...before, status: "cancelled" };
     await save({ status: "cancelled" });
     expect(settled).toEqual([]);
+  });
+});
+
+describe("a save that brings a cancelled booking back", () => {
+  test("withdraws a pending refund and settles nothing", async () => {
+    before = { ...before, status: "cancelled" };
+    await save({ status: "confirmed" });
+    expect(withdrawn).toEqual(["b-1"]);
+    expect(settled).toEqual([]);
+  });
+
+  test("a save that keeps it cancelled withdraws nothing", async () => {
+    before = { ...before, status: "cancelled" };
+    await save({ status: "cancelled", notes: "x" });
+    expect(withdrawn).toEqual([]);
   });
 });
 

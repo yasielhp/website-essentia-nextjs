@@ -65,6 +65,7 @@ const real = {
   record: { ...(await import("@/lib/booking-events/record")) },
 };
 let settleRefundOnCancel: typeof import("./refunds").settleRefundOnCancel;
+let withdrawRefundOnReactivation: typeof import("./refunds").withdrawRefundOnReactivation;
 
 beforeAll(async () => {
   process.env.NEXT_PUBLIC_APP_URL ??= "https://app.example.test";
@@ -84,7 +85,8 @@ beforeAll(async () => {
       recorded.push(e);
     },
   }));
-  ({ settleRefundOnCancel } = await import("./refunds"));
+  ({ settleRefundOnCancel, withdrawRefundOnReactivation } =
+    await import("./refunds"));
 });
 
 afterAll(() => {
@@ -236,6 +238,45 @@ describe("a cancellation by the team", () => {
         return { error: null, id: "re-1" };
       },
     }));
+  });
+});
+
+describe("a cancelled booking brought back", () => {
+  const owedEntry = {
+    event: "refund_owed",
+    actor_role: "client",
+    provider_id: "790098209516",
+    payload: { amountEur: 100 },
+    created_at: "2026-07-10T10:00:00Z",
+  };
+
+  test("withdraws a refund still pending, so the page no longer shows it", async () => {
+    entries = [...entries, owedEntry];
+    // The status has just been written back.
+    bookingRow = { ...bookingRow, status: "confirmed" };
+    await withdrawRefundOnReactivation({
+      bookingId: "b-1",
+      actorId: "u-1",
+      actorRole: "admin",
+    });
+    expect(recorded).toHaveLength(1);
+    expect(recorded[0]).toMatchObject({
+      channel: "payment",
+      event: "refund_waived",
+      actorRole: "admin",
+    });
+    expect(recorded[0]!.summary).toBe(
+      `Sin reembolso · la reserva se ha reactivado (estaban pendientes ${EUR100})`,
+    );
+  });
+
+  test("writes nothing when no refund was pending", async () => {
+    bookingRow = { ...bookingRow, status: "confirmed" };
+    await withdrawRefundOnReactivation({
+      bookingId: "b-1",
+      actorRole: "admin",
+    });
+    expect(recorded).toEqual([]);
   });
 });
 

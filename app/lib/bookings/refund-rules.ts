@@ -39,7 +39,12 @@ export type PaymentEntry = {
   provider_id: string | null;
   payload: Record<string, unknown> | null;
   created_at: string;
+  /** `failed` marks an entry that records a doubt, not a fact: never counted. */
+  status?: string | null;
 };
+
+/** An entry that states a fact (not a `failed` one, which records a doubt). */
+const counts = (e: PaymentEntry) => e.status !== "failed";
 
 /** What was paid online, and the Redsys order that took it. */
 export type OnlinePayment = { orderId: string | null; onlineEur: number };
@@ -158,7 +163,7 @@ export function refundOnCancel(input: {
 /** Cents already marked as returned. */
 function refundedCents(entries: PaymentEntry[]): number {
   return entries
-    .filter((e) => e.event === REFUNDED)
+    .filter((e) => e.event === REFUNDED && counts(e))
     .reduce((sum, e) => sum + toCents(entryAmount(e)), 0);
 }
 
@@ -183,8 +188,11 @@ export function refundableEur(
 }
 
 /**
- * Where the refund stands: owed (the last `refund_owed` entry, less what was
- * returned after it, on a booking still cancelled), returned, or nothing.
+ * Where the refund stands, decided by the LATEST word on it: a `refund_owed`
+ * stands until a later `refund_waived` (a late cancellation after a
+ * reactivation, or the reactivation itself) or the `refunded` entries after it
+ * settle it, and only while the booking is cancelled. Owed is what that last
+ * `refund_owed` named, less what was returned since; returned, or nothing.
  */
 export function refundState(
   booking: RefundBooking,
@@ -199,13 +207,16 @@ export function refundState(
     };
   }
 
-  let lastOwed = -1;
+  let last = -1;
   entries.forEach((e, i) => {
-    if (e.event === REFUND_OWED) lastOwed = i;
+    if ((e.event === REFUND_OWED || e.event === REFUND_WAIVED) && counts(e)) {
+      last = i;
+    }
   });
-  if (booking.status === "cancelled" && lastOwed >= 0) {
-    const owed = toCents(entryAmount(entries[lastOwed]!));
-    const returnedSince = refundedCents(entries.slice(lastOwed + 1));
+  const lastWord = last >= 0 ? entries[last] : undefined;
+  if (booking.status === "cancelled" && lastWord?.event === REFUND_OWED) {
+    const owed = toCents(entryAmount(lastWord));
+    const returnedSince = refundedCents(entries.slice(last + 1));
     const left = Math.min(
       owed - returnedSince,
       toCents(refundableEur(booking, entries, online)),

@@ -18,6 +18,7 @@ import {
   REFUND_WAIVED,
   onlinePayment,
   refundOnCancel,
+  refundState,
   refundableEur,
   type PaymentEntry,
   type RefundBooking,
@@ -68,7 +69,7 @@ export async function readRefundContext(
   if (!data) return null;
   const { data: rows, error } = await db
     .from("booking_events")
-    .select("event, actor_role, provider_id, payload, created_at")
+    .select("event, actor_role, provider_id, payload, created_at, status")
     .eq("booking_id", bookingId)
     .eq("channel", "payment")
     .order("created_at", { ascending: true });
@@ -288,5 +289,46 @@ async function tellTheOffice(
       status: "failed",
       error: err instanceof Error ? err.message : String(err),
     });
+  }
+}
+
+/**
+ * A cancelled booking brought back (its status changed from `cancelled`):
+ * a refund still pending is no longer owed, and the history says so with a
+ * `refund_waived`, so a later cancellation decides the money afresh. Never
+ * throws.
+ */
+export async function withdrawRefundOnReactivation(input: {
+  bookingId: string;
+  actorId?: string | null;
+  actorRole: BookingEventActorRole;
+}): Promise<void> {
+  try {
+    const ctx = await readRefundContext(input.bookingId);
+    if (!ctx) return;
+    const online = onlinePayment(ctx.booking, ctx.entries);
+    // Read as if still cancelled: the status has just been written.
+    const pending = refundState(
+      { ...ctx.booking, status: "cancelled" },
+      ctx.entries,
+      online,
+    );
+    if (pending.kind !== "owed") return;
+    await recordBookingEvent({
+      bookingId: input.bookingId,
+      channel: "payment",
+      event: REFUND_WAIVED,
+      actorId: input.actorId ?? null,
+      actorRole: input.actorRole,
+      summary: `Sin reembolso · la reserva se ha reactivado (estaban pendientes ${formatPrice(pending.amountEur, "es")})`,
+      providerId: online.orderId,
+      payload: {
+        amountEur: pending.amountEur,
+        orderId: online.orderId,
+        reason: "reactivated",
+      },
+    });
+  } catch (err) {
+    console.error("[refunds] could not withdraw the pending refund:", err);
   }
 }

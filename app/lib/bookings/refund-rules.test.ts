@@ -193,6 +193,79 @@ describe("refundState and refundableEur", () => {
   });
 });
 
+describe("the latest word on the refund decides", () => {
+  const stateOf = (booking: RefundBooking, entries: PaymentEntry[]) =>
+    refundView(booking, entries, true).state;
+
+  it("owed by the link, reactivated, then cancelled 2 h before with no refund: nothing pending", () => {
+    // The sequence a review reproduced: the page went on saying 100 € owed.
+    const entries = [
+      redsysPaid(100),
+      entry("refund_owed", 100, { actor_role: "client" }),
+      entry("refund_waived", 100, { actor_role: "admin" }), // reactivated
+      entry("refund_waived", 100, { actor_role: "admin" }), // late, no refund
+    ];
+    expect(stateOf(paidOnline, entries)).toEqual({ kind: "none" });
+  });
+
+  it("a later refund_waived settles an earlier refund_owed even with no reactivation entry", () => {
+    const entries = [
+      redsysPaid(100),
+      entry("refund_owed", 100),
+      entry("refund_waived", 100),
+    ];
+    expect(stateOf(paidOnline, entries)).toEqual({ kind: "none" });
+  });
+
+  it("owed, reactivated (the booking is no longer cancelled): nothing pending", () => {
+    const entries = [redsysPaid(100), entry("refund_owed", 100)];
+    expect(stateOf({ ...paidOnline, status: "confirmed" }, entries)).toEqual({
+      kind: "none",
+    });
+  });
+
+  it("waived, then cancelled again in time: owed once, not twice", () => {
+    const entries = [
+      redsysPaid(100),
+      entry("refund_owed", 100),
+      entry("refund_waived", 100),
+      entry("refund_owed", 100),
+    ];
+    expect(stateOf(paidOnline, entries)).toEqual({
+      kind: "owed",
+      amountEur: 100,
+    });
+  });
+
+  it("owed, then returned: refunded", () => {
+    const entries = [
+      redsysPaid(100),
+      entry("refund_owed", 100),
+      entry("refunded", 100, { actor_role: "admin" }),
+    ];
+    expect(
+      stateOf({ ...paidOnline, payment_status: "refunded" }, entries),
+    ).toEqual({ kind: "refunded", amountEur: 100 });
+  });
+
+  it("an entry that records a doubt (status failed) is not a word on it", () => {
+    const entries = [
+      redsysPaid(100),
+      entry("refund_owed", 100, { status: "failed" }),
+    ];
+    expect(stateOf(paidOnline, entries)).toEqual({ kind: "none" });
+    const later = [
+      redsysPaid(100),
+      entry("refund_owed", 100),
+      entry("refund_waived", 100, { status: "failed" }),
+    ];
+    expect(stateOf(paidOnline, later)).toEqual({
+      kind: "owed",
+      amountEur: 100,
+    });
+  });
+});
+
 describe("refundPatch and the ledger", () => {
   it("returning everything makes the booking refunded and takes it out of income", () => {
     const patch = refundPatch(paidOnline, 100);

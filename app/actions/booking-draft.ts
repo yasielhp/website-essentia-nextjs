@@ -13,7 +13,10 @@ import type {
 } from "@/lib/booking-events/types";
 import { formatPrice, parseIsoDate } from "@/utils/format";
 import { amountOwed } from "@/lib/payments/amounts";
-import { settleRefundOnCancel } from "@/lib/bookings/refunds";
+import {
+  settleRefundOnCancel,
+  withdrawRefundOnReactivation,
+} from "@/lib/bookings/refunds";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -710,6 +713,13 @@ export async function updateBookingByAdmin(
         teamRefundsLate:
           options?.refundLate === true &&
           (actor.role === "admin" || actor.role === "staff"),
+      });
+    } else if (was.status === "cancelled" && payload.status !== "cancelled") {
+      // Brought back: a refund still pending is no longer owed.
+      await withdrawRefundOnReactivation({
+        bookingId,
+        actorId: actor.userId,
+        actorRole: actor.role as BookingEventActorRole,
       });
     }
   }
