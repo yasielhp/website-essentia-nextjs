@@ -450,7 +450,9 @@
           "refund_waived": "Sin reembolso",
           "refunded": "Reembolsada",
           "checkout": "Pago iniciado",
-          "duplicate": "Pago duplicado"
+          "duplicate": "Pago duplicado",
+          "bonus_returned": "Sesión devuelta al bono",
+          "bonus_lost": "Sesión del bono perdida"
         },
         "roles": {
           "admin": "Administrador",

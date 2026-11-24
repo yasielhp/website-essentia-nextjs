@@ -224,7 +224,7 @@ describe("the refund promised by the cancellation link", () => {
     expect(page?.refundEur).toBe(100);
 
     const res = await actions.cancelBookingByToken("tok", "es");
-    expect(res).toEqual({ ok: true, refundEur: 100 });
+    expect(res).toEqual({ ok: true, refundEur: 100, bonusReturned: false });
 
     const owed = recorded.find(
       (e) => e.channel === "payment" && e.event === "refund_owed",
@@ -252,7 +252,7 @@ describe("the refund promised by the cancellation link", () => {
       (await actions.fetchCancellableBooking("tok"))?.refundEur,
     ).toBeNull();
     const res = await actions.cancelBookingByToken("tok", "es");
-    expect(res).toEqual({ ok: true, refundEur: null });
+    expect(res).toEqual({ ok: true, refundEur: null, bonusReturned: false });
     expect(recorded.some((e) => e.channel === "payment")).toBe(false);
     expect(sent.map((m) => m.to)).toEqual(["ana@example.test"]);
   });
@@ -320,9 +320,56 @@ describe("one moment for the window and the refund", () => {
     Date.now = () => realNow() + (calls++ > 0 ? 60_000 : 0);
     try {
       const res = await actions.cancelBookingByToken("tok", "es");
-      expect(res).toEqual({ ok: true, refundEur: 100 });
+      expect(res).toEqual({ ok: true, refundEur: 100, bonusReturned: false });
     } finally {
       Date.now = realNow;
     }
+  });
+});
+
+describe("a session drawn from a bonus, cancelled by link", () => {
+  beforeEach(() => {
+    bookingRow = {
+      ...bookingRow,
+      payment_mode: "bonus",
+      payment_status: "paid",
+      amount_paid_eur: 0,
+      bonus_id: "bn-1",
+      contact_bonuses: { sessions_total: 5 },
+    };
+  });
+
+  test("in time it goes back to the bonus: the page says so and the history records it", async () => {
+    setSystemTime(new Date("2026-07-13T09:00:00Z"));
+    const page = await actions.fetchCancellableBooking("tok");
+    expect(page).toMatchObject({
+      cancellable: true,
+      bonusSession: true,
+      refundEur: null,
+    });
+    const res = await actions.cancelBookingByToken("tok", "es");
+    expect(res).toEqual({ ok: true, refundEur: null, bonusReturned: true });
+    expect(recorded.find((e) => e.event === "bonus_returned")?.summary).toBe(
+      "Sesión devuelta al bono de 5 sesiones · cancelada con 48 h de antelación",
+    );
+    expect(recorded.some((e) => e.event === "refund_owed")).toBe(false);
+  });
+
+  test("23 hours before in summer it cannot be cancelled by link, and nothing is written", async () => {
+    setSystemTime(new Date("2026-07-14T10:00:00Z"));
+    const page = await actions.fetchCancellableBooking("tok");
+    expect(page).toMatchObject({ cancellable: false, bonusSession: true });
+    expect((await actions.cancelBookingByToken("tok", "es")).ok).toBe(false);
+    expect(recorded).toEqual([]);
+  });
+
+  test("a booking paid online is no bonus session", async () => {
+    bookingRow = { ...bookingRow, payment_mode: "full", bonus_id: null };
+    setSystemTime(new Date("2026-07-13T09:00:00Z"));
+    expect((await actions.fetchCancellableBooking("tok"))?.bonusSession).toBe(
+      false,
+    );
+    const res = await actions.cancelBookingByToken("tok", "es");
+    expect(res.bonusReturned).toBe(false);
   });
 });

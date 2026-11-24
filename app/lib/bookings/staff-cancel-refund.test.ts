@@ -21,6 +21,10 @@ import {
 type Settle = Parameters<typeof import("./refunds").settleRefundOnCancel>[0];
 
 let settled: Settle[] = [];
+type BonusSettle = Parameters<
+  typeof import("@/lib/bonuses/settle").settleBonusOnCancel
+>[0];
+let bonusSettled: BonusSettle[] = [];
 let withdrawn: string[] = [];
 let rpcCalls = 0;
 /** What `readRefundContext` answers before a save that cancels. */
@@ -63,6 +67,7 @@ const real = {
   guard: { ...(await import("@/lib/auth-guard")) },
   record: { ...(await import("@/lib/booking-events/record")) },
   refunds: { ...(await import("./refunds")) },
+  bonusSettle: { ...(await import("@/lib/bonuses/settle")) },
   propagate: { ...(await import("@/lib/calendar-propagate")) },
   sync: { ...(await import("@/lib/calendar-sync")) },
   wa: { ...(await import("@/lib/whatsapp/notify")) },
@@ -111,6 +116,13 @@ beforeAll(async () => {
       withdrawn.push(input.bookingId);
     },
   }));
+  mock.module("@/lib/bonuses/settle", () => ({
+    ...real.bonusSettle,
+    settleBonusOnCancel: async (input: BonusSettle) => {
+      bonusSettled.push(input);
+      return { bonus: true, returned: false, reason: "late" };
+    },
+  }));
   mock.module("@/lib/calendar-propagate", () => ({
     ...real.propagate,
     removeBookingFromCalendars: async () => {},
@@ -136,6 +148,7 @@ afterAll(() => {
   mock.module("@/lib/auth-guard", () => real.guard);
   mock.module("@/lib/booking-events/record", () => real.record);
   mock.module("./refunds", () => real.refunds);
+  mock.module("@/lib/bonuses/settle", () => real.bonusSettle);
   mock.module("@/lib/calendar-propagate", () => real.propagate);
   mock.module("@/lib/calendar-sync", () => real.sync);
   mock.module("@/lib/whatsapp/notify", () => real.wa);
@@ -144,6 +157,7 @@ afterAll(() => {
 
 beforeEach(() => {
   settled = [];
+  bonusSettled = [];
   withdrawn = [];
   rpcCalls = 0;
   refundContext = null;
@@ -180,7 +194,7 @@ beforeEach(() => {
 /** A save of the edit screen, with the fields that matter here. */
 const save = (
   patch: Record<string, unknown>,
-  options?: { refundLate?: boolean },
+  options?: Parameters<typeof updateBookingByAdmin>[3],
 ) =>
   updateBookingByAdmin(
     "token",
@@ -302,6 +316,49 @@ describe("a save that cancels and also undoes the online payment", () => {
       amount_paid_eur: 0,
     });
     expect(res).toEqual({ error: null });
+  });
+});
+
+describe("a bonus session cancelled by the team", () => {
+  test("the dashboard's save settles it on the session as it was, lost unless ticked", async () => {
+    await save({ status: "cancelled" });
+    expect(bonusSettled[0]).toMatchObject({
+      bookingId: "b-1",
+      source: "dashboard",
+      actorRole: "admin",
+      date: "2026-07-15",
+      time: "10:00",
+      teamReturnsLate: false,
+    });
+  });
+
+  test("ticked by an administrator or staff it is given back; a partner's tick is not heard", async () => {
+    await save({ status: "cancelled" }, { bonusReturnLate: true });
+    expect(bonusSettled[0]?.teamReturnsLate).toBe(true);
+    actor = { userId: "u-3", role: "partner" };
+    await save({ status: "cancelled" }, { bonusReturnLate: true });
+    expect(bonusSettled[1]?.teamReturnsLate).toBe(false);
+  });
+
+  test("a save that does not cancel settles no bonus session", async () => {
+    await save({ notes: "x" });
+    expect(bonusSettled).toEqual([]);
+  });
+
+  test("the assistants' tool settles it too, and answers with it", async () => {
+    const quiet = spyOn(console, "error").mockImplementation(() => {});
+    const res = await cancelBookingForStaff(
+      "b-1",
+      undefined,
+      { userId: "u-1", role: "staff" },
+      { bonusReturnLate: true },
+    );
+    quiet.mockRestore();
+    expect(bonusSettled[0]).toMatchObject({
+      source: "assistant",
+      teamReturnsLate: true,
+    });
+    if (res.ok) expect(res.bonus).toMatchObject({ bonus: true });
   });
 });
 

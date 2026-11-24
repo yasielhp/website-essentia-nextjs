@@ -450,7 +450,9 @@
           "refund_waived": "No refund",
           "refunded": "Refunded",
           "checkout": "Payment started",
-          "duplicate": "Duplicate payment"
+          "duplicate": "Duplicate payment",
+          "bonus_returned": "Session back to the voucher",
+          "bonus_lost": "Voucher session lost"
         },
         "roles": {
           "admin": "Admin",

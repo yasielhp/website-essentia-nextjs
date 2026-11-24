@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { bonusBalance } from "@/lib/bonuses/balance";
+import { readBonusUses } from "@/lib/bonuses/uses";
 import { effectivePayment } from "@/lib/payments/amounts";
 import { json, defineTool, fail, type ToolServer } from "@/lib/mcp/tool";
 import { pagingShape, rangeOf, searchTerm } from "@/lib/mcp/paging";
@@ -151,19 +152,11 @@ export function registerContactTools(server: ToolServer): void {
         expires_at: string;
         service_tiers: { label: string | null } | null;
       }[];
-      const uses = bonuses.length
-        ? (
-            ((
-              await db()
-                .from("bookings")
-                .select("bonus_id, status")
-                .in(
-                  "bonus_id",
-                  bonuses.map((b) => b.id),
-                )
-            ).data ?? []) as { bonus_id: string; status: string | null }[]
-          ).map((u) => ({ bonusId: u.bonus_id, status: u.status ?? "" }))
-        : [];
+      // A session lost to a late cancellation counts as used.
+      const uses = (await readBonusUses(bonuses.map((b) => b.id))).map((u) => ({
+        bonusId: u.bonus_id,
+        status: u.status,
+      }));
 
       const result: Record<string, unknown> = {
         contact,
@@ -182,6 +175,9 @@ export function registerContactTools(server: ToolServer): void {
             session_type: b.service_tiers?.label ?? null,
             sessions_total: b.sessions_total,
             sessions_used: used,
+            sessions_lost: uses.filter(
+              (u) => u.bonusId === b.id && u.status === "lost",
+            ).length,
             sessions_left: remaining,
             purchased_at: b.purchased_at,
             expires_at: b.expires_at,

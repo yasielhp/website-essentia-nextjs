@@ -13,6 +13,10 @@ import {
   settleRefundOnCancel,
   type CancelRefund,
 } from "@/lib/bookings/refunds";
+import {
+  settleBonusOnCancel,
+  type BonusCancelOutcome,
+} from "@/lib/bonuses/settle";
 
 /**
  * Taking and cancelling a booking on behalf of the centre, with no browser in
@@ -334,6 +338,8 @@ export type CancelResult =
       paid_eur: number;
       /** Money paid online now owed back, as the history recorded it. */
       refund: CancelRefund;
+      /** For a bonus session: whether it went back to the bonus. */
+      bonus: BonusCancelOutcome;
       notified: { client: boolean; professional: boolean; calendar: boolean };
     };
 
@@ -349,7 +355,7 @@ export async function cancelBookingForStaff(
   bookingId: string,
   reason: string | undefined,
   actor: Actor,
-  options?: { refundLate?: boolean },
+  options?: { refundLate?: boolean; bonusReturnLate?: boolean },
 ): Promise<CancelResult> {
   const { data } = await db()
     .from("bookings")
@@ -412,6 +418,16 @@ export async function cancelBookingForStaff(
     time: booking.time,
     teamRefundsLate:
       options?.refundLate === true &&
+      (actor.role === "admin" || actor.role === "staff"),
+  });
+  const bonus = await settleBonusOnCancel({
+    bookingId,
+    source: "assistant",
+    ...actorOf(actor),
+    date: booking.date,
+    time: booking.time,
+    teamReturnsLate:
+      options?.bonusReturnLate === true &&
       (actor.role === "admin" || actor.role === "staff"),
   });
 
@@ -486,6 +502,7 @@ export async function cancelBookingForStaff(
     bookingId,
     paid_eur: Number(booking.amount_paid_eur ?? 0),
     refund,
+    bonus,
     notified,
   };
 }

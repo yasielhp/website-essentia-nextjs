@@ -16,9 +16,10 @@ import {
   refundIfCancelledNow,
   settleRefundOnCancel,
 } from "@/lib/bookings/refunds";
+import { settleBonusOnCancel } from "@/lib/bonuses/settle";
 
 const SELECT =
-  "id, service_id, service_title, date, time, duration, status, first_name, last_name, email, staff_id, service_tiers(label)";
+  "id, service_id, service_title, date, time, duration, status, first_name, last_name, email, staff_id, payment_mode, service_tiers(label)";
 
 type Row = {
   id: string;
@@ -32,6 +33,7 @@ type Row = {
   last_name: string | null;
   email: string | null;
   staff_id: string | null;
+  payment_mode?: string | null;
   service_tiers: { label: string | null } | null;
 };
 
@@ -72,6 +74,9 @@ export async function fetchCancellableBooking(
     alreadyCancelled: booking.status === "cancelled",
     // The page promises money back only when there is money to give back.
     refundEur: cancellable ? await refundIfCancelledNow(booking.id) : null,
+    // And says what happens to a bonus session: back to the bonus in time,
+    // lost inside the last 24 hours.
+    bonusSession: booking.payment_mode === "bonus",
   };
 }
 
@@ -97,6 +102,8 @@ export async function cancelBookingByToken(
   reason?: "not_found" | "too_late" | "already";
   /** Money paid online that is now owed back to the client, or null. */
   refundEur?: number | null;
+  /** The session was drawn from a bonus and went back to it. */
+  bonusReturned?: boolean;
 }> {
   if (!token) return { ok: false, reason: "not_found" };
 
@@ -147,6 +154,15 @@ export async function cancelBookingByToken(
   // Inside the window checked above, so money paid online is owed back: the
   // history says so and the office is emailed the amount and the order.
   const refund = await settleRefundOnCancel({
+    bookingId: booking.id,
+    source: "client_link",
+    actorRole: "client",
+    date: booking.date,
+    time: booking.time,
+    now,
+  });
+  // A session drawn from a bonus: cancelled in time, so it goes back to it.
+  const bonus = await settleBonusOnCancel({
     bookingId: booking.id,
     source: "client_link",
     actorRole: "client",
@@ -275,5 +291,9 @@ export async function cancelBookingByToken(
     });
   }
 
-  return { ok: true, refundEur: refund.owed ? refund.amountEur : null };
+  return {
+    ok: true,
+    refundEur: refund.owed ? refund.amountEur : null,
+    bonusReturned: bonus.bonus && bonus.returned,
+  };
 }

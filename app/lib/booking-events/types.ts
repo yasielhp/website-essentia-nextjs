@@ -41,7 +41,11 @@ export type BookingEventName =
   /** A Redsys checkout was opened, under this order number. */
   | "checkout"
   /** A second authorised payment for a booking already paid: to refund. */
-  | "duplicate";
+  | "duplicate"
+  /** A cancelled bonus session that went back to the bonus. */
+  | "bonus_returned"
+  /** A cancelled bonus session lost under the 24-hour rule. */
+  | "bonus_lost";
 
 /**
  * How far it got.

@@ -57,6 +57,8 @@ export type CancellableBooking = {
    * when nothing would: not paid online, or no longer cancellable.
    */
   refundEur: number | null;
+  /** The session is drawn from a bonus (it goes back to it, or is lost). */
+  bonusSession: boolean;
 };
 
 /** A booking row as read from the database. */

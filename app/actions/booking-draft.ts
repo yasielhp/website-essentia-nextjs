@@ -19,6 +19,7 @@ import {
   withdrawRefundOnReactivation,
 } from "@/lib/bookings/refunds";
 import { cancelErasesOnlinePayment } from "@/lib/bookings/refund-rules";
+import { settleBonusOnCancel } from "@/lib/bonuses/settle";
 import type { UpdateBookingPayload } from "@/types/booking";
 
 /**
@@ -652,12 +653,14 @@ const REFUND_PAYMENT_CONFLICT = "refund_payment_conflict";
  * read only from an administrator or a member of staff, and only as `true`;
  * anything else is "no refund", which is what the Terms say for a late
  * cancellation. At least 24 hours before, the refund is owed whatever it says.
+ * `options.bonusReturnLate` is the same answer for a session drawn from a
+ * bonus: "give the session back to the bonus?", lost otherwise.
  */
 export async function updateBookingByAdmin(
   accessToken: string | null,
   bookingId: string,
   payload: UpdateBookingPayload,
-  options?: { refundLate?: boolean },
+  options?: { refundLate?: boolean; bonusReturnLate?: boolean },
 ): Promise<{ error: string | null }> {
   let actor: AuthContext;
   try {
@@ -736,6 +739,20 @@ export async function updateBookingByAdmin(
         time: was.time ?? null,
         teamRefundsLate:
           options?.refundLate === true &&
+          (actor.role === "admin" || actor.role === "staff"),
+      });
+      // A bonus session: back to the bonus in time; inside the last 24 hours
+      // lost unless the team ticked "Devolver la sesión al bono" (never a
+      // partner's call).
+      await settleBonusOnCancel({
+        bookingId,
+        source: "dashboard",
+        actorId: actor.userId,
+        actorRole: actor.role as BookingEventActorRole,
+        date: was.date ?? null,
+        time: was.time ?? null,
+        teamReturnsLate:
+          options?.bonusReturnLate === true &&
           (actor.role === "admin" || actor.role === "staff"),
       });
     } else if (was.status === "cancelled" && payload.status !== "cancelled") {

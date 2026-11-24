@@ -10,12 +10,14 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import type { BookingEventActorRole } from "@/lib/booking-events/types";
 import {
+  USES_SESSION,
   bonusBalance,
   usableBonus,
   type BonusRow,
 } from "@/lib/bonuses/balance";
 import { bonusExpiry, bonusToday } from "@/lib/bonuses/expiry";
 import { bonusLabelEs } from "@/lib/bonuses/label";
+import { readBonusUses } from "@/lib/bonuses/uses";
 import { bonusPlanSchema } from "@/lib/schemas";
 import type {
   BonusBooking,
@@ -153,15 +155,9 @@ export async function fetchContactBonuses(
   const bonuses = (data ?? []) as unknown as ContactBonusDb[];
   if (bonuses.length === 0) return [];
 
-  const { data: useData } = await db
-    .from("bookings")
-    .select("id, date, time, status, bonus_id")
-    .in(
-      "bonus_id",
-      bonuses.map((b) => b.id),
-    )
-    .order("date", { ascending: true });
-  const uses = (useData ?? []) as UseRow[];
+  // A session lost under the 24-hour rule comes back as status `lost`, which
+  // the balance counts as used.
+  const uses: UseRow[] = await readBonusUses(bonuses.map((b) => b.id));
 
   return bonuses.map((b) => {
     const row: BonusRow = {
@@ -181,6 +177,7 @@ export async function fetchContactBonuses(
       time: u.time,
       status: u.status,
     }));
+    const lost = mine.filter((u) => u.status === "lost").length;
     return {
       id: b.id,
       planId: b.plan_id,
@@ -194,6 +191,7 @@ export async function fetchContactBonuses(
       notes: b.notes,
       used,
       remaining,
+      lost,
       bookings,
     };
   });
@@ -320,12 +318,11 @@ export async function assignBookingBonus(
   // The sessions are counted, not reserved: two bookings assigned to the last
   // session at the same moment both pass the check above. Count again now
   // that this one is written, and give it back if the bonus went over.
-  const { count } = await db
-    .from("bookings")
-    .select("id", { count: "exact", head: true })
-    .eq("bonus_id", usable.id)
-    .in("status", ["pending", "confirmed", "completed"]);
-  if ((count ?? 0) > chosen.sessionsTotal) {
+  // Lost sessions count too: a session cancelled late is used up.
+  const count = (await readBonusUses([usable.id])).filter((u) =>
+    USES_SESSION.has(u.status),
+  ).length;
+  if (count > chosen.sessionsTotal) {
     await db
       .from("bookings")
       .update({

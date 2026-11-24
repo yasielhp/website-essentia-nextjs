@@ -21,6 +21,10 @@ export type BonusBooking = {
   id: string;
   date: string | null;
   time: string | null;
+  /**
+   * The booking's status, or `lost` for a session cancelled inside the last
+   * 24 hours and not given back: the bonus counts it as used.
+   */
   status: string | null;
 };
 
@@ -38,6 +42,8 @@ export type ContactBonus = {
   notes: string | null;
   used: number;
   remaining: number;
+  /** Of `used`, the sessions lost to a late cancellation. */
+  lost: number;
   bookings: BonusBooking[];
 };
 

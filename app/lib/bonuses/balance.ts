@@ -4,9 +4,20 @@ export type BonusRow = {
   sessionsTotal: number;
   expiresAt: string;
 };
+/**
+ * A booking that drew on a bonus. `status` is the booking's, or `lost` for a
+ * cancelled session lost under the 24-hour rule (`useStatus` in
+ * `cancellation.ts`), which the bonus counts as used.
+ */
 export type BonusUse = { bonusId: string; status: string };
 
-const USES_SESSION = new Set(["pending", "confirmed", "completed"]);
+/** The statuses that hold, or used up, one of the bonus's sessions. */
+export const USES_SESSION = new Set([
+  "pending",
+  "confirmed",
+  "completed",
+  "lost",
+]);
 
 export function bonusBalance(bonus: BonusRow, uses: BonusUse[]) {
   const used = uses.filter(

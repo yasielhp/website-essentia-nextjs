@@ -269,7 +269,7 @@ export function registerBookingTools(server: ToolServer): void {
     {
       title: "Cancel Booking",
       description:
-        "Cancel a booking as the dashboard does: the history, the client's email, the professional's WhatsApp and the calendars. It does NOT return any money. If the booking was paid online and the session is at least 24 hours away, the refund is owed: it is recorded as pending in the booking's history and the office is emailed the amount and the Redsys order number, to return it by hand in the Redsys portal. Within the last 24 hours (or after the session) there is no refund unless refund_late is true, which is the team's decision (for instance when the centre itself cancels); ask before setting it.",
+        "Cancel a booking as the dashboard does: the history, the client's email, the professional's WhatsApp and the calendars. It does NOT return any money. If the booking was paid online and the session is at least 24 hours away, the refund is owed: it is recorded as pending in the booking's history and the office is emailed the amount and the Redsys order number, to return it by hand in the Redsys portal. Within the last 24 hours (or after the session) there is no refund unless refund_late is true, which is the team's decision (for instance when the centre itself cancels); ask before setting it. A session drawn from a bonus goes back to the bonus when cancelled at least 24 hours before; within the last 24 hours it is lost unless bonus_return_late is true, also the team's decision.",
       inputSchema: {
         id: z.string().uuid(),
         reason: z.string().trim().max(300).optional(),
@@ -279,14 +279,23 @@ export function registerBookingTools(server: ToolServer): void {
           .describe(
             "Only for a booking paid online cancelled within the last 24 hours: true records the refund as owed anyway. Default false (no refund, as the Terms say).",
           ),
+        bonus_return_late: z
+          .boolean()
+          .optional()
+          .describe(
+            "Only for a session drawn from a bonus cancelled within the last 24 hours: true gives the session back to the bonus. Default false (the session is lost, as the Terms say).",
+          ),
       },
     },
-    async ({ id, reason, refund_late }, auth) => {
+    async ({ id, reason, refund_late, bonus_return_late }, auth) => {
       const result = await cancelBookingForStaff(
         id,
         reason,
         { userId: auth.userId, role: auth.role },
-        { refundLate: refund_late === true },
+        {
+          refundLate: refund_late === true,
+          bonusReturnLate: bonus_return_late === true,
+        },
       );
       if (!result.ok) {
         return fail(
@@ -312,6 +321,13 @@ export function registerBookingTools(server: ToolServer): void {
               owed: false,
               reason: result.refund.reason,
             },
+        ...(result.bonus.bonus
+          ? {
+              bonus_session: result.bonus.returned
+                ? "returned to the bonus"
+                : "lost (cancelled within the last 24 hours)",
+            }
+          : {}),
         notified: result.notified,
       });
     },
