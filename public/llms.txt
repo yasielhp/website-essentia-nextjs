@@ -14,6 +14,8 @@
 
 Prices are not listed in this file. The centre changes them, and the current price of each treatment is on its own page, under its name, next to how long it lasts.
 
+The full price is paid online when booking. A booking can be changed or cancelled up to 24 hours before the session, and a cancellation made at least 24 hours ahead is refunded; within the last 24 hours, or for a no-show, there is no refund.
+
 ## Services
 
 Bookable online, given at the centre.
@@ -60,7 +62,7 @@ Bookable online, given at the centre.
 
 ## Pages
 
-- [Book a session](https://www.essentiawellnessclub.com/booking): Choose the treatment, the day and the hour, and pay online.
+- [Book a session](https://www.essentiawellnessclub.com/booking): Choose the treatment, the day and the hour, and pay the full price online.
 - [Wellness](https://www.essentiawellnessclub.com/wellness): The wellness services.
 - [Medicine](https://www.essentiawellnessclub.com/medicine): The medicine services.
 - [Memberships](https://www.essentiawellnessclub.com/experiences/memberships): Membership plans. Conditions and current prices are on the page.

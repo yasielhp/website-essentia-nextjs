@@ -69,24 +69,22 @@ export function TermsEN() {
         made through our website or by contacting us directly.
       </p>
       <p>
-        Bookings made through the website require a payment at the time of
-        booking: you may pay a deposit, at the percentage shown during the
-        booking process, or the full price of the session, to which the discount
-        displayed at that time may apply. Any outstanding balance is paid at the
-        centre on the day of the session. A booking is confirmed only once the
-        payment has been registered; if the payment is not completed within 30
-        minutes, the reserved time is released automatically. For bookings made
-        by phone or in person, Essentia may likewise require a deposit.
+        Bookings made through the website require payment of the full price of
+        the session at the time of booking, to which the discount displayed at
+        that time may apply. A booking is confirmed only once the payment has
+        been registered; if the payment is not completed within 30 minutes, the
+        reserved time is released automatically. For bookings made by phone or
+        in person, Essentia may likewise require payment in advance.
       </p>
       <h3>3.2 Cancellation and No-Show Policy</h3>
       <p>
-        Bookings may be cancelled or rescheduled up to 24 hours before the
-        scheduled time at no charge; in that case any amount paid in advance is
-        kept as a credit towards a new appointment. Cancellations within 24
-        hours or no-shows forfeit the amount paid in advance and, failing that,
-        may be charged at the full session rate or deducted from an available
-        session allowance. This is without prejudice to your rights under
-        consumer law.
+        Bookings may be cancelled or rescheduled at no charge up to 24 hours
+        before the scheduled time. If a booking is cancelled at least 24 hours
+        in advance, any amount paid in advance will be refunded in full.
+        Cancellations within 24 hours or no-shows are not entitled to a refund
+        of the amount paid in advance and, failing that, may be charged at the
+        full session rate or deducted from an available session allowance. This
+        is without prejudice to your rights under consumer law.
       </p>
       <h3>3.3 Payments</h3>
       <p>

@@ -67,10 +67,10 @@ export function PrivacyES() {
         </li>
         <li>
           <strong>Datos de reservas y transacciones:</strong> reservas de
-          sesiones, pagos anticipados y señales, bonos de sesiones adquiridos y
-          su consumo, detalles de membresía y registros de pagos. Los pagos con
-          tarjeta los tramita la pasarela Redsys; no almacenamos el número de su
-          tarjeta.
+          sesiones, pagos anticipados y sus reembolsos, bonos de sesiones
+          adquiridos y su consumo, detalles de membresía y registros de pagos.
+          Los pagos con tarjeta los tramita la pasarela Redsys; no almacenamos
+          el número de su tarjeta.
         </li>
         <li>
           <strong>Datos de comunicaciones:</strong> mensajes enviados a través

@@ -73,27 +73,26 @@ export function TermsES() {
         directamente con nosotros.
       </p>
       <p>
-        Las reservas realizadas a través del sitio web requieren un pago en el
-        momento de reservar: usted podrá abonar una señal, cuyo porcentaje se
-        indica en el proceso de reserva, o el importe íntegro de la sesión, al
-        que podrá aplicarse el descuento que se muestre en ese momento. El
-        importe pendiente, si lo hubiera, se abona en el centro el día de la
-        sesión. La reserva queda confirmada únicamente cuando el pago ha sido
-        registrado; si el pago no se completa en un plazo de 30 minutos, la hora
-        reservada se libera automáticamente. En las reservas realizadas por
-        teléfono o presencialmente, Essentia podrá requerir igualmente una
-        señal.
+        Las reservas realizadas a través del sitio web requieren el pago del
+        importe íntegro de la sesión en el momento de reservar, al que podrá
+        aplicarse el descuento que se muestre en ese momento. La reserva queda
+        confirmada únicamente cuando el pago ha sido registrado; si el pago no
+        se completa en un plazo de 30 minutos, la hora reservada se libera
+        automáticamente. En las reservas realizadas por teléfono o
+        presencialmente, Essentia podrá requerir igualmente el pago anticipado
+        de la sesión.
       </p>
       <h3>3.2 Política de cancelación y no presentación</h3>
       <p>
         Las reservas pueden cancelarse o reprogramarse sin cargo hasta 24 horas
-        antes de la hora programada; en ese caso, el importe abonado por
-        adelantado se mantendrá como saldo a su favor para una nueva cita. Las
-        cancelaciones en las 24 horas previas o la no presentación supondrán la
-        pérdida del importe abonado por adelantado y, en su defecto, podrán
-        facturarse al precio íntegro de la sesión o deducirse del saldo de
-        sesiones disponible. Lo anterior se entiende sin perjuicio de los
-        derechos que le reconozca la legislación de consumo.
+        antes de la hora programada. Si la reserva se cancela con al menos 24
+        horas de antelación, se le reembolsará íntegramente el importe abonado
+        por adelantado. Las cancelaciones en las 24 horas previas o la no
+        presentación no darán derecho al reembolso del importe abonado por
+        adelantado y, en su defecto, podrán facturarse al precio íntegro de la
+        sesión o deducirse del saldo de sesiones disponible. Lo anterior se
+        entiende sin perjuicio de los derechos que le reconozca la legislación
+        de consumo.
       </p>
       <h3>3.3 Pagos</h3>
       <p>

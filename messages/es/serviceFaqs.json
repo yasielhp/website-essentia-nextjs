@@ -73,7 +73,7 @@
     },
     "1": {
       "question": "¿Necesito reservar con antelación?",
-      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Al confirmar puedes pagar online o pagar en el centro el día de la sesión."
+      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Al reservar pagas online el precio completo de la sesión, y la reserva queda confirmada con el pago."
     },
     "2": {
       "question": "¿Cada sesión es igual para todas las personas?",
@@ -101,7 +101,7 @@
     },
     "8": {
       "question": "¿Qué pasa si no puedo asistir?",
-      "answer": "Puedes cancelar o cambiar tu cita hasta 24 horas antes de la sesión sin ningún coste: escríbenos y buscamos otro hueco. Dentro de las 24 horas previas, o si no acudes, el importe pagado online no se reembolsa, y en las reservas con pago en el centro te pediremos el pago por adelantado la próxima vez. La cabina y la terapeuta quedan reservadas para ti, y ese hueco ya no puede ofrecerse a otra persona."
+      "answer": "Puedes cambiar o cancelar tu cita hasta 24 horas antes de la sesión. Si la cancelas con al menos 24 horas de antelación, te devolvemos el importe pagado; para cambiarla, escríbenos y buscamos otro hueco. Dentro de las 24 horas previas, o si no acudes, no hay reembolso, y en las reservas con pago en el centro te pediremos el pago por adelantado la próxima vez. La cabina y la terapeuta quedan reservadas para ti, y ese hueco ya no puede ofrecerse a otra persona."
     }
   },
   "facial-therapies": {
@@ -115,7 +115,7 @@
     },
     "2": {
       "question": "¿Necesito reservar con antelación?",
-      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Al confirmar puedes pagar online o pagar en el centro el día de la sesión."
+      "answer": "Sí. Todas las sesiones se reservan previamente a través de nuestra web. Al reservar pagas online el precio completo de la sesión, y la reserva queda confirmada con el pago."
     },
     "3": {
       "question": "¿Cuánto dura cada sesión?",
@@ -135,7 +135,7 @@
     },
     "7": {
       "question": "¿Qué pasa si no puedo asistir?",
-      "answer": "Puedes cancelar o cambiar tu cita hasta 24 horas antes de la sesión sin ningún coste: escríbenos y buscamos otro hueco. Dentro de las 24 horas previas, o si no acudes, el importe pagado online no se reembolsa, y en las reservas con pago en el centro te pediremos el pago por adelantado la próxima vez. La cabina y la terapeuta quedan reservadas para ti, y ese hueco ya no puede ofrecerse a otra persona."
+      "answer": "Puedes cambiar o cancelar tu cita hasta 24 horas antes de la sesión. Si la cancelas con al menos 24 horas de antelación, te devolvemos el importe pagado; para cambiarla, escríbenos y buscamos otro hueco. Dentro de las 24 horas previas, o si no acudes, no hay reembolso, y en las reservas con pago en el centro te pediremos el pago por adelantado la próxima vez. La cabina y la terapeuta quedan reservadas para ti, y ese hueco ya no puede ofrecerse a otra persona."
     }
   },
   "hyperbaric-chambers": {

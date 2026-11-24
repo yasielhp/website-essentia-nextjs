@@ -63,7 +63,7 @@ export function PrivacyEN() {
         </li>
         <li>
           <strong>Booking and transaction data:</strong> session bookings,
-          advance payments and deposits, session vouchers bought and used,
+          advance payments and their refunds, session vouchers bought and used,
           membership details and payment records. Card payments are handled by
           the Redsys gateway; we do not store your card number.
         </li>

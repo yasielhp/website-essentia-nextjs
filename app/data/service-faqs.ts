@@ -94,7 +94,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Do I need to book in advance?",
       answer:
-        "Yes. Every session is booked ahead through our website. When you confirm you can pay online, or pay at the centre on the day of your session.",
+        "Yes. Every session is booked ahead through our website. When you book you pay the full price of the session online, and the booking is confirmed by the payment.",
     },
     {
       question: "Is every session the same for everyone?",
@@ -129,7 +129,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "What if I cannot make it?",
       answer:
-        "You can cancel or move your appointment up to 24 hours before the session at no cost — write to us and we will find another slot. Within 24 hours, or if you do not turn up, an amount paid online is not refunded, and for bookings paying at the centre we will ask for payment up front next time. The room and the therapist are held for you, and that slot can no longer be offered to anyone else.",
+        "You can change or cancel your appointment up to 24 hours before the session. If you cancel at least 24 hours ahead, we refund what you paid; to move it, write to us and we will find another slot. Within 24 hours, or if you do not turn up, there is no refund, and for bookings paying at the centre we will ask for payment up front next time. The room and the therapist are held for you, and that slot can no longer be offered to anyone else.",
     },
   ],
 
@@ -147,7 +147,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Do I need to book in advance?",
       answer:
-        "Yes. Every session is booked ahead through our website. When you confirm you can pay online, or pay at the centre on the day of your session.",
+        "Yes. Every session is booked ahead through our website. When you book you pay the full price of the session online, and the booking is confirmed by the payment.",
     },
     {
       question: "How long is each session?",
@@ -172,7 +172,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "What if I cannot make it?",
       answer:
-        "You can cancel or move your appointment up to 24 hours before the session at no cost — write to us and we will find another slot. Within 24 hours, or if you do not turn up, an amount paid online is not refunded, and for bookings paying at the centre we will ask for payment up front next time. The room and the therapist are held for you, and that slot can no longer be offered to anyone else.",
+        "You can change or cancel your appointment up to 24 hours before the session. If you cancel at least 24 hours ahead, we refund what you paid; to move it, write to us and we will find another slot. Within 24 hours, or if you do not turn up, there is no refund, and for bookings paying at the centre we will ask for payment up front next time. The room and the therapist are held for you, and that slot can no longer be offered to anyone else.",
     },
   ],
 

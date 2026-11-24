@@ -119,6 +119,13 @@ const SUMMARY =
 const NO_PRICES =
   "Prices are not listed in this file. The centre changes them, and the current price of each treatment is on its own page, under its name, next to how long it lasts.";
 
+/**
+ * How a booking is paid, changed and cancelled: the rule of the Terms (3.1 and
+ * 3.2) and of the booking form, in one sentence an assistant can quote.
+ */
+const PAYMENT_POLICY =
+  "The full price is paid online when booking. A booking can be changed or cancelled up to 24 hours before the session, and a cancellation made at least 24 hours ahead is refunded; within the last 24 hours, or for a no-show, there is no refund.";
+
 const ADDRESS = `${contact.address}, Canary Islands, Spain`;
 
 /** The pages of the site that are open today and are not a treatment. */
@@ -126,7 +133,7 @@ const PAGES: { label: string; path: string; note: string }[] = [
   {
     label: "Book a session",
     path: "/booking",
-    note: "Choose the treatment, the day and the hour, and pay online.",
+    note: "Choose the treatment, the day and the hour, and pay the full price online.",
   },
   { label: "Wellness", path: "/wellness", note: "The wellness services." },
   { label: "Medicine", path: "/medicine", note: "The medicine services." },
@@ -173,6 +180,8 @@ export function buildLlmsTxt(): string {
     "- Languages: English and Spanish (the Spanish pages are under /es/)",
     "",
     NO_PRICES,
+    "",
+    PAYMENT_POLICY,
     "",
     "## Services",
     "",
@@ -226,9 +235,10 @@ export function buildLlmsFullTxt(): string {
     "",
     "## Booking and prices",
     "",
-    `- **Booking:** ${SITE}/booking — choose the service, the treatment, the day and the hour, and pay online.`,
+    `- **Booking:** ${SITE}/booking — choose the service, the treatment, the day and the hour, and pay the full price online.`,
     "- **Where:** every session takes place at the centre.",
     `- **Prices:** ${NO_PRICES}`,
+    `- **Payment and cancellation:** ${PAYMENT_POLICY}`,
     ...families.flatMap((f) => [
       "",
       "---",
