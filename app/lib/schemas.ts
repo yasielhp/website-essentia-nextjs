@@ -306,6 +306,7 @@ export const campaignAudienceSchema = z.object({
     .nullable(),
   neverBooked: z.boolean(),
   hasBooked: z.boolean().optional(),
+  // Obsolete: accepted so an old row or client still validates. See the type.
   sendLocale: z.enum(["en", "es"]).optional(),
   manualIds: z.array(z.uuid("contactIdInvalid")).max(5000, "tooManyContacts"),
   manualOnly: z.boolean().optional(),

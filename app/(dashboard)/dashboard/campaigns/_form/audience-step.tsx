@@ -28,7 +28,7 @@ const LANGUAGES: { value: CampaignLanguage; key: string }[] = [
   { value: "es", key: "languageEs" },
 ];
 
-/** The conditions half of an audience; the send language stays with the campaign. */
+/** The conditions half of an audience: what a saved segment holds. */
 export function conditionsOf(audience: CampaignAudience): SegmentConditions {
   return {
     language: audience.language,

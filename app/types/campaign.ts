@@ -127,7 +127,11 @@ export type RecipientStatus =
 /** The two languages an email can go out in. */
 export type CampaignLocale = "en" | "es";
 
-/** The language filter of a campaign; `any` sends each contact their own. */
+/**
+ * The language filter of a campaign. `any` writes to each contact in her own
+ * language, so the campaign has both versions; `en` or `es` keeps only those
+ * contacts and has that one version.
+ */
 export type CampaignLanguage = CampaignLocale | "any";
 
 /** The `audience` jsonb column: conditions plus hand-picked contacts. */
@@ -143,8 +147,12 @@ export type CampaignAudience = {
   /** Only people with at least one booking. Optional: older rows never had it. */
   hasBooked?: boolean;
   /**
-   * The one language the email is written in. Fixed by the segment when it
-   * selects a language; chosen by the admin when the segment spans both.
+   * OBSOLETE, kept only so a row saved with it still reads. A campaign used to
+   * go out in ONE language, this one when the segment spanned both. Now it is
+   * written in every language its audience includes and each contact gets her
+   * own (`recipientLocale`), so this decides nothing; it is only how a WhatsApp
+   * block saved in the old shape is given its language (`whatsappBlocks`). The
+   * form drops it the first time the audience is touched.
    */
   sendLocale?: CampaignLocale;
   /** Contacts added by hand, unioned with the filter result. */
