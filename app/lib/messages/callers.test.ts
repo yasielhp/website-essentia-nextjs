@@ -59,9 +59,12 @@ function resolveDb({ table, ops }: Ctx): unknown {
     case "booking_events":
       return { data: [], error: null };
     case "contacts":
-      return has("upsert")
+      // A contact the public way creates gets an id; one it finds is the row
+      // the test set, under the id every caller links.
+      if (has("insert")) return { data: { id: "contact-1" }, error: null };
+      return has("upsert") || has("update")
         ? { data: null, error: null }
-        : { data: contactRow, error: null };
+        : { data: { id: "contact-1", ...contactRow }, error: null };
     case "contact_consents":
       return {
         data: { token: "c".repeat(32), signed_at: null },

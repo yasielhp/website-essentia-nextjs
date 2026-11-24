@@ -4,8 +4,9 @@ import {
   createRateLimiter,
   type RateLimiter,
 } from "@/lib/campaigns/rate-limit";
-import { isValidPhone, normalizeEmail } from "@/utils/contact";
+import { isValidPhone } from "@/utils/contact";
 import type { Visitor } from "@/lib/bookings/visitor";
+import { writeContact } from "./write-contact";
 
 /**
  * The contact a public form writes, on the server.
@@ -22,23 +23,28 @@ import type { Visitor } from "@/lib/bookings/visitor";
  * `insforge/migrations/20261124_revoke_public_definer_functions.sql`.
  *
  * Here the form sends what it always sent and nothing else (a strict object:
- * a key it does not send refuses the call), and the server calls the same
- * two functions with the service key:
+ * a key it does not send refuses the call), and the server:
  *
- *  - the member check answers ONE thing, whether the address is a member's
- *    (the form then asks her to sign in). Never the role itself: an address
- *    of the team reads the same as one with no account;
- *  - the contact is written by `upsert_contact` exactly as the browser wrote
- *    it, so every consent rule of `upsert_contact` (unticked is `null`, a tick
- *    after a STOP, CLAUDE.md "WhatsApp consent rule") holds as before. "News
- *    and offers" is ONE choice: ticked, the newsletter and WhatsApp marketing
- *    go on together; unticked, `null` touches nothing. The booking-notice
- *    consent is NOT here: it is `saveBookingConsents`' to stamp, with its own
- *    guards, after this has written the contact.
+ *  - answers ONE thing about the address, whether it is a member's (the form
+ *    then asks her to sign in), read with `check_email_role` and the service
+ *    key. Never the role itself: an address of the team reads the same as one
+ *    with no account;
+ *  - writes the contact the PUBLIC way (`writeContact`, `write-contact.ts`):
+ *    a new contact with what she typed, as always; an existing one keeps its
+ *    name, phone and language and only gains the "news and offers" yes she
+ *    gives, never over a STOP or an unsubscribe. "News and offers" is ONE
+ *    choice: ticked, the newsletter and WhatsApp marketing go on together;
+ *    unticked, `null` touches nothing. The booking-notice consent is NOT here:
+ *    it is `saveBookingConsents`' to stamp, with its own guards (the same
+ *    phone among them), after this.
  *
- * Both are rate limited per address of the caller and per email
- * (`createRateLimiter`: a brake in the memory of the instance, not a
- * guarantee).
+ * Rate limited per address of the CALLER (`createRateLimiter`: a brake in the
+ * memory of the instance, not a guarantee), which is what slows down somebody
+ * walking through many addresses. Deliberately not per email: a stranger
+ * could spend an address's allowance and so keep its owner's booking from
+ * being linked to her contact, and with the public way there is nothing to
+ * gain by writing one address again and again. A refusal never stops the
+ * booking: the form goes on without the link, as when the database fails.
  *
  * Server only, and deliberately not a `"use server"` module: the thin door is
  * `app/actions/public-contact.ts`.
@@ -78,41 +84,30 @@ export type PublicContactResult =
   /** The database did not answer, or answered no id. */
   | { kind: "failed" };
 
-/** How often, in ten minutes, per address of the caller and per email. */
-export const PUBLIC_CONTACT_LIMITS = { perIp: 20, perEmail: 10 } as const;
+/** How often, in ten minutes, per address of the caller. */
+export const PUBLIC_CONTACT_LIMIT_PER_IP = 20;
 const TEN_MINUTES = 10 * 60_000;
 
-export type ContactLimiters = { ip: RateLimiter; email: RateLimiter };
-
-export function createContactLimiters(
-  limits: { perIp: number; perEmail: number } = PUBLIC_CONTACT_LIMITS,
-): ContactLimiters {
-  return {
-    ip: createRateLimiter({ max: limits.perIp, windowMs: TEN_MINUTES }),
-    email: createRateLimiter({ max: limits.perEmail, windowMs: TEN_MINUTES }),
-  };
+export function createContactLimiter(
+  perIp: number = PUBLIC_CONTACT_LIMIT_PER_IP,
+): RateLimiter {
+  return createRateLimiter({ max: perIp, windowMs: TEN_MINUTES });
 }
 
-const sharedLimiters = createContactLimiters();
+const sharedLimiter = createContactLimiter();
 
 export type PublicContactDeps = {
   visitor: Visitor;
-  /** Fresh ones in tests; the instance's own otherwise. */
-  limiters?: ContactLimiters;
+  /** A fresh one in tests; the instance's own otherwise. */
+  limiter?: RateLimiter;
 };
 
 /**
- * Spends one call for this caller and this email. No caller address (no
- * proxy in front, a test) means no limit by address; the email is always
- * counted.
+ * Spends one call for this caller. No caller address (no proxy in front, a
+ * test) means no limit.
  */
-export function allowedFor(
-  limiters: ContactLimiters,
-  visitor: Visitor,
-  email: string,
-): boolean {
-  if (visitor.ip && !limiters.ip.take(visitor.ip)) return false;
-  return limiters.email.take(normalizeEmail(email) ?? email);
+export function allowedFor(limiter: RateLimiter, visitor: Visitor): boolean {
+  return !visitor.ip || limiter.take(visitor.ip);
 }
 
 /**
@@ -133,43 +128,6 @@ export async function isMemberAddress(db: Db, email: string): Promise<boolean> {
   }
 }
 
-/** What `upsert_contact` is given; `null` consents touch nothing. */
-export type ContactWrite = {
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone: string | null;
-  language: string;
-  gender: string | null;
-  newsletter: true | null;
-  whatsappMarketing: true | null;
-};
-
-/** Writes the contact with the service key and answers its id, or null. */
-export async function upsertContact(
-  db: Db,
-  contact: ContactWrite,
-): Promise<string | null> {
-  try {
-    const { data, error } = await db.rpc("upsert_contact", {
-      p_email: contact.email,
-      p_first_name: contact.firstName,
-      p_last_name: contact.lastName,
-      p_phone: contact.phone,
-      p_language: contact.language,
-      p_gender: contact.gender,
-      p_newsletter: contact.newsletter,
-      // The booking-notice consent is never a public form's to send here.
-      p_whatsapp: null,
-      p_whatsapp_marketing: contact.whatsappMarketing,
-    });
-    if (error || typeof data !== "string" || !data) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
 /** The details step of the public booking form: who the booking is for. */
 export async function savePublicContactCore(
   raw: unknown,
@@ -178,7 +136,7 @@ export async function savePublicContactCore(
   const parsed = publicContactSchema.safeParse(raw);
   if (!parsed.success) return { kind: "invalid" };
   const input = parsed.data;
-  if (!allowedFor(deps.limiters ?? sharedLimiters, deps.visitor, input.email)) {
+  if (!allowedFor(deps.limiter ?? sharedLimiter, deps.visitor)) {
     return { kind: "rate_limited" };
   }
 
@@ -187,17 +145,21 @@ export async function savePublicContactCore(
     return { kind: "member" };
   }
 
-  const contactId = await upsertContact(db, {
-    email: input.email,
-    firstName: input.firstName,
-    lastName: input.lastName,
-    phone: input.phone,
-    language: input.language,
-    gender: input.gender,
-    // One box, both channels (`marketingChoice` in the form).
-    newsletter: input.marketing,
-    whatsappMarketing: input.marketing,
-  });
+  const contactId = await writeContact(
+    db,
+    {
+      email: input.email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phone: input.phone,
+      language: input.language,
+      gender: input.gender,
+      // One box, both channels (`marketingChoice` in the form).
+      newsletter: input.marketing,
+      whatsappMarketing: input.marketing,
+    },
+    "public",
+  );
   if (!contactId) return { kind: "failed" };
   return { kind: "saved", contactId };
 }

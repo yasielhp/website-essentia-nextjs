@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { whatsappActivationPatch } from "@/lib/whatsapp/consent";
 import { fakeDb, type Row } from "@/lib/whatsapp/fake-contacts-db";
 import {
   readOwnMarketing,
@@ -13,18 +12,26 @@ const ago = (minutes: number) =>
 const base = (over: Row = {}): Row => ({
   id: "c1",
   email: "ana@example.com",
+  phone: "+34600000000",
   created_at: ago(600),
   updated_at: ago(1),
   whatsapp_opted_in_at: null,
   whatsapp_opted_out_at: null,
   ...over,
 });
+/** The phone typed in the form: the contact's number, written another way. */
+const TYPED = "600 000 000";
 
 describe("stampBookingNoticeConsent", () => {
   test("stamps a contact the details step has just written", async () => {
     const rows = [base()];
     const { db } = fakeDb(rows);
-    const result = await stampBookingNoticeConsent(db, "ana@example.com", NOW);
+    const result = await stampBookingNoticeConsent(
+      db,
+      "ana@example.com",
+      TYPED,
+      NOW,
+    );
     expect(result).toEqual({ ok: true, stamped: true });
     expect(rows[0].whatsapp_opted_in_at).toBe(NOW.toISOString());
   });
@@ -32,7 +39,12 @@ describe("stampBookingNoticeConsent", () => {
   test("does not stamp a contact last written long ago", async () => {
     const rows = [base({ updated_at: ago(16), created_at: ago(900) })];
     const { db } = fakeDb(rows);
-    const result = await stampBookingNoticeConsent(db, "ana@example.com", NOW);
+    const result = await stampBookingNoticeConsent(
+      db,
+      "ana@example.com",
+      TYPED,
+      NOW,
+    );
     expect(result).toEqual({ ok: true, stamped: false });
     expect(rows[0].whatsapp_opted_in_at).toBeNull();
   });
@@ -40,7 +52,12 @@ describe("stampBookingNoticeConsent", () => {
   test("never touches a contact who sent a STOP", async () => {
     const rows = [base({ whatsapp_opted_out_at: ago(5000) })];
     const { db } = fakeDb(rows);
-    const result = await stampBookingNoticeConsent(db, "ana@example.com", NOW);
+    const result = await stampBookingNoticeConsent(
+      db,
+      "ana@example.com",
+      TYPED,
+      NOW,
+    );
     expect(result).toEqual({ ok: true, stamped: false });
     expect(rows[0].whatsapp_opted_in_at).toBeNull();
     expect(rows[0].whatsapp_opted_out_at).toBe(ago(5000));
@@ -53,7 +70,12 @@ describe("stampBookingNoticeConsent", () => {
         all[0].whatsapp_opted_out_at = ago(0);
       },
     });
-    const result = await stampBookingNoticeConsent(db, "ana@example.com", NOW);
+    const result = await stampBookingNoticeConsent(
+      db,
+      "ana@example.com",
+      TYPED,
+      NOW,
+    );
     expect(result).toEqual({ ok: true, stamped: false });
     expect(rows[0].whatsapp_opted_in_at).toBeNull();
   });
@@ -61,7 +83,12 @@ describe("stampBookingNoticeConsent", () => {
   test("keeps the date of a consent already given", async () => {
     const rows = [base({ whatsapp_opted_in_at: ago(100000) })];
     const { db } = fakeDb(rows);
-    const result = await stampBookingNoticeConsent(db, "ana@example.com", NOW);
+    const result = await stampBookingNoticeConsent(
+      db,
+      "ana@example.com",
+      TYPED,
+      NOW,
+    );
     expect(result).toEqual({ ok: true, stamped: false });
     expect(rows[0].whatsapp_opted_in_at).toBe(ago(100000));
   });
@@ -70,7 +97,7 @@ describe("stampBookingNoticeConsent", () => {
     const rows = [base({ created_at: ago(2), updated_at: ago(2) })];
     const { db } = fakeDb(rows);
     expect(
-      (await stampBookingNoticeConsent(db, "ana@example.com", NOW)).ok,
+      (await stampBookingNoticeConsent(db, "ana@example.com", TYPED, NOW)).ok,
     ).toBe(true);
     expect(rows[0].whatsapp_opted_in_at).toBe(NOW.toISOString());
   });
@@ -81,10 +108,50 @@ describe("stampBookingNoticeConsent", () => {
     const result = await stampBookingNoticeConsent(
       db,
       "other@example.com",
+      TYPED,
       NOW,
     );
     expect(result).toEqual({ ok: true, stamped: false });
     expect(rows[0].whatsapp_opted_in_at).toBeNull();
+  });
+
+  test("a phone that is not the contact's stamps nothing: a stranger cannot consent for somebody's number", async () => {
+    for (const typed of ["611 222 333", "+44 7700 900123"]) {
+      const rows = [base()];
+      const result = await stampBookingNoticeConsent(
+        fakeDb(rows).db,
+        "ana@example.com",
+        typed,
+        NOW,
+      );
+      expect(result).toEqual({ ok: true, stamped: false });
+      expect(rows[0].whatsapp_opted_in_at).toBeNull();
+    }
+  });
+
+  test("no phone, or one that is not a number, stamps nothing and reads nothing", async () => {
+    for (const typed of [null, "", "12"]) {
+      const rows = [base()];
+      const result = await stampBookingNoticeConsent(
+        fakeDb(rows, { failOn: "read" }).db,
+        "ana@example.com",
+        typed,
+        NOW,
+      );
+      expect(result).toEqual({ ok: true, stamped: false });
+      expect(rows[0].whatsapp_opted_in_at).toBeNull();
+    }
+  });
+
+  test("a contact with no number of its own gets no consent from a typed one", async () => {
+    const rows = [base({ phone: null })];
+    const result = await stampBookingNoticeConsent(
+      fakeDb(rows).db,
+      "ana@example.com",
+      TYPED,
+      NOW,
+    );
+    expect(result).toEqual({ ok: true, stamped: false });
   });
 
   test("a failing database answers ok:false with no raw text", async () => {
@@ -93,6 +160,7 @@ describe("stampBookingNoticeConsent", () => {
       const result = await stampBookingNoticeConsent(
         db,
         "ana@example.com",
+        TYPED,
         NOW,
       );
       expect(result).toEqual({ ok: false, error: "db" });
@@ -101,40 +169,112 @@ describe("stampBookingNoticeConsent", () => {
   });
 });
 
-describe("recordOwnWhatsAppConsent", () => {
+describe("recordOwnWhatsAppConsent: the public way, with her own session", () => {
   const input = {
     firstName: "Ana",
     lastName: "G",
     phone: "600000000",
     language: "es" as const,
   };
+  const existing = (over: Row = {}): Row => ({
+    id: "c1",
+    email: "ana@example.com",
+    first_name: "Ana María",
+    last_name: "García",
+    phone: "+34611222333",
+    preferred_language: "en",
+    newsletter_subscribed: false,
+    newsletter_unsubscribed_at: null,
+    whatsapp_marketing_opted_in_at: null,
+    whatsapp_opted_out_at: null,
+    updated_at: ago(900),
+    ...over,
+  });
 
-  test("a ticked box turns on the newsletter and WhatsApp marketing together", async () => {
-    const { db, calls } = fakeDb([]);
+  test("a contact she does not have yet is created with what she typed, and the box she ticked", async () => {
+    const rows: Row[] = [];
+    const { db, calls } = fakeDb(rows);
+    expect(
+      await recordOwnWhatsAppConsent(db, "ana@example.com", {
+        ...input,
+        marketing: true,
+      }),
+    ).toEqual({ ok: true });
+    expect(calls.rpc).toEqual([]);
+    expect(rows[0]).toMatchObject({
+      email: "ana@example.com",
+      first_name: "Ana",
+      last_name: "G",
+      phone: "600000000",
+      preferred_language: "es",
+      newsletter_subscribed: true,
+    });
+    expect(rows[0].whatsapp_marketing_opted_in_at).not.toBeNull();
+    // Never the booking-notice consent: that is the stamp's, with its guards.
+    expect(rows[0]).not.toHaveProperty("whatsapp_opted_in_at");
+  });
+
+  test("the contact she has keeps its name, phone and language, and only gains the yes she gives", async () => {
+    const rows = [existing()];
+    const { db } = fakeDb(rows);
     await recordOwnWhatsAppConsent(db, "ana@example.com", {
       ...input,
       marketing: true,
     });
-    expect(calls.rpc[0].args).toMatchObject({
-      p_email: "ana@example.com",
-      p_newsletter: true,
-      p_whatsapp: null,
-      p_whatsapp_marketing: true,
+    expect(rows[0]).toMatchObject({
+      first_name: "Ana María",
+      last_name: "García",
+      phone: "+34611222333",
+      preferred_language: "en",
+      newsletter_subscribed: true,
     });
+    expect(rows[0].whatsapp_marketing_opted_in_at).not.toBeNull();
+    // Touched, so the notice consent that follows finds it fresh.
+    expect(rows[0].updated_at).not.toBe(ago(900));
   });
 
-  test("an unticked box still writes the contact but touches no consent", async () => {
-    const { db, calls } = fakeDb([]);
+  test("unticked touches no consent and still changes nothing else", async () => {
+    const rows = [existing()];
+    const { db } = fakeDb(rows);
     await recordOwnWhatsAppConsent(db, "ana@example.com", {
       ...input,
       marketing: false,
     });
-    expect(calls.rpc).toHaveLength(1);
-    expect(calls.rpc[0].args).toMatchObject({
-      p_newsletter: null,
-      p_whatsapp: null,
-      p_whatsapp_marketing: null,
+    expect(rows[0]).toMatchObject({
+      phone: "+34611222333",
+      newsletter_subscribed: false,
+      whatsapp_marketing_opted_in_at: null,
     });
+  });
+
+  test("a STOP or an unsubscribe of hers stays: the box does not take back a no", async () => {
+    const rows = [
+      existing({
+        whatsapp_opted_out_at: ago(3000),
+        newsletter_unsubscribed_at: ago(3000),
+      }),
+    ];
+    const { db } = fakeDb(rows);
+    await recordOwnWhatsAppConsent(db, "ana@example.com", {
+      ...input,
+      marketing: true,
+    });
+    expect(rows[0]).toMatchObject({
+      whatsapp_opted_out_at: ago(3000),
+      newsletter_unsubscribed_at: ago(3000),
+      newsletter_subscribed: false,
+      whatsapp_marketing_opted_in_at: null,
+    });
+  });
+
+  test("a database that does not answer is ok:false", async () => {
+    const { db } = fakeDb([], { failOn: "read" });
+    expect(
+      await recordOwnWhatsAppConsent(db, "ana@example.com", {
+        ...input,
+        marketing: true,
+      }),
+    ).toEqual({ ok: false, error: "db" });
   });
 });
 
@@ -179,66 +319,75 @@ describe("readOwnMarketing", () => {
   });
 });
 
-describe("the booking after a STOP: the order is intentional", () => {
+describe("the booking after a STOP: the form takes back no no", () => {
   /**
    * A client who sent BAJA and books again, in the order the form does it:
-   * 1. `upsert_contact`, from the contact action (`savePublicContact`). With
-   *    "news and offers" ticked it clears the STOP and, because a STOP is
-   *    global, withdraws the OTHER use (the booking notices). `whatsappActivationPatch("marketing")` is that
-   *    rule in TypeScript, kept in step with the SQL.
-   * 2. `saveBookingConsents`, which stamps the notices on a contact
-   *    with no consent and no STOP.
+   * 1. her contact, the public way (`recordOwnWhatsAppConsent` for her own
+   *    session, `savePublicContact` for a guest: the same `writeContact`);
+   * 2. `saveBookingConsents`, which stamps the notices on a contact with the
+   *    same phone, no consent and no STOP.
    *
-   * So ticking news and offers is an explicit new yes: she gets her booking
-   * notices back along with it. Without the tick the STOP stays and nothing is
-   * stamped, so booking again alone never reactivates a BAJA. This is
-   * deliberate, not a leak: write it down if it ever changes.
+   * Until 2026-11-24 a ticked "news and offers" lifted the STOP here and the
+   * notices came back with it. The owner decided otherwise: an address is not
+   * proof of who types it, so no form lifts a STOP or an unsubscribe, ticked
+   * or not. Coming back is a reply to WhatsApp or the centre's switch on her
+   * card. Write it down if it ever changes.
    */
   const stopped = (): Row => ({
     id: "c1",
     email: "ana@example.com",
+    phone: "+34600000000",
     created_at: ago(900),
     updated_at: ago(900),
     newsletter_subscribed: true,
+    newsletter_unsubscribed_at: null,
     whatsapp_opted_in_at: ago(5000),
     whatsapp_marketing_opted_in_at: ago(5000),
     whatsapp_opted_out_at: ago(3000),
   });
+  const input = {
+    firstName: "Ana",
+    lastName: "G",
+    phone: TYPED,
+    language: "es" as const,
+  };
 
-  test("with news and offers ticked she gets the booking notices back, as a fresh consent", async () => {
-    const rows = [stopped()];
-    // 1. upsert_contact(p_newsletter, p_whatsapp_marketing) as the form sends it
-    Object.assign(
-      rows[0],
-      whatsappActivationPatch("marketing", rows[0], NOW.toISOString()),
-      {
-        updated_at: NOW.toISOString(),
-      },
-    );
-    expect(rows[0].whatsapp_opted_out_at).toBeNull();
-    expect(rows[0].whatsapp_opted_in_at).toBeNull();
-    expect(rows[0].whatsapp_marketing_opted_in_at).toBe(NOW.toISOString());
-    // 2. the notice consent after the Terms
-    const result = await stampBookingNoticeConsent(
-      fakeDb(rows).db,
-      "ana@example.com",
-      NOW,
-    );
-    expect(result).toEqual({ ok: true, stamped: true });
-    expect(rows[0].whatsapp_opted_in_at).toBe(NOW.toISOString());
-    expect(rows[0].whatsapp_opted_out_at).toBeNull();
-  });
+  test.each([true, false])(
+    "with news and offers %s, the STOP stands and the notices are not stamped",
+    async (marketing) => {
+      const rows = [stopped()];
+      const { db } = fakeDb(rows);
+      await recordOwnWhatsAppConsent(db, "ana@example.com", {
+        ...input,
+        marketing,
+      });
+      const result = await stampBookingNoticeConsent(
+        db,
+        "ana@example.com",
+        TYPED,
+        // The contact was just written with the real clock.
+        new Date(),
+      );
+      expect(result).toEqual({ ok: true, stamped: false });
+      expect(rows[0]).toMatchObject({
+        whatsapp_opted_out_at: ago(3000),
+        whatsapp_opted_in_at: ago(5000),
+        whatsapp_marketing_opted_in_at: ago(5000),
+      });
+    },
+  );
 
-  test("without the tick the STOP stands and the notices are not stamped", async () => {
-    const rows = [stopped()];
-    Object.assign(rows[0], { updated_at: NOW.toISOString() }); // upsert with all nulls
-    const result = await stampBookingNoticeConsent(
-      fakeDb(rows).db,
-      "ana@example.com",
-      NOW,
-    );
-    expect(result).toEqual({ ok: true, stamped: false });
-    expect(rows[0].whatsapp_opted_out_at).toBe(ago(3000));
-    expect(rows[0].whatsapp_opted_in_at).toBe(ago(5000));
+  test("a client with no STOP and the same phone gets the notices, as before", async () => {
+    const rows = [
+      { ...stopped(), whatsapp_opted_out_at: null, whatsapp_opted_in_at: null },
+    ];
+    const { db } = fakeDb(rows);
+    await recordOwnWhatsAppConsent(db, "ana@example.com", {
+      ...input,
+      marketing: false,
+    });
+    expect(
+      await stampBookingNoticeConsent(db, "ana@example.com", TYPED, new Date()),
+    ).toEqual({ ok: true, stamped: true });
   });
 });

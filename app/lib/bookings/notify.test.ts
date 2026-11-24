@@ -13,6 +13,7 @@ import { bookingConfirmedEmail } from "@/emails/templates/booking-confirmed";
 import { bookingReceivedEmail } from "@/emails/templates/booking-received";
 import { bookingRescheduledEmail } from "@/emails/templates/booking-rescheduled";
 import { formatLongDate } from "@/lib/format-date";
+import { fakeDb, type Row } from "@/lib/whatsapp/fake-contacts-db";
 import type { notifyBooking as NotifyBooking } from "@/actions/booking-notifications";
 import type {
   BookingNotificationEvent,
@@ -83,11 +84,29 @@ function chain(result: () => unknown): unknown {
   return proxy;
 }
 
+/** The contacts on file, for the tests of the confirmation's contact. */
+let contactRows: Row[] | null = null;
+/** The functions of the database the code called. */
+let rpcCalls: { name: string; args: unknown }[] = [];
+/** The tables the code asked for, when a test is counting them. */
+let tablesAsked: string[] | null = null;
+
 const fakeAdmin = {
   getAdminClient: () => ({
     database: {
-      from: (table: string) =>
-        chain(() => {
+      rpc: async (name: string, args: unknown) => {
+        rpcCalls.push({ name, args });
+        return { data: null, error: null };
+      },
+      from: (table: string) => {
+        tablesAsked?.push(table);
+        if (table === "contacts" && contactRows) {
+          const contacts = fakeDb(contactRows).db as {
+            from: (t: string) => unknown;
+          };
+          return contacts.from(table);
+        }
+        return chain(() => {
           if (table === "message_templates") return templates();
           if (table === "bookings") {
             bookingReads += 1;
@@ -97,7 +116,8 @@ const fakeAdmin = {
             return { data: historyRows, error: null };
           }
           return { data: null, error: null };
-        }),
+        });
+      },
     },
   }),
 };
@@ -971,23 +991,16 @@ describe("the public 'received': once, for a booking being made now, from its ow
   });
 
   test("it never writes the contact: only the team's confirmation syncs it", async () => {
+    // Counted on the module's own fake: a spy on it would not reach the code,
+    // which holds the mocked module's function.
     const tables: string[] = [];
-    const spied = spyOn(fakeAdmin, "getAdminClient").mockImplementation(() => ({
-      database: {
-        from: (table: string) => {
-          tables.push(table);
-          return chain(() =>
-            table === "bookings"
-              ? { data: bookingRow, error: null }
-              : table === "booking_events"
-                ? { data: historyRows, error: null }
-                : { data: null, error: null },
-          );
-        },
-      },
-    }));
-    await ask();
-    spied.mockRestore();
+    tablesAsked = tables;
+    try {
+      await ask();
+    } finally {
+      tablesAsked = null;
+    }
+    expect(tables).toContain("bookings");
     expect(tables).not.toContain("contacts");
   });
 
@@ -1015,5 +1028,86 @@ describe("the public 'received': once, for a booking being made now, from its ow
     // Three are judged (and refused: already sent); the fourth is not even read.
     expect(answers.every((a) => !a.ok)).toBe(true);
     expect(bookingReads).toBe(3);
+  });
+});
+
+describe("the team's confirmation links the client's contact and never rewrites it", () => {
+  /**
+   * The booking's name and phone are whatever was typed in the form, maybe by
+   * somebody else with this client's address. Written over her contact, her
+   * notices would go to that person's phone. So the contact is only found (or
+   * created when there is none) and a lead made a client.
+   */
+  function withContacts(contacts: Row[]) {
+    contactRows = contacts;
+    rpcCalls = [];
+    return {
+      promoted: rpcCalls,
+      restore: () => {
+        contactRows = null;
+      },
+    };
+  }
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  test("a contact on file keeps its name and phone, and is made a client", async () => {
+    const contacts: Row[] = [
+      {
+        id: "c-ana",
+        email: "ana@example.test",
+        first_name: "Ana María",
+        last_name: "Pérez",
+        phone: "+34611222333",
+      },
+    ];
+    const { promoted, restore } = withContacts(contacts);
+    try {
+      await notifyBookingCore(
+        {
+          ...payload("confirmed", "es"),
+          clientName: "Otra Persona",
+          clientPhone: "+34 699 000 111",
+        },
+        actor,
+      );
+      await settle();
+    } finally {
+      restore();
+    }
+    expect(contacts[0]).toEqual({
+      id: "c-ana",
+      email: "ana@example.test",
+      first_name: "Ana María",
+      last_name: "Pérez",
+      phone: "+34611222333",
+    });
+    expect(promoted).toEqual([
+      { name: "promote_contact_to_client", args: { p_contact_id: "c-ana" } },
+    ]);
+  });
+
+  test("an address with no contact gets one with the booking's details", async () => {
+    const contacts: Row[] = [];
+    const { promoted, restore } = withContacts(contacts);
+    try {
+      await notifyBookingCore(
+        { ...payload("confirmed", "es"), clientPhone: "+34 600 000 000" },
+        actor,
+      );
+      await settle();
+    } finally {
+      restore();
+    }
+    expect(contacts).toEqual([
+      expect.objectContaining({
+        email: "ana@example.test",
+        first_name: "Ana",
+        last_name: "García",
+        phone: "+34 600 000 000",
+      }),
+    ]);
+    expect(promoted).toEqual([
+      { name: "promote_contact_to_client", args: { p_contact_id: "c1" } },
+    ]);
   });
 });

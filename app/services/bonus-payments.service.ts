@@ -1,4 +1,5 @@
 import { getAdminClient } from "@/lib/insforge-admin";
+import { writeContact } from "@/lib/contacts/write-contact";
 import { sendEmail } from "@/emails/send";
 import { bonusPurchaseEmail } from "@/emails/templates/bonus-purchase";
 import { fixedBlocksByKind } from "@/lib/messages/fixed-blocks";
@@ -98,23 +99,27 @@ export async function handleBonusPaid(
       .eq("id", order.id);
 
   try {
-    // Same call the booking form makes. The newsletter flag is `null`: buying
-    // a bonus is not consent to a mailing list, and `null` leaves an earlier
-    // yes untouched.
-    const { data: contactId, error: contactError } = await db.rpc(
-      "upsert_contact",
+    // The public way, as the booking form writes its contact: the order was
+    // typed by somebody who proved no address, so an EXISTING contact keeps
+    // its name, phone and language (the order keeps what was typed) and a new
+    // one is created with it. No consent: buying a bonus is not consent to a
+    // mailing list.
+    const contactId = await writeContact(
+      db,
       {
-        p_email: order.email,
-        p_first_name: order.first_name,
-        p_last_name: order.last_name,
-        p_phone: order.phone,
-        p_language: order.preferred_language,
-        p_gender: null,
-        p_newsletter: null,
+        email: order.email,
+        firstName: order.first_name,
+        lastName: order.last_name,
+        phone: order.phone,
+        language: order.preferred_language,
+        gender: null,
+        newsletter: null,
+        whatsappMarketing: null,
       },
+      "public",
     );
-    if (contactError || !contactId) {
-      throw new Error("upsert_contact failed");
+    if (!contactId) {
+      throw new Error("the contact could not be written");
     }
 
     const purchasedAt = bonusToday();
@@ -122,7 +127,7 @@ export async function handleBonusPaid(
       .from("contact_bonuses")
       .insert([
         {
-          contact_id: contactId as string,
+          contact_id: contactId,
           plan_id: order.plan_id,
           tier_id: order.tier_id,
           sessions_total: order.sessions,
@@ -140,14 +145,14 @@ export async function handleBonusPaid(
 
     await db
       .from("bonus_orders")
-      .update({ contact_id: contactId as string, contact_bonus_id: bonusId })
+      .update({ contact_id: contactId, contact_bonus_id: bonusId })
       .eq("id", order.id);
 
     // Someone who has bought is a client; a failure here is not worth undoing
     // a payment for.
     try {
       await db.rpc("promote_contact_to_client", {
-        p_contact_id: contactId as string,
+        p_contact_id: contactId,
       });
     } catch {
       // fail-open

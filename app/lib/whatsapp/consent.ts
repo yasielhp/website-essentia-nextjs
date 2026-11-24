@@ -6,11 +6,13 @@
  * (`whatsapp_marketing_opted_in_at`). The opt-out is a single global stop
  * (`whatsapp_opted_out_at`): a STOP or BAJA reply blocks both uses.
  *
- * Turning a use on clears the STOP, so with a STOP in force it also has to
- * retire what was consented to before it: the other use is set back to NULL
- * and the one turned on gets a new date. Otherwise a consent given months ago
- * would come back to life on someone else's click. `upsert_contact` applies
- * the same rule in SQL (migration 20261117h); keep the two in step.
+ * Turning a use on (the team's switch, or `upsert_contact` on the team's
+ * paths) clears the STOP, so with a STOP in force it also has to retire what
+ * was consented to before it: the other use is set back to NULL and the one
+ * turned on gets a new date. Otherwise a consent given months ago would come
+ * back to life on someone else's click. `upsert_contact` applies the same rule
+ * in SQL (migration 20261117h); keep the two in step. A public path never
+ * clears a STOP (`writeContact` in `app/lib/contacts/write-contact.ts`).
  *
  * Pure so the dashboard rows and any audience filter read it the same way.
  */

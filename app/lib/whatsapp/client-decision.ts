@@ -106,14 +106,17 @@ export function hasClientConsent(contact: ClientContact | null): boolean {
 }
 
 /**
- * The number to write to: the one typed on the booking when it is valid, else
- * the contact's. Null when neither is a number the database accepts.
+ * The number to write to: the CONTACT's, the one her consent belongs to and
+ * the one the appointment campaigns use. Never the number typed on the
+ * booking: anybody can type a client's address with another phone, and the
+ * public way no longer rewrites the contact's number with it, so that number
+ * would carry her name and her consent to a stranger. The booking keeps it,
+ * for the team. Null when the contact has no number the database accepts.
  */
 export function clientPhone(
   contact: Pick<ClientContact, "phone"> | null,
-  booking: Pick<ClientBooking, "phone">,
 ): string | null {
-  return toCampaignPhone(booking.phone) ?? toCampaignPhone(contact?.phone);
+  return toCampaignPhone(contact?.phone);
 }
 
 /**
@@ -122,11 +125,8 @@ export function clientPhone(
  * database accepts. Null otherwise. The one place that rule is spelled out;
  * the decision, the loader and the cron all ask it.
  */
-export function clientRecipient(
-  contact: ClientContact | null,
-  booking: Pick<ClientBooking, "phone">,
-): string | null {
-  return hasClientConsent(contact) ? clientPhone(contact, booking) : null;
+export function clientRecipient(contact: ClientContact | null): string | null {
+  return hasClientConsent(contact) ? clientPhone(contact) : null;
 }
 
 // Every field a source may name; a field added to the type is a type error here.
@@ -184,7 +184,7 @@ export function decideClientWhatsApp(input: {
   const definition = MESSAGE_CATALOG[key];
   if (!definition.whatsappEligible) return { kind: "none" };
   if (!row || !row.whatsapp_template_id) return { kind: "none" };
-  const to = clientRecipient(contact, booking);
+  const to = clientRecipient(contact);
   if (!to) return { kind: "none" };
   if (input.phoneSuppressed) return { kind: "none" };
   // Switched off (strictly false: a null or an odd value is on). Judged before

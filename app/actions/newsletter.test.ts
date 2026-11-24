@@ -44,6 +44,9 @@ let caller: Caller | null = ANA;
 let listed: { email: string; subscribed: boolean }[] = [];
 let listOk = true;
 let profileUpdates: Query[] = [];
+/** The addresses whose contact asked to be left alone. */
+let unsubscribed: string[] = [];
+let contactsFail = false;
 
 const real = {
   admin: { ...(await import("@/lib/insforge-admin")) },
@@ -57,7 +60,17 @@ beforeAll(async () => {
   mock.module("@/lib/insforge-admin", () => ({
     ...real.admin,
     getAdminClient: () => {
-      const made = chainDb(async () => ({ data: null, error: null }));
+      const made = chainDb(async (table, chain) => {
+        if (table !== "contacts") return { data: null, error: null };
+        if (contactsFail) return { data: null, error: { message: "boom" } };
+        const email = String(filters(chain).email);
+        return {
+          data: unsubscribed.includes(email)
+            ? { newsletter_unsubscribed_at: "2026-02-01T00:00:00.000Z" }
+            : null,
+          error: null,
+        };
+      });
       profileUpdates = made.log;
       return { database: made.db };
     },
@@ -87,6 +100,8 @@ afterAll(() => {
 });
 
 beforeEach(() => {
+  unsubscribed = [];
+  contactsFail = false;
   caller = ANA;
   listed = [];
   listOk = true;
@@ -266,6 +281,23 @@ describe("subscribeToNewsletter", () => {
       ok: true,
     });
     expect(listed).toEqual([{ email: "ana@example.com", subscribed: true }]);
+  });
+
+  test("an address that asked to be left alone stays off, and the answer is the same as any other's", async () => {
+    unsubscribed = ["ana@example.com"];
+    expect(await actions.subscribeToNewsletter("Ana@Example.com")).toEqual({
+      ok: true,
+    });
+    expect(listed).toEqual([]);
+  });
+
+  test("a contact that cannot be read is an error, never a subscription", async () => {
+    contactsFail = true;
+    expect(await actions.subscribeToNewsletter("ana@example.com")).toEqual({
+      ok: false,
+      error: "db",
+    });
+    expect(listed).toEqual([]);
   });
 
   test("what is not a string is an ordinary refusal, not a crash", async () => {

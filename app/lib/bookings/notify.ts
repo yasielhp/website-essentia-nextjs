@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { writeContact } from "@/lib/contacts/write-contact";
 import { getAppUrl } from "@/lib/env";
 import { sendEmail } from "@/emails/send";
 import { bookingReceivedEmail } from "@/emails/templates/booking-received";
@@ -257,28 +258,40 @@ function buildCancelUrl(
     : `${base}/booking/cancel?token=${token}`;
 }
 
-async function upsertContact(
+/**
+ * The contact of a booking the team has just confirmed: found by its address,
+ * or created with the booking's details when there is none, and made a client
+ * when it was a lead (`promote_contact_to_client`: a member stays a member).
+ *
+ * An EXISTING contact is never changed here (`link`, decided by the owner on
+ * 2026-11-24): the booking's name and phone are whatever was typed in the
+ * form, maybe by somebody else, and writing them over the contact would send
+ * that person's notices to a stranger's phone. The booking keeps them.
+ */
+async function linkConfirmedContact(
   email: string,
   firstName: string,
   lastName: string,
   phone: string | null | undefined,
-  status: "lead" | "client",
 ): Promise<void> {
   try {
+    const db = getAdminClient().database;
     const [first_name, ...rest] = firstName.trim().split(" ");
-    const last_name = lastName.trim() || rest.join(" ") || null;
-    await getAdminClient()
-      .database.from("contacts")
-      .upsert(
-        {
-          email,
-          first_name: first_name ?? "",
-          last_name,
-          phone: phone ?? null,
-          status,
-        },
-        { onConflict: "email" },
-      );
+    const id = await writeContact(
+      db,
+      {
+        email,
+        firstName: first_name ?? "",
+        lastName: lastName.trim() || rest.join(" ") || "",
+        phone: phone ?? null,
+        language: null,
+        gender: null,
+        newsletter: null,
+        whatsappMarketing: null,
+      },
+      "link",
+    );
+    if (id) await db.rpc("promote_contact_to_client", { p_contact_id: id });
   } catch {
     // fail-open: contact sync must not block the notification flow
   }
@@ -527,12 +540,11 @@ export async function notifyBookingCore(
   // contact: whoever calls it is anonymous, and the form writes its own.
   if (event === "confirmed") {
     const [firstName, ...lastParts] = clientName.trim().split(" ");
-    void upsertContact(
+    void linkConfirmedContact(
       clientEmail,
       firstName ?? clientName,
       lastParts.join(" "),
       clientPhone,
-      "client",
     );
   }
 

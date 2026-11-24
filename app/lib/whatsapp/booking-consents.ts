@@ -33,7 +33,9 @@ import type { OwnWhatsAppConsentInput } from "@/types/contact";
  *    the phone in the form are not hers, so that booking is treated as a
  *    guest's (`consentTarget`).
  *
- * It never lifts a STOP by itself and never throws.
+ * It never lifts a STOP or an unsubscribe, never rewrites an existing
+ * contact's name, phone or language (the public way, `writeContact`), and
+ * never throws.
  */
 
 /** How long the consent writes may occupy the page's action queue. */
@@ -129,8 +131,14 @@ export type BookingConsentEffects = {
     sessionEmail: string,
     input: OwnWhatsAppConsentInput,
   ) => Promise<Outcome>;
-  /** Stamps the notice consent on a contact that was just written. */
-  stampNotice: (email: string) => Promise<Outcome & { stamped?: boolean }>;
+  /**
+   * Stamps the notice consent on a contact that was just written, when its
+   * phone is the one typed (`phone`, as the form sent it).
+   */
+  stampNotice: (
+    email: string,
+    phone: string | null,
+  ) => Promise<Outcome & { stamped?: boolean }>;
   /** Puts the caller on the newsletter list and marks her profile. */
   subscribeNewsletter: (
     userId: string,
@@ -279,9 +287,7 @@ export async function writeBookingConsents(
   // again before each thing is BEGUN: the first write, and the newsletter
   // list. It is deliberately not looked at between her contact and the notice
   // consent. Those two are one piece: a contact written and left unstamped is a
-  // booking with no notices, and for a client who ticked "news and offers"
-  // after a STOP (which withdraws the notices so they can be given afresh) it
-  // would mean the news without the notices until she booked again.
+  // booking with no notices until she books again.
   const work = (async (): Promise<BookingConsentResult> => {
     try {
       let session: { userId: string; email: string | null } | null = null;
@@ -329,7 +335,10 @@ export async function writeBookingConsents(
 
       if (input.termsAccepted) {
         begun = true;
-        const notice = await attempt(() => effects.stampNotice(email))();
+        const typedPhone = typeof input.phone === "string" ? input.phone : null;
+        const notice = await attempt(() =>
+          effects.stampNotice(email, typedPhone),
+        )();
         if (!notice.ok) errors.push("db");
         else stamped = "stamped" in notice && notice.stamped === true;
       }

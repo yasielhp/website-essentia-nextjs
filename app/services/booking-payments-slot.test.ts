@@ -244,4 +244,55 @@ describe("money for an hour that is still free, as before", () => {
     ]);
     expect(history[0]!.summary).not.toContain("otra reserva");
   });
+
+  test("her contact on file keeps its name and becomes a client; a member stays a member", async () => {
+    // The booking's name is what was typed in the public form, maybe by
+    // somebody else: it never lands on the contact that is already there.
+    tables.contacts.push(
+      {
+        id: "c-ana",
+        email: "ana@example.test",
+        first_name: "Ana María",
+        last_name: "Pérez",
+        phone: "+34611222333",
+        status: "lead",
+      },
+      { id: "c-member", email: "member@example.test", status: "member" },
+    );
+    tables.bookings.push(paidFor("pending"));
+    await handleBookingPaid(BOOKING, 8100, "o-1");
+    expect(tables.contacts[0]).toEqual({
+      id: "c-ana",
+      email: "ana@example.test",
+      first_name: "Ana María",
+      last_name: "Pérez",
+      phone: "+34611222333",
+      status: "client",
+    });
+
+    tables.bookings.length = 0;
+    tables.bookings.push({
+      ...paidFor("pending"),
+      email: "member@example.test",
+    });
+    await handleBookingPaid(BOOKING, 8100, "o-2");
+    expect(tables.contacts[1]).toEqual({
+      id: "c-member",
+      email: "member@example.test",
+      status: "member",
+    });
+  });
+
+  test("an address with no contact gets one, with the booking's name, as a client", async () => {
+    tables.bookings.push(paidFor("pending"));
+    await handleBookingPaid(BOOKING, 8100, "o-1");
+    expect(tables.contacts).toEqual([
+      expect.objectContaining({
+        email: "ana@example.test",
+        first_name: "Ana",
+        last_name: "García",
+        status: "client",
+      }),
+    ]);
+  });
 });

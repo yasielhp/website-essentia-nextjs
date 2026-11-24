@@ -1,4 +1,5 @@
 import { getAdminClient } from "@/lib/insforge-admin";
+import { writeContact } from "@/lib/contacts/write-contact";
 import { pushBookingToCalendars } from "@/lib/calendar-sync";
 import { recordBookingEvent } from "@/lib/booking-events/record";
 import { sendEmail } from "@/emails/send";
@@ -235,17 +236,30 @@ export async function handleBookingPaid(
     }
   }
 
-  // Sync contact record for paid web bookings
+  // The contact of a paid web booking: found by its address, or created with
+  // the booking's name when there is none, and made a client when it was a
+  // lead (a member stays a member). An EXISTING contact is never changed here
+  // (`link`, decided by the owner on 2026-11-24): the booking's name is
+  // whatever was typed in the public form, maybe by somebody else.
   try {
-    await adminClient.database.from("contacts").upsert(
+    const db = adminClient.database;
+    const contactId = await writeContact(
+      db,
       {
         email: booking.email as string,
-        first_name: booking.first_name as string,
-        last_name: (booking.last_name as string | null) ?? null,
-        status: "client",
+        firstName: (booking.first_name as string | null) ?? "",
+        lastName: (booking.last_name as string | null) ?? "",
+        phone: null,
+        language: null,
+        gender: null,
+        newsletter: null,
+        whatsappMarketing: null,
       },
-      { onConflict: "email" },
+      "link",
     );
+    if (contactId) {
+      await db.rpc("promote_contact_to_client", { p_contact_id: contactId });
+    }
   } catch {
     // fail-open: contact sync must not block payment confirmation
   }

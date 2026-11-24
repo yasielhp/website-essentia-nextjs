@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { normalizeEmail } from "@/utils/contact";
 
 /**
  * The newsletter list, as Resend and the `contacts` table see it.
@@ -88,6 +89,31 @@ export async function setNewsletterState(
 
   await syncContactNewsletter(email, subscribed);
   return { ok: true };
+}
+
+/**
+ * Puts an address on the list unless it asked to be left alone: an address
+ * whose contact carries `newsletter_unsubscribed_at` stays off, and nothing is
+ * written (`skipped`). For every door that proves no address, or that is the
+ * booking form (decided by the owner on 2026-11-24): the footer's sign-up, and
+ * the "news and offers" box of a signed-in client's booking. Coming back on
+ * after an unsubscribe is her own preference in her account
+ * (`updateNewsletterForUser`) or the centre's switch, never a form.
+ */
+export async function subscribeUnlessUnsubscribed(
+  email: string,
+): Promise<{ ok: boolean; error?: string; skipped?: boolean }> {
+  const address = normalizeEmail(email);
+  if (!address) return { ok: false, error: "invalid" };
+  const { data, error } = await getAdminClient()
+    .database.from("contacts")
+    .select("newsletter_unsubscribed_at")
+    .eq("email", address)
+    .maybeSingle();
+  if (error) return { ok: false, error: "db" };
+  const row = data as { newsletter_unsubscribed_at: string | null } | null;
+  if (row?.newsletter_unsubscribed_at) return { ok: true, skipped: true };
+  return setNewsletterState(address, true);
 }
 
 /**

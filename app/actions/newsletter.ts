@@ -3,7 +3,11 @@
 import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import { ADMIN_ROLES, AuthError, authenticate } from "@/lib/auth-guard";
-import { emailForUnsubscribeToken, setNewsletterState } from "@/lib/newsletter";
+import {
+  emailForUnsubscribeToken,
+  setNewsletterState,
+  subscribeUnlessUnsubscribed,
+} from "@/lib/newsletter";
 
 /**
  * An address as it reaches these doors: anything at all, because a Server
@@ -29,7 +33,10 @@ const emailInput = z.string().trim().toLowerCase().max(160).pipe(z.email());
  * no session. The exposure it carries is the one every open signup form has —
  * someone can put an address that is not theirs on the list. Closing that means
  * double opt-in (a confirmation email before the address counts as subscribed),
- * which is a product decision rather than a guard.
+ * which is a product decision rather than a guard. What it never does is take
+ * back an unsubscribe: an address that asked to be left alone stays off the
+ * list, and the answer is the same as for any other, so it does not tell a
+ * stranger which addresses unsubscribed.
  */
 // react-doctor-disable-next-line react-doctor/server-auth-actions
 export async function subscribeToNewsletter(
@@ -39,7 +46,8 @@ export async function subscribeToNewsletter(
   // threw, and a thrown action is a 500 instead of the form's own error.
   const parsed = emailInput.safeParse(email);
   if (!parsed.success) return { ok: false, error: "invalid" };
-  return setNewsletterState(parsed.data, true);
+  const result = await subscribeUnlessUnsubscribed(parsed.data);
+  return result.ok ? { ok: true } : { ok: false, error: result.error };
 }
 
 /** What the unsubscribe page shows before asking for confirmation. */

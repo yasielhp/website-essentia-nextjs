@@ -73,7 +73,7 @@ describe("writeBookingConsents, a guest", () => {
     const result = await writeBookingConsents(null, INPUT, fx);
     expect(result).toEqual({ ok: true, stamped: true });
     expect(names()).toEqual(["notice"]);
-    expect(calls[0].args).toEqual(["ana@example.com"]);
+    expect(calls[0].args).toEqual(["ana@example.com", "600000000"]);
   });
 
   test("without the terms nothing is written, and that is not an error", async () => {
@@ -148,7 +148,7 @@ describe("writeBookingConsents, a signed-in client", () => {
         marketing: false,
       },
     ]);
-    expect(calls[2].args).toEqual(["ana@example.com"]);
+    expect(calls[2].args).toEqual(["ana@example.com", "600000000"]);
   });
 
   test("the news and offers box also puts her on the list, last, with her own id and address", async () => {
@@ -236,7 +236,7 @@ describe("writeBookingConsents, signed in but booking with another address", () 
     expect(names()).toEqual(["authenticate", "notice"]);
     // The consent of that booking goes the way a guest's does: the address of
     // the form, under the rules of the stamp (a contact just written, no STOP).
-    expect(calls[1].args).toEqual(["client@example.com"]);
+    expect(calls[1].args).toEqual(["client@example.com", "600000000"]);
     expect(JSON.stringify(calls)).not.toContain("ana@example.com");
   });
 
@@ -268,7 +268,7 @@ describe("writeBookingConsents, signed in but booking with another address", () 
     const result = await writeBookingConsents("token", OTHER, fx);
     expect(result).toEqual({ ok: true, stamped: true });
     expect(names()).toEqual(["notice"]);
-    expect(calls[0].args).toEqual(["client@example.com"]);
+    expect(calls[0].args).toEqual(["client@example.com", "600000000"]);
   });
 });
 

@@ -40,10 +40,12 @@ const ROW = {
   whatsapp_params: SOURCES,
 };
 
+// The contact's number is the one written to; the booking's is another on
+// purpose, to show it never is.
 const CONTACT: ClientContact = {
   first_name: "Ana",
   last_name: "García",
-  phone: "600 11 22 33",
+  phone: "+34 611 222 333",
   preferred_language: "es",
   whatsapp_opted_in_at: "2026-11-01T00:00:00Z",
   whatsapp_opted_out_at: null,
@@ -53,7 +55,7 @@ const CONTACT: ClientContact = {
 const BOOKING: ClientBooking = {
   first_name: "Ana",
   last_name: "García",
-  phone: "+34 611 222 333",
+  phone: "600 11 22 33",
   service_title: "Drenaje linfático",
   tier_label: "Sesión individual",
   date: "2026-12-10",
@@ -115,47 +117,41 @@ describe("hasClientConsent", () => {
 });
 
 describe("clientPhone", () => {
-  it("prefers the booking's own number when it is valid", () => {
-    expect(clientPhone(CONTACT, BOOKING)).toBe("+34611222333");
+  it("is the contact's number, the one her consent belongs to", () => {
+    expect(clientPhone(CONTACT)).toBe("+34611222333");
   });
-  it("falls back to the contact's when the booking's is not a number", () => {
-    expect(clientPhone(CONTACT, { ...BOOKING, phone: "no phone" })).toBe(
-      "+34600112233",
-    );
-    expect(clientPhone(CONTACT, { ...BOOKING, phone: null })).toBe(
-      "+34600112233",
-    );
+  it("never the one typed on the booking: a contact with no number is no number", () => {
+    // Anybody can type a client's address with another phone: that number
+    // would get her name and her consent.
+    expect(clientPhone({ ...CONTACT, phone: null })).toBeNull();
+    expect(clientPhone({ ...CONTACT, phone: "no phone" })).toBeNull();
   });
-  it("is null when neither is a number the database accepts", () => {
-    expect(
-      clientPhone({ ...CONTACT, phone: "123" }, { ...BOOKING, phone: "" }),
-    ).toBeNull();
-    expect(clientPhone(null, { ...BOOKING, phone: null })).toBeNull();
+  it("is null when the contact's is not a number the database accepts", () => {
+    expect(clientPhone({ ...CONTACT, phone: "123" })).toBeNull();
+    expect(clientPhone(null)).toBeNull();
   });
 });
 
 describe("clientRecipient", () => {
   it("is the number when the client may be written to, and null when she may not", () => {
-    expect(clientRecipient(CONTACT, BOOKING)).toBe("+34611222333");
-    expect(clientRecipient(null, BOOKING)).toBeNull();
+    expect(clientRecipient(CONTACT)).toBe("+34611222333");
+    expect(clientRecipient(null)).toBeNull();
     expect(
-      clientRecipient({ ...CONTACT, whatsapp_opted_in_at: null }, BOOKING),
+      clientRecipient({ ...CONTACT, whatsapp_opted_in_at: null }),
     ).toBeNull();
     expect(
-      clientRecipient(
-        { ...CONTACT, whatsapp_opted_out_at: "2026-11-02T00:00:00Z" },
-        BOOKING,
-      ),
+      clientRecipient({
+        ...CONTACT,
+        whatsapp_opted_out_at: "2026-11-02T00:00:00Z",
+      }),
     ).toBeNull();
     expect(
-      clientRecipient(
-        { ...CONTACT, whatsapp_unreachable_at: "2026-11-02T00:00:00Z" },
-        BOOKING,
-      ),
+      clientRecipient({
+        ...CONTACT,
+        whatsapp_unreachable_at: "2026-11-02T00:00:00Z",
+      }),
     ).toBeNull();
-    expect(
-      clientRecipient({ ...CONTACT, phone: null }, { ...BOOKING, phone: null }),
-    ).toBeNull();
+    expect(clientRecipient({ ...CONTACT, phone: null })).toBeNull();
   });
 });
 
@@ -245,6 +241,20 @@ describe("decideClientWhatsApp — nothing to do", () => {
         booking: { ...BOOKING, phone: null },
       }).kind,
     ).toBe("none");
+  });
+
+  it("a number typed on the booking alone is nothing: only the contact's is written to", () => {
+    // A stranger who books with a client's address and her own phone: the
+    // client has consent, but the typed number gets nothing.
+    expect(
+      decide({
+        contact: { ...CONTACT, phone: null },
+        booking: { ...BOOKING, phone: "+34 699 000 111" },
+      }).kind,
+    ).toBe("none");
+    const sent = decide({ booking: { ...BOOKING, phone: "+34 699 000 111" } });
+    expect(sent.kind).toBe("send");
+    expect("to" in sent ? sent.to : null).toBe("+34611222333");
   });
 
   it("without consent a broken template is still nothing: the client would not have been messaged", () => {
@@ -738,7 +748,7 @@ function loaderHarness(
 const BOOKING_ROW = {
   email: "Ana@Example.test",
   contact_id: "c-1",
-  phone: "+34 611 222 333",
+  phone: "600 11 22 33",
   first_name: "Ana",
   last_name: "García",
   service_title: "Drenaje linfático",

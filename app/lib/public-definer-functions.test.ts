@@ -132,15 +132,17 @@ const calls = (fn: string) => new RegExp(`\\.rpc\\(\\s*["'\`]${fn}["'\`]`);
  */
 const CALLERS: Record<string, string[]> = {
   check_email_role: ["app/lib/contacts/public-contact.ts"],
+  // The team's way only (admin and staff at the desk, the agents' tool):
+  // every public path writes its contact without it (`writeContact`).
   upsert_contact: [
     "app/lib/bookings/for-staff.ts",
-    "app/lib/contacts/public-contact.ts",
-    "app/lib/whatsapp/self-consent.ts",
-    "app/services/bonus-payments.service.ts",
+    "app/lib/contacts/write-contact.ts",
   ],
   promote_contact_to_client: [
+    "app/lib/bookings/notify.ts",
     "app/lib/bookings/public-booking.ts",
     "app/services/bonus-payments.service.ts",
+    "app/services/booking-payments.service.ts",
   ],
   register_for_education: ["app/lib/contacts/event-registration.ts"],
   register_for_race: ["app/lib/contacts/event-registration.ts"],
@@ -252,11 +254,18 @@ describe("the doors that call them instead of the browser", () => {
 
   test("what they take is a strict object, and who asks is checked where it matters", () => {
     const contact = read("app/lib/contacts/public-contact.ts");
+    const writer = read("app/lib/contacts/write-contact.ts");
+    const deskCore = read("app/lib/bookings/desk-contact.ts");
     const registration = read("app/lib/contacts/event-registration.ts");
     const desk = read("app/actions/desk-booking.ts");
     expect({
       contactStrict: contact.includes("z.strictObject("),
-      contactNeverSendsTheNoticeConsent: contact.includes("p_whatsapp: null,"),
+      contactNeverSendsTheNoticeConsent: writer.includes("p_whatsapp: null,"),
+      // The public paths write the public way; only admin and staff overwrite.
+      contactPublicWay: contact.includes('"public",'),
+      deskOverwritesOnlyForTheTeam:
+        deskCore.includes('new Set(["admin", "staff"])') &&
+        deskCore.includes('OVERWRITES.has(actor.role) ? "overwrite" : "link"'),
       registrationStrict: (registration.match(/z\.strictObject\(/g) ?? [])
         .length,
       // Her own account unless the team names another.
@@ -266,6 +275,8 @@ describe("the doors that call them instead of the browser", () => {
     }).toEqual({
       contactStrict: true,
       contactNeverSendsTheNoticeConsent: true,
+      contactPublicWay: true,
+      deskOverwritesOnlyForTheTeam: true,
       registrationStrict: 2,
       ownAccount: true,
       teamOnly: true,

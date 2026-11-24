@@ -52,7 +52,6 @@ type Rpc = (
 let jar: string | null = null;
 let calls: Call[] = [];
 let tables: FakeTables;
-let contactFor: Record<string, string> = {};
 
 const realFetch = globalThis.fetch;
 const real = {
@@ -99,18 +98,12 @@ beforeAll(async () => {
     getAdminClient: () => {
       const { db } = fakeBookingsDb(tables);
       const promote = (db as unknown as { rpc: Rpc }).rpc;
-      // The contact functions, called with the SERVICE key by the contact's
+      // The member check, called with the SERVICE key by the contact's
       // action; the promotion as its SQL does it (`fakeBookingsDb`).
       const rpc: Rpc = (name, args) => {
         calls.push({ name: `rpc:${name}`, args: [args] });
         if (name === "check_email_role") {
           return Promise.resolve({ data: "lead", error: null });
-        }
-        if (name === "upsert_contact") {
-          return Promise.resolve({
-            data: contactFor[String(args.p_email)] ?? null,
-            error: null,
-          });
         }
         return promote(name, args);
       };
@@ -165,7 +158,6 @@ afterAll(() => {
 beforeEach(() => {
   calls = [];
   jar = null;
-  contactFor = { "ana@example.com": CONTACT_A, "bea@example.com": CONTACT_B };
   tables = {
     bookings: [],
     service_tiers: [
@@ -293,18 +285,17 @@ describe("the public form, end to end, with the browser writing no booking", () 
     // And this browser holds the claim the checkout will ask for.
     expect(String(jar)).toContain(fakeId(1));
     expect(calls.filter((c) => c.name === "history")).toHaveLength(1);
-    // Her contact, written and asked about on the server (the role never
-    // reaches the browser), and made a client there once her booking exists.
+    // Her address asked about on the server (the role never reaches the
+    // browser), her contact found there the public way (it is on file, so
+    // nothing of it is rewritten: no `upsert_contact`), and made a client
+    // once her booking exists.
     expect(
       calls.filter((c) => c.name.startsWith("rpc:")).map((c) => c.name),
-    ).toEqual([
-      "rpc:check_email_role",
-      "rpc:upsert_contact",
-      "rpc:promote_contact_to_client",
-    ]);
-    expect(tables.contacts.find((c) => c.id === CONTACT_A)?.status).toBe(
-      "client",
-    );
+    ).toEqual(["rpc:check_email_role", "rpc:promote_contact_to_client"]);
+    const contact = tables.contacts.find((c) => c.id === CONTACT_A);
+    expect(contact?.status).toBe("client");
+    expect(contact).not.toHaveProperty("first_name");
+    expect(contact).not.toHaveProperty("phone");
     // "Received" goes out once the payment is open.
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(calls.filter((c) => c.name === "notifyBooking")).toHaveLength(1);

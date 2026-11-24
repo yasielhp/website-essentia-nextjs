@@ -32,6 +32,9 @@ let adminCalls = 0;
 /** One list per client the action asked for; `rpcs()` reads them all. */
 let rpcLists: { name: string; args: unknown }[][] = [];
 const rpcs = () => rpcLists.flat();
+/** The contact rows it inserted, and the patches it wrote, the same way. */
+let writeLists: Row[][] = [];
+const writes = () => writeLists.flat();
 let listed: string[] = [];
 
 const real = {
@@ -63,6 +66,7 @@ beforeAll(async () => {
         failOn: dbFails ? "read" : undefined,
       });
       rpcLists.push(calls.rpc);
+      writeLists.push(calls.inserts);
       return { database: db };
     },
   }));
@@ -85,7 +89,10 @@ beforeAll(async () => {
   }));
   mock.module("@/lib/newsletter", () => ({
     ...real.newsletter,
-    setNewsletterState: async (email: string) => {
+    // The list, as the real one decides it: never over an unsubscribe.
+    subscribeUnlessUnsubscribed: async (email: string) => {
+      const row = rows.find((r) => r.email === email);
+      if (row?.newsletter_unsubscribed_at) return { ok: true, skipped: true };
       listed.push(email);
       return { ok: true };
     },
@@ -111,6 +118,9 @@ const now = () => new Date().toISOString();
 const contact = (email: string, over: Row = {}): Row => ({
   id: email,
   email,
+  first_name: "On file",
+  phone: "+34600000000",
+  preferred_language: "en",
   created_at: now(),
   updated_at: now(),
   whatsapp_opted_in_at: null,
@@ -128,6 +138,7 @@ beforeEach(() => {
   dbHangs = false;
   adminCalls = 0;
   rpcLists = [];
+  writeLists = [];
   listed = [];
 });
 
@@ -156,26 +167,81 @@ describe("saveBookingConsents", () => {
     expect(rpcs()).toEqual([]);
   });
 
-  test("a signed-in client booking with her own address has her contact written and stamped", async () => {
+  test("a signed-in client booking with her own address has her contact written the public way, and stamped", async () => {
     const result = await saveBookingConsents(
       "token",
       input({ email: " Session@Example.com", marketing: true }),
     );
     expect(result).toEqual({ ok: true });
-    expect(rpcs()).toHaveLength(1);
-    expect(rpcs()[0]).toMatchObject({
-      name: "upsert_contact",
-      args: {
-        p_email: "session@example.com",
-        p_first_name: "Ana",
-        p_phone: "600000000",
-        p_newsletter: true,
-        p_whatsapp_marketing: true,
-      },
+    // Her contact exists: no `upsert_contact`, nothing inserted, and what is
+    // on file stays; only the yes she gave is added.
+    expect(rpcs()).toEqual([]);
+    expect(writes()).toEqual([]);
+    expect(rows[1]).toMatchObject({
+      first_name: "On file",
+      phone: "+34600000000",
+      preferred_language: "en",
+      newsletter_subscribed: true,
     });
+    expect(rows[1].whatsapp_marketing_opted_in_at).not.toBeNull();
     expect(rows[1].whatsapp_opted_in_at).not.toBeNull();
     expect(rows[0].whatsapp_opted_in_at).toBeNull();
     expect(listed).toEqual(["session@example.com"]);
+  });
+
+  test("a signed-in client with no contact yet has one created with what she typed", async () => {
+    rows = [contact("guest@example.com")];
+    const result = await saveBookingConsents(
+      "token",
+      input({ email: "session@example.com" }),
+    );
+    expect(result).toEqual({ ok: true });
+    expect(writes()).toEqual([
+      expect.objectContaining({
+        email: "session@example.com",
+        first_name: "Ana",
+        phone: "600000000",
+        preferred_language: "es",
+      }),
+    ]);
+    // Her number is the one she typed, so the notices are hers.
+    expect(rows[1]?.whatsapp_opted_in_at).not.toBeNull();
+  });
+
+  test("with ANOTHER phone typed than her contact's, her contact keeps its number and gets no notice consent", async () => {
+    const result = await saveBookingConsents(
+      "token",
+      input({ email: "session@example.com", phone: "611 222 333" }),
+    );
+    expect(result).toEqual({ ok: true });
+    expect(rows[1].phone).toBe("+34600000000");
+    expect(rows[1].whatsapp_opted_in_at).toBeNull();
+  });
+
+  test("a guest with ANOTHER phone than the contact of the address gets no notice consent on it", async () => {
+    const result = await saveBookingConsents(
+      null,
+      input({ phone: "+44 7700 900123" }),
+    );
+    expect(result).toEqual({ ok: true });
+    expect(rows[0].whatsapp_opted_in_at).toBeNull();
+  });
+
+  test("a STOP or an unsubscribe of hers is not taken back by the box", async () => {
+    rows[1].whatsapp_opted_out_at = "2026-01-01T00:00:00.000Z";
+    rows[1].newsletter_unsubscribed_at = "2026-01-01T00:00:00.000Z";
+    const result = await saveBookingConsents(
+      "token",
+      input({ email: "session@example.com", marketing: true }),
+    );
+    expect(result).toEqual({ ok: true });
+    expect(rows[1]).toMatchObject({
+      whatsapp_opted_out_at: "2026-01-01T00:00:00.000Z",
+      newsletter_unsubscribed_at: "2026-01-01T00:00:00.000Z",
+      whatsapp_opted_in_at: null,
+    });
+    expect(rows[1].newsletter_subscribed ?? null).toBeNull();
+    expect(listed).toEqual([]);
   });
 
   test("signed in with ANOTHER address in the form: the session's contact is not written, stamped or listed", async () => {
@@ -300,10 +366,7 @@ describe("saveBookingConsents", () => {
       input({ email: "session@example.com" }),
     );
     expect(result).toEqual({ ok: true });
-    expect(rpcs()[0]).toMatchObject({
-      name: "upsert_contact",
-      args: { p_email: "session@example.com" },
-    });
+    // The session's contact is the one stamped, not the profile's.
     expect(rows[1].whatsapp_opted_in_at).not.toBeNull();
     expect(rows[0].whatsapp_opted_in_at).toBeNull();
   });

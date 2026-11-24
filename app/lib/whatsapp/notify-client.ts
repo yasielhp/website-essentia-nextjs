@@ -383,7 +383,7 @@ export async function notifyClientOnWhatsApp(
 
     // Consent and a number first: a template is not even read for a client
     // who would not be messaged.
-    if (!clientRecipient(contact, booking)) return;
+    if (!clientRecipient(contact)) return;
     const template = await loadClientTemplate(
       deps.db,
       row.whatsapp_template_id,

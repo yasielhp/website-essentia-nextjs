@@ -156,7 +156,8 @@ export function fakeBookingsDb(
       for (const raw of incoming) {
         const row = {
           id: raw.id ?? freshId([...rows, ...written]),
-          status: "pending",
+          // Each table's own default: a booking is `pending`, a contact a `lead`.
+          status: table === "contacts" ? "lead" : "pending",
           ...raw,
         };
         if (table === "bookings" && clashes(row, [...rows, ...written])) {

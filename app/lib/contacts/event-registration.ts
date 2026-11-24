@@ -2,14 +2,14 @@ import { z } from "zod";
 import { getAdminClient } from "@/lib/insforge-admin";
 import type { AuthContext } from "@/lib/auth-guard";
 import type { Visitor } from "@/lib/bookings/visitor";
+import type { RateLimiter } from "@/lib/campaigns/rate-limit";
 import {
   allowedFor,
-  createContactLimiters,
+  createContactLimiter,
   isMemberAddress,
   personFields,
-  upsertContact,
-  type ContactLimiters,
 } from "./public-contact";
+import { writeContact } from "./write-contact";
 
 /**
  * A registration for a run of the Running Club or a session of the education
@@ -25,10 +25,11 @@ import {
  *
  *  - a guest (`registerGuestCore`): the event must exist; an address that is
  *    a member's is told so ("member", nothing written) and nothing else about
- *    it; her contact is written as the page always wrote it (no consent at
- *    all: these forms ask for none), and the registration is hers, by that
- *    contact. Rate limited per caller and per email, like the booking form's
- *    contact;
+ *    it; her contact is written the PUBLIC way (`writeContact`: a new one as
+ *    the page always wrote it, with no consent at all, since these forms ask
+ *    for none; an existing one is never changed), and the registration is
+ *    hers, by that contact. Rate limited per caller, like the booking form's
+ *    contact (not per email, so a stranger cannot spend somebody's turn);
  *  - an account (`registerAccountCore`): a signed-in person registers HERSELF,
  *    the account her token proves, never an id the browser sends; the team
  *    (admin and staff) may register any account, by its id.
@@ -90,7 +91,7 @@ export type RegistrationResult =
 /** The roles that may register an account other than their own. */
 const TEAM = new Set(["admin", "staff"]);
 
-const sharedLimiters = createContactLimiters({ perIp: 10, perEmail: 5 });
+const sharedLimiter = createContactLimiter(10);
 
 /** Whether the event exists; `"failed"` when the database did not answer. */
 async function eventExists(
@@ -135,12 +136,12 @@ async function register(
 /** A guest, from the page's form. */
 export async function registerGuestCore(
   raw: unknown,
-  deps: { visitor: Visitor; limiters?: ContactLimiters },
+  deps: { visitor: Visitor; limiter?: RateLimiter },
 ): Promise<RegistrationResult> {
   const parsed = guestRegistrationSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "invalid" };
   const input = parsed.data;
-  if (!allowedFor(deps.limiters ?? sharedLimiters, deps.visitor, input.email)) {
+  if (!allowedFor(deps.limiter ?? sharedLimiter, deps.visitor)) {
     return { ok: false, error: "rate_limited" };
   }
 
@@ -154,17 +155,22 @@ export async function registerGuestCore(
       return { ok: false, error: "member" };
     }
 
-    // As the page always wrote it: no gender, and no consent of any kind.
-    const contactId = await upsertContact(db, {
-      email: input.email,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      phone: input.phone,
-      language: input.language,
-      gender: null,
-      newsletter: null,
-      whatsappMarketing: null,
-    });
+    // As the page always wrote a new one: no gender, and no consent of any
+    // kind. An existing contact is not changed.
+    const contactId = await writeContact(
+      db,
+      {
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        phone: input.phone,
+        language: input.language,
+        gender: null,
+        newsletter: null,
+        whatsappMarketing: null,
+      },
+      "public",
+    );
     if (!contactId) return { ok: false, error: "failed" };
 
     const done = await register(db, input.kind, input.eventId, {

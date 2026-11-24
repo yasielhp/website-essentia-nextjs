@@ -35,18 +35,20 @@ export async function createDeskBooking(
 
 /**
  * The client's contact for a booking taken at the desk: written, or found by
- * its address, before the booking itself. The team only, as above. What is
- * written, and why it is the server's, is in `app/lib/bookings/desk-contact.ts`.
+ * its address, before the booking itself. The team only, as above; a partner
+ * links or creates, and never changes an existing contact. What is written,
+ * and why it is the server's, is in `app/lib/bookings/desk-contact.ts`.
  */
 export async function linkDeskContact(
   accessToken: string | null,
   input: unknown,
 ): Promise<DeskContactResult | { ok: false; error: "session" }> {
+  let actor;
   try {
-    await requireRole(accessToken);
+    actor = await requireRole(accessToken);
   } catch (err) {
     if (err instanceof AuthError) return { ok: false, error: "session" };
     throw err;
   }
-  return linkDeskContactCore(input);
+  return linkDeskContactCore(actor, input);
 }

@@ -3,7 +3,7 @@ import { getAdminClient } from "@/lib/insforge-admin";
 import { authenticate } from "@/lib/auth-guard";
 import { clientIp } from "@/lib/auth-security";
 import { createRateLimiter } from "@/lib/campaigns/rate-limit";
-import { setNewsletterState } from "@/lib/newsletter";
+import { subscribeUnlessUnsubscribed } from "@/lib/newsletter";
 import {
   publicReply,
   writeBookingConsents,
@@ -95,15 +95,19 @@ export async function saveBookingConsentsCore(
             sessionEmail,
             contact,
           ),
-        stampNotice: (email) =>
+        stampNotice: (email, phone) =>
           stampBookingNoticeConsent(
             getAdminClient().database,
             email,
+            phone,
             new Date(),
           ),
         subscribeNewsletter: async (userId, sessionEmail) => {
-          const listed = await setNewsletterState(sessionEmail, true);
+          // Never over an unsubscribe of hers: the box is a form, and a form
+          // does not take back a no (her account's preference does).
+          const listed = await subscribeUnlessUnsubscribed(sessionEmail);
           if (!listed.ok) return { ok: false };
+          if (listed.skipped) return { ok: true };
           const { error } = await getAdminClient()
             .database.from("profiles")
             .update({ newsletter_subscribed: true })

@@ -18,12 +18,10 @@ import type {
  * before. A withdrawal is the unsubscribe link in an email, a BAJA/STOP reply on
  * WhatsApp, or the centre in the dashboard.
  *
- * After a STOP the order matters, on purpose. Ticking "news and offers" is an
- * explicit new yes: `upsert_contact` clears the STOP and withdraws the booking
- * notices (a STOP is global), and then the notice consent is stamped again, so a
- * client who left gets her notices back together with the news she just asked
- * for. Booking again WITHOUT the tick lifts nothing. Pinned in
- * `self-consent.test.ts`.
+ * No box lifts a withdrawal (owner's decision of 2026-11-24): after a STOP or
+ * an unsubscribe, booking again, ticked or not, leaves it as it is, and an
+ * existing contact keeps its name and phone (`writeContact`, the public way).
+ * Pinned in `self-consent.test.ts`.
  */
 
 /**

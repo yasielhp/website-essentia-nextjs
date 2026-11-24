@@ -7,7 +7,7 @@ import {
   mock,
   test,
 } from "bun:test";
-import { chainDb, filters } from "@/lib/campaigns/fake-db";
+import { argsOf, chainDb, filters, has } from "@/lib/campaigns/fake-db";
 
 /**
  * The registrations of the Running Club and the education programmes,
@@ -35,6 +35,10 @@ type Rpc = { name: string; args: Record<string, unknown> };
 let rpcs: Rpc[] = [];
 let reads: string[] = [];
 let failing: string | null = null;
+/** The contacts already on file, and what was inserted or updated. */
+let contacts: Record<string, unknown>[] = [];
+let inserted: Record<string, unknown>[] = [];
+let updated: Record<string, unknown>[] = [];
 
 const tables: Record<string, { id: string }[]> = {
   races: [{ id: RACE }],
@@ -48,6 +52,24 @@ const roles: Record<string, string> = {
 const { db } = chainDb((table, chain) => {
   reads.push(table);
   if (failing === table) return { data: null, error: { message: "boom" } };
+  if (table === "contacts") {
+    if (has(chain, "insert")) {
+      const row = (
+        argsOf(chain, "insert")![0] as Record<string, unknown>[]
+      )[0]!;
+      inserted.push(row);
+      return { data: { id: "contact-1" }, error: null };
+    }
+    if (has(chain, "update")) {
+      updated.push(argsOf(chain, "update")![0] as Record<string, unknown>);
+      return { data: null, error: null };
+    }
+    const email = filters(chain).email;
+    return {
+      data: contacts.find((row) => row.email === email) ?? null,
+      error: null,
+    };
+  }
   const id = filters(chain).id;
   return {
     data: (tables[table] ?? []).find((row) => row.id === id) ?? null,
@@ -74,6 +96,8 @@ const real = {
 };
 
 let actions: typeof import("@/actions/event-registration");
+let registerGuestCore: typeof import("./event-registration").registerGuestCore;
+let createContactLimiter: typeof import("./public-contact").createContactLimiter;
 
 beforeAll(async () => {
   mock.module("@/lib/insforge-admin", () => ({
@@ -111,6 +135,8 @@ beforeAll(async () => {
   }));
   mock.module("@/actions/event-registration", () => real.action);
   actions = await import("@/actions/event-registration");
+  ({ registerGuestCore } = await import("./event-registration"));
+  ({ createContactLimiter } = await import("./public-contact"));
 });
 
 afterAll(() => {
@@ -123,6 +149,9 @@ beforeEach(() => {
   rpcs = [];
   reads = [];
   failing = null;
+  contacts = [];
+  inserted = [];
+  updated = [];
 });
 
 let n = 0;
@@ -144,28 +173,44 @@ describe("a guest registers, through the server", () => {
     expect(await actions.registerGuestForEvent(guest({ email }))).toEqual({
       ok: true,
     });
-    expect(reads).toEqual(["races"]);
+    expect(reads).toEqual(["races", "contacts", "contacts"]);
     expect(rpcs).toEqual([
       { name: "check_email_role", args: { p_email: email } },
-      {
-        name: "upsert_contact",
-        args: {
-          p_email: email,
-          p_first_name: "Ana",
-          p_last_name: "García",
-          p_phone: "600000000",
-          p_language: "es",
-          p_gender: null,
-          p_newsletter: null,
-          p_whatsapp: null,
-          p_whatsapp_marketing: null,
-        },
-      },
       {
         name: "register_for_race",
         args: { p_race_id: RACE, p_contact_id: "contact-1" },
       },
     ]);
+    // A new contact, as the page always wrote one: no consent of any kind.
+    expect(inserted).toEqual([
+      {
+        email,
+        first_name: "Ana",
+        last_name: "García",
+        phone: "600000000",
+        preferred_language: "es",
+        gender: null,
+        newsletter_subscribed: false,
+        newsletter_subscribed_at: null,
+        whatsapp_marketing_opted_in_at: null,
+      },
+    ]);
+  });
+
+  test("an address already on file keeps its name, phone and language, and gains nothing", async () => {
+    const email = `known${++n}@example.com`;
+    contacts = [{ id: "c-known", email }];
+    expect(await actions.registerGuestForEvent(guest({ email }))).toEqual({
+      ok: true,
+    });
+    expect(inserted).toEqual([]);
+    // Only touched: no name, phone, language or consent in the patch.
+    expect(updated).toHaveLength(1);
+    expect(Object.keys(updated[0]!)).toEqual(["updated_at"]);
+    expect(rpcs.at(-1)).toEqual({
+      name: "register_for_race",
+      args: { p_race_id: RACE, p_contact_id: "c-known" },
+    });
   });
 
   test("for a session of the programmes, the same, with its own function", async () => {
@@ -174,7 +219,7 @@ describe("a guest registers, through the server", () => {
         guest({ kind: "education", eventId: SESSION }),
       ),
     ).toEqual({ ok: true });
-    expect(reads).toEqual(["education_sessions"]);
+    expect(reads[0]).toBe("education_sessions");
     expect(rpcs.at(-1)).toEqual({
       name: "register_for_education",
       args: { p_session_id: SESSION, p_contact_id: "contact-1" },
@@ -235,20 +280,26 @@ describe("a guest registers, through the server", () => {
     });
   });
 
-  test("one address: a few in ten minutes, then 'rate_limited' with nothing asked or written", async () => {
-    const email = `limit${++n}@example.com`;
-    for (let i = 0; i < 5; i++) {
-      expect(await actions.registerGuestForEvent(guest({ email }))).toEqual({
-        ok: true,
+  test("one caller: a few in ten minutes, then 'rate_limited' with nothing asked or written; never per email", async () => {
+    const limiter = createContactLimiter(10);
+    const call = (ip: string, email: string) =>
+      registerGuestCore(guest({ email }), {
+        visitor: { claims: null, ip },
+        limiter,
       });
+    const email = `limit${++n}@example.com`;
+    for (let i = 0; i < 10; i++) {
+      expect(await call("203.0.113.5", `p${i}-${email}`)).toEqual({ ok: true });
     }
     rpcs = [];
     reads = [];
-    expect(await actions.registerGuestForEvent(guest({ email }))).toEqual({
+    expect(await call("203.0.113.5", email)).toEqual({
       ok: false,
       error: "rate_limited",
     });
     expect({ reads, rpcs }).toEqual({ reads: [], rpcs: [] });
+    // The same address from somebody else's connection is not held back.
+    expect(await call("198.51.100.7", email)).toEqual({ ok: true });
   });
 });
 

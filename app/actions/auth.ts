@@ -15,6 +15,7 @@ import {
 } from "@/lib/schemas";
 import { getAppUrl } from "@/lib/env";
 import { getAdminClient } from "@/lib/insforge-admin";
+import { writeContact } from "@/lib/contacts/write-contact";
 import {
   LOCK_THRESHOLD,
   accountFailures,
@@ -305,32 +306,27 @@ export async function signUp(
   // Consent lands on the contact row, which is what campaigns read. The
   // profile may not exist yet — the browser creates it after this returns — so
   // it is not touched here. Best effort: bookkeeping must never fail a sign-up.
+  //
+  // The public way (`writeContact`): a sign-up proves no address until it is
+  // verified, so a known client keeps the name on file and only GAINS the
+  // newsletter, never over an unsubscribe of hers (decided by the owner on
+  // 2026-11-24); a new address is created with the first name given.
   if (newsletter) {
-    try {
-      const db = getAdminClient().database;
-      const consent = {
-        newsletter_subscribed: true,
-        newsletter_subscribed_at: new Date().toISOString(),
-        newsletter_unsubscribed_at: null,
-      };
-      const { data: existing } = await db
-        .from("contacts")
-        .select("id")
-        .eq("email", address)
-        .maybeSingle();
-      if (existing) {
-        // A known client: only the consent changes, never the name on file.
-        await db.from("contacts").update(consent).eq("email", address);
-      } else {
-        await db.from("contacts").insert({
-          email: address,
-          first_name: parsed.data.name?.trim().split(/\s+/)[0] || null,
-          ...consent,
-        });
-      }
-    } catch (err) {
-      console.error("[signUp] could not record newsletter consent:", err);
-    }
+    const id = await writeContact(
+      getAdminClient().database,
+      {
+        email: address,
+        firstName: parsed.data.name?.trim().split(/\s+/)[0] || "",
+        lastName: "",
+        phone: null,
+        language: null,
+        gender: null,
+        newsletter: true,
+        whatsappMarketing: null,
+      },
+      "public",
+    );
+    if (!id) console.error("[signUp] could not record newsletter consent");
   }
 
   return {
