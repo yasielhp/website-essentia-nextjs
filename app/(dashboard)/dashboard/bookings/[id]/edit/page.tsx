@@ -43,6 +43,8 @@ import {
 import { useLocationOptions } from "../../_shared/location-options";
 import { PaymentFields } from "../../_shared/payment-fields";
 import { RefundOnCancel } from "./refund-on-cancel";
+import { BonusOnCancel } from "./bonus-on-cancel";
+import { bonusChoiceOnSave } from "@/lib/bonuses/cancellation";
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -123,6 +125,7 @@ export default function EditBookingPage() {
     origDate,
     origTime,
     origStatus,
+    origPaymentMode,
     origPartlyPaid,
   } = useBookingEditData({
     id,
@@ -139,6 +142,14 @@ export default function EditBookingPage() {
   // When "Cancelada" was chosen: the screen says "refund owed" or offers the
   // box as of that moment, and the save records what it said.
   const [cancelSeenAt, setCancelSeenAt] = useState<number | null>(null);
+  // For a session drawn from a bonus: give it back although it is late?
+  const [bonusReturnLate, setBonusReturnLate] = useState(false);
+  const decidesForTheCentre = role === "admin" || role === "staff";
+  const cancellingBonus =
+    status === "cancelled" &&
+    origStatus !== "" &&
+    origStatus !== "cancelled" &&
+    origPaymentMode === "bonus";
   useEffect(() => {
     if (role !== "admin" && role !== "staff") return;
     let cancelled = false;
@@ -211,6 +222,15 @@ export default function EditBookingPage() {
               isOutsideCancellationWindow(origDate, origTime, cancelSeenAt),
             ticked: refundLate,
           }),
+        bonusReturnLate:
+          cancellingBonus &&
+          decidesForTheCentre &&
+          bonusChoiceOnSave({
+            shownInAdvance:
+              cancelSeenAt !== null &&
+              isOutsideCancellationWindow(origDate, origTime, cancelSeenAt),
+            ticked: bonusReturnLate,
+          }),
       },
     );
     dispatchAsync({ type: "SUBMIT_END" });
@@ -271,6 +291,16 @@ export default function EditBookingPage() {
               dispatchForm({ type: "SET_FIELD", field: "status", value: s });
             }}
           />
+          {cancellingBonus && decidesForTheCentre && cancelSeenAt !== null && (
+            <BonusOnCancel
+              date={origDate}
+              time={origTime}
+              seenAt={cancelSeenAt}
+              returnLate={bonusReturnLate}
+              onChange={setBonusReturnLate}
+              disabled={submitting}
+            />
+          )}
           {cancelling && cancelSeenAt !== null && (
             <RefundOnCancel
               view={refundView}

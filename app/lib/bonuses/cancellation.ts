@@ -78,3 +78,16 @@ export function useStatus(
     ? "lost"
     : (booking.status ?? "");
 }
+
+/**
+ * What the edit screen records as the team's choice for a bonus session: true
+ * when it goes back to the bonus. At least 24 hours before (as the screen
+ * measured it when "Cancelada" was chosen) it goes back and the screen said
+ * so; inside them, the box «Devolver la sesión al bono».
+ */
+export function bonusChoiceOnSave(input: {
+  shownInAdvance: boolean;
+  ticked: boolean;
+}): boolean {
+  return input.shownInAdvance || input.ticked;
+}

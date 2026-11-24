@@ -35,6 +35,8 @@ function chain(table: string): unknown {
         ? { data: bookingRow, error: null }
         : { data: bookings, error: null };
     }
+    if (table === "contact_bonuses")
+      return { data: contactBonuses, error: null };
     if (table === "booking_events") {
       return entriesError
         ? { data: null, error: entriesError }
@@ -58,10 +60,14 @@ function chain(table: string): unknown {
   return proxy;
 }
 
+let contactBonuses: Record<string, unknown>[] = [];
+
 const real = {
   admin: { ...(await import("@/lib/insforge-admin")) },
   record: { ...(await import("@/lib/booking-events/record")) },
+  guard: { ...(await import("@/lib/auth-guard")) },
 };
+let fetchContactBonuses: typeof import("@/actions/bonuses").fetchContactBonuses;
 let settleBonusOnCancel: typeof import("./settle").settleBonusOnCancel;
 let readBonusUses: typeof import("./uses").readBonusUses;
 
@@ -76,13 +82,19 @@ beforeAll(async () => {
       recorded.push(e);
     },
   }));
+  mock.module("@/lib/auth-guard", () => ({
+    ...real.guard,
+    requireRole: async () => ({ userId: "u-1", role: "admin" }),
+  }));
   ({ settleBonusOnCancel } = await import("./settle"));
   ({ readBonusUses } = await import("./uses"));
+  ({ fetchContactBonuses } = await import("@/actions/bonuses"));
 });
 
 afterAll(() => {
   mock.module("@/lib/insforge-admin", () => real.admin);
   mock.module("@/lib/booking-events/record", () => real.record);
+  mock.module("@/lib/auth-guard", () => real.guard);
 });
 
 beforeEach(() => {
@@ -237,5 +249,61 @@ describe("readBonusUses: what the bonus counts", () => {
     const uses = await readBonusUses(["bn-1"]);
     quiet.mockRestore();
     expect(uses[0]!.status).toBe("cancelled");
+  });
+});
+
+describe("the contact's bonus card", () => {
+  test("counts the lost session as used and says how many were lost", async () => {
+    contactBonuses = [
+      {
+        id: "bn-1",
+        plan_id: null,
+        tier_id: "t-1",
+        sessions_total: 5,
+        price_eur: "300.00",
+        paid_method: "card",
+        purchased_at: "2026-06-01",
+        expires_at: "2027-06-01",
+        notes: null,
+        service_tiers: { label: "Drenaje" },
+      },
+    ];
+    bookings = [
+      {
+        id: "b1",
+        bonus_id: "bn-1",
+        date: "2026-07-01",
+        time: "10:00",
+        status: "completed",
+      },
+      {
+        id: "b2",
+        bonus_id: "bn-1",
+        date: "2026-07-08",
+        time: "10:00",
+        status: "cancelled",
+      },
+      {
+        id: "b3",
+        bonus_id: "bn-1",
+        date: "2026-07-15",
+        time: "10:00",
+        status: "cancelled",
+      },
+    ];
+    entries = [
+      {
+        booking_id: "b2",
+        event: "bonus_lost",
+        created_at: "2026-07-08T05:00:00Z",
+      },
+      {
+        booking_id: "b3",
+        event: "bonus_returned",
+        created_at: "2026-07-12T05:00:00Z",
+      },
+    ];
+    const [bonus] = await fetchContactBonuses("token", "c-1");
+    expect(bonus).toMatchObject({ used: 2, remaining: 3, lost: 1 });
   });
 });

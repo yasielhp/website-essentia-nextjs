@@ -209,16 +209,19 @@
       "body": "Puedes cancelarla sin coste.",
       "bodyRefund": "Puedes cancelarla sin coste. Te devolveremos los {amount} que pagaste online.",
       "action": "Sí, cancelar mi cita",
-      "working": "Cancelando…"
+      "working": "Cancelando…",
+      "bodyBonus": "Puedes cancelarla sin coste. La sesión vuelve a tu bono."
     },
     "done": {
       "heading": "Cita cancelada",
       "body": "Tu cita queda cancelada y el hueco vuelve a estar libre.",
-      "bodyRefund": "Tu cita queda cancelada y el hueco vuelve a estar libre. Te devolveremos los {amount} que pagaste online, en la misma tarjeta; puede tardar unos días en aparecer."
+      "bodyRefund": "Tu cita queda cancelada y el hueco vuelve a estar libre. Te devolveremos los {amount} que pagaste online, en la misma tarjeta; puede tardar unos días en aparecer.",
+      "bodyBonus": "Tu cita queda cancelada, el hueco vuelve a estar libre y la sesión vuelve a tu bono."
     },
     "late": {
       "heading": "Ya no se puede cancelar online",
-      "body": "Faltan menos de 24 horas para tu sesión. Llámanos o escríbenos y vemos qué podemos hacer."
+      "body": "Faltan menos de 24 horas para tu sesión. Llámanos o escríbenos y vemos qué podemos hacer.",
+      "bodyBonus": "Faltan menos de 24 horas para tu sesión. Si la cancelas ahora o no acudes, la sesión se descuenta de tu bono. Llámanos o escríbenos y vemos qué podemos hacer."
     },
     "already": {
       "heading": "Esta cita ya estaba cancelada",

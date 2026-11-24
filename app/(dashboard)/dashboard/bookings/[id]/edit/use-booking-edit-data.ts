@@ -97,6 +97,8 @@ export function useBookingEditData({
   const [origTime, setOrigTime] = useState<string>("");
   // The state it was saved in, to tell a save that cancels it.
   const [origStatus, setOrigStatus] = useState<string>("");
+  // How it was paid: a session drawn from a bonus asks what to do with it.
+  const [origPaymentMode, setOrigPaymentMode] = useState<string | null>(null);
   // Partly paid when it was loaded: a deposit from before 2026-11-24, which
   // keeps "partly paid" among the payment choices of this screen.
   const [origPartlyPaid, setOrigPartlyPaid] = useState(false);
@@ -165,6 +167,7 @@ export function useBookingEditData({
       setOrigDate(b.date ?? null);
       setOrigTime(b.time ?? "");
       setOrigStatus(b.status ?? "pending");
+      setOrigPaymentMode(b.payment_mode ?? null);
       setOrigPartlyPaid(paymentValueOf(b).status === "deposit_paid");
 
       // Bookings taken before the staff column carry the old free-text
@@ -262,6 +265,7 @@ export function useBookingEditData({
     origDate,
     origTime,
     origStatus,
+    origPaymentMode,
     origPartlyPaid,
   };
 }

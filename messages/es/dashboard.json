@@ -364,6 +364,11 @@
         "inAdvance": "Se pagaron {amount} online y faltan 24 horas o más: al guardar quedará un reembolso pendiente de {amount} y el administrador recibirá un correo con el número de pedido de Redsys.",
         "lateLabel": "Devolver igualmente los {amount} pagados online",
         "lateHelp": "Faltan menos de 24 horas o la sesión ya ha pasado: según las condiciones no hay reembolso. Márcalo solo si cancela el centro o decidís devolverlo; quedará como reembolso pendiente y el administrador recibirá un correo."
+      },
+      "bonus": {
+        "inAdvance": "Es una sesión de un bono y faltan 24 horas o más: al guardar, la sesión vuelve al bono.",
+        "lateLabel": "Devolver la sesión al bono",
+        "lateHelp": "Faltan menos de 24 horas o la sesión ya ha pasado: según las condiciones, la sesión del bono se pierde. Márcalo solo si cancela el centro o decidís devolverla."
       }
     },
     "detail": {
@@ -1396,7 +1401,8 @@
           "cancel": "Cancelar",
           "noPlans": "No hay bonos activos. Créalos en Ajustes → Bonos.",
           "error": "No se ha podido añadir el bono."
-        }
+        },
+        "lost": "{count, plural, one {# perdida} other {# perdidas}}"
       },
       "showAll": "Ver todas ({count})",
       "showLess": "Ver menos",

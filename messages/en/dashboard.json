@@ -364,6 +364,11 @@
         "inAdvance": "{amount} was paid online and the session is 24 hours or more away: saving records a pending refund of {amount} and emails the administrator the Redsys order number.",
         "lateLabel": "Refund the {amount} paid online anyway",
         "lateHelp": "The session is less than 24 hours away or has passed: under the Terms there is no refund. Tick it only if the centre is cancelling or you decide to refund; it is then recorded as a pending refund and the administrator gets an email."
+      },
+      "bonus": {
+        "inAdvance": "This is a voucher session and it is 24 hours or more away: saving gives the session back to the voucher.",
+        "lateLabel": "Give the session back to the voucher",
+        "lateHelp": "The session is less than 24 hours away or has passed: under the Terms the voucher session is lost. Tick it only if the centre is cancelling or you decide to give it back."
       }
     },
     "detail": {
@@ -1396,7 +1401,8 @@
           "cancel": "Cancel",
           "noPlans": "There are no active vouchers. Create them in Settings → Vouchers.",
           "error": "The voucher could not be added."
-        }
+        },
+        "lost": "{count, plural, one {# lost} other {# lost}}"
       },
       "showAll": "See all ({count})",
       "showLess": "See less",

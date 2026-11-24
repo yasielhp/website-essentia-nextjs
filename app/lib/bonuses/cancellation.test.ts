@@ -1,7 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { hoursUntilSession } from "@/lib/bookings/cancellation-window";
 import { bonusBalance } from "./balance";
-import { bonusOnCancel, lostBookingIds, useStatus } from "./cancellation";
+import {
+  bonusChoiceOnSave,
+  bonusOnCancel,
+  lostBookingIds,
+  useStatus,
+} from "./cancellation";
 
 const at = (iso: string) => Date.parse(iso);
 /** The decision for a session at `date time` (Canary time) cancelled at `now`. */
@@ -126,6 +131,23 @@ describe("the bonus balance counts a lost session as used", () => {
   it("a session lost and then reactivated counts once, as booked", () => {
     expect(useStatus({ id: "b2", status: "confirmed" }, new Set(["b2"]))).toBe(
       "confirmed",
+    );
+  });
+});
+
+describe("bonusChoiceOnSave: what the edit screen showed is what is recorded", () => {
+  it("shown as going back (24 hours or more when chosen): sent as given back", () => {
+    expect(bonusChoiceOnSave({ shownInAdvance: true, ticked: false })).toBe(
+      true,
+    );
+  });
+
+  it("inside the 24 hours the box decides, unticked by default", () => {
+    expect(bonusChoiceOnSave({ shownInAdvance: false, ticked: false })).toBe(
+      false,
+    );
+    expect(bonusChoiceOnSave({ shownInAdvance: false, ticked: true })).toBe(
+      true,
     );
   });
 });

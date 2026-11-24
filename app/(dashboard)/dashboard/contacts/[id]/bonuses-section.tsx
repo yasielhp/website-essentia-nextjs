@@ -105,6 +105,9 @@ export function BonusesSection({
                     className={`mt-1 text-sm ${expired ? "text-red-600" : "text-petroleum-500"}`}
                   >
                     {b.used}/{b.sessionsTotal} ·{" "}
+                    {/* Of the used, the sessions lost to a late
+                    cancellation: they are why the count is not the visits. */}
+                    {b.lost > 0 && <>{t("lost", { count: b.lost })} · </>}
                     {t(expired ? "expiredOn" : "expiresOn", {
                       date: shortDate(b.expiresAt),
                     })}

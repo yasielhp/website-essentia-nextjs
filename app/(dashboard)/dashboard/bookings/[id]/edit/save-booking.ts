@@ -175,8 +175,11 @@ export async function updateBooking(
   id: string,
   draft: BookingDraft,
   original: BookingSnapshot | null,
-  /** For a booking paid online cancelled inside the last 24 hours. */
-  options?: { refundLate?: boolean },
+  /**
+   * For a booking cancelled inside the last 24 hours: refund the money paid
+   * online, give the bonus session back.
+   */
+  options?: { refundLate?: boolean; bonusReturnLate?: boolean },
 ): Promise<{ error: string | null }> {
   // The price is worked out again only when the session type or the place
   // changed. Otherwise the stored one stands: a booking paid on the web may

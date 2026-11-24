@@ -28,6 +28,8 @@ export function CancelContent() {
   const [working, setWorking] = useState(false);
   // What the cancellation left owed back, as the server decided it.
   const [refundEur, setRefundEur] = useState<number | null>(null);
+  // A session drawn from a bonus that went back to it.
+  const [bonusReturned, setBonusReturned] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +58,7 @@ export function CancelContent() {
     try {
       const result = await cancelBookingByToken(token, locale as "en" | "es");
       setRefundEur(result.refundEur ?? null);
+      setBonusReturned(result.bonusReturned === true);
       setScreen(
         result.ok
           ? "done"
@@ -88,15 +91,23 @@ export function CancelContent() {
       title: t("confirm.heading"),
       body: booking?.refundEur
         ? t("confirm.bodyRefund", { amount: price(booking.refundEur) })
-        : t("confirm.body"),
+        : booking?.bonusSession
+          ? t("confirm.bodyBonus")
+          : t("confirm.body"),
     },
     done: {
       title: t("done.heading"),
       body: refundEur
         ? t("done.bodyRefund", { amount: price(refundEur) })
-        : t("done.body"),
+        : bonusReturned
+          ? t("done.bodyBonus")
+          : t("done.body"),
     },
-    late: { title: t("late.heading"), body: t("late.body") },
+    // Inside the 24 hours a bonus session is lost: said before she calls.
+    late: {
+      title: t("late.heading"),
+      body: booking?.bonusSession ? t("late.bodyBonus") : t("late.body"),
+    },
     already: { title: t("already.heading"), body: t("already.body") },
     missing: { title: t("missing.heading"), body: t("missing.body") },
   };
