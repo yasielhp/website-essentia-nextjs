@@ -13,7 +13,8 @@ function c(overrides: Partial<ContactCandidate> = {}): ContactCandidate {
     email: `person${seq}@example.com`,
     firstName: `Person ${seq}`,
     language: "en",
-    newsletter: false,
+    // Subscribed: every email campaign needs it. A test of the rule says so.
+    newsletter: true,
     bouncedAt: null,
     unsubscribedAt: null,
     lastBookingDate: null,
@@ -164,12 +165,102 @@ describe("filterAudience — newsletter", () => {
     ).toEqual([sub.id]);
   });
 
-  it("keeps everyone when newsletter is null", () => {
+  it("with the condition off, an email still reaches the subscribers only", () => {
     const sub = c({ newsletter: true });
     const not = c({ newsletter: false });
     expect(
       ids(filterAudience([sub, not], audience({ newsletter: null }), NOW)),
+    ).toEqual([sub.id]);
+  });
+
+  it("on WhatsApp the condition off keeps both: there the consent is WhatsApp's own", () => {
+    const sub = c({ newsletter: true, phone: "+34600111001" });
+    const not = c({ newsletter: false, phone: "+34600111002" });
+    for (const contact of [sub, not]) {
+      contact.whatsappMarketingOptedInAt = "2026-09-01T00:00:00Z";
+    }
+    expect(
+      ids(
+        filterAudience(
+          [sub, not],
+          audience({ newsletter: null }),
+          NOW,
+          "whatsapp",
+        ),
+      ),
     ).toEqual([sub.id, not.id]);
+  });
+});
+
+describe("filterAudience — an email campaign needs the newsletter subscription", () => {
+  const subscribed = () => c({ newsletter: true });
+  const notSubscribed = () => c({ newsletter: false });
+  const unsubscribed = () =>
+    c({ newsletter: false, unsubscribedAt: "2026-08-01T00:00:00Z" });
+  const bounced = () =>
+    c({ newsletter: true, bouncedAt: "2026-08-01T00:00:00Z" });
+
+  it("reaches who is subscribed, and nobody else, with no condition set at all", () => {
+    const people = [subscribed(), notSubscribed(), unsubscribed(), bounced()];
+    expect(ids(filterAudience(people, EMPTY_AUDIENCE, NOW))).toEqual([
+      people[0]!.id,
+    ]);
+  });
+
+  it("a subscriber who later unsubscribed is out, even if the flag was left on", () => {
+    const stale = c({
+      newsletter: true,
+      unsubscribedAt: "2026-08-01T00:00:00Z",
+    });
+    expect(filterAudience([stale], EMPTY_AUDIENCE, NOW)).toEqual([]);
+  });
+
+  it("a subscriber whose address bounced is out", () => {
+    expect(filterAudience([bounced()], EMPTY_AUDIENCE, NOW)).toEqual([]);
+  });
+
+  it("picking a contact by hand does not add one who never subscribed", () => {
+    const sub = subscribed();
+    const not = notSubscribed();
+    expect(
+      ids(
+        filterAudience(
+          [sub, not],
+          audience({ language: "es", manualIds: [sub.id, not.id] }),
+          NOW,
+        ),
+      ),
+    ).toEqual([sub.id]);
+  });
+
+  it("nor does a hand-made list: the people picked, of those subscribed", () => {
+    const people = [subscribed(), notSubscribed(), unsubscribed(), bounced()];
+    expect(
+      ids(
+        filterAudience(
+          people,
+          audience({ manualOnly: true, manualIds: people.map((p) => p.id) }),
+          NOW,
+        ),
+      ),
+    ).toEqual([people[0]!.id]);
+  });
+
+  it("whatever the email kind: every email campaign is news and offers", () => {
+    // The purpose a caller passes is a WhatsApp matter; email asks the same.
+    const people = [subscribed(), notSubscribed()];
+    expect(
+      ids(
+        filterAudience(
+          people,
+          EMPTY_AUDIENCE,
+          NOW,
+          "email",
+          new Set(),
+          "appointment",
+        ),
+      ),
+    ).toEqual([people[0]!.id]);
   });
 });
 

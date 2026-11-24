@@ -18,7 +18,8 @@ function c(over: Partial<ContactCandidate> = {}): ContactCandidate {
     email: `person${seq}@example.com`,
     firstName: `Person ${seq}`,
     language: "en",
-    newsletter: false,
+    // Subscribed: every email campaign needs it. A test of the rule says so.
+    newsletter: true,
     bouncedAt: null,
     unsubscribedAt: null,
     lastBookingDate: null,
@@ -52,7 +53,9 @@ describe("a manual-only audience, by email", () => {
   });
 
   it("includes a person who does not meet the filters, because she was picked", () => {
-    const picked = c({ language: "en", newsletter: false, bookingsCount: 0 });
+    // Subscribed (an email needs it whoever picks her), but in English and
+    // with no booking, against a Spanish filter of clients.
+    const picked = c({ language: "en", bookingsCount: 0 });
     const out = filterAudience(
       [picked],
       manual([picked.id], {
@@ -73,6 +76,17 @@ describe("a manual-only audience, by email", () => {
     const out = filterAudience(
       [unsubscribed, bounced, noAddress, fine],
       manual([unsubscribed.id, bounced.id, noAddress.id, fine.id]),
+      NOW,
+    );
+    expect(ids(out)).toEqual([fine.id]);
+  });
+
+  it("and one who never subscribed to the newsletter: being picked is not consent", () => {
+    const notSubscribed = c({ newsletter: false });
+    const fine = c();
+    const out = filterAudience(
+      [notSubscribed, fine],
+      manual([notSubscribed.id, fine.id]),
       NOW,
     );
     expect(ids(out)).toEqual([fine.id]);

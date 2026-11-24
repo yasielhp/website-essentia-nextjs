@@ -159,8 +159,14 @@ export type Recipient = {
  * bounce say nothing about WhatsApp, and a WhatsApp opt-out nothing about
  * email.
  *
- * Email: a hand-picked contact still needs a deliverable address, and a
- * bounced one would only bounce again and hurt the sender reputation.
+ * Email: every email campaign is news and offers (`consentPurposeOf` gives no
+ * other purpose to an email kind), so it needs the contact's own yes to them:
+ * `newsletter_subscribed`, as WhatsApp needs its marketing consent. Not a
+ * condition the admin may turn off, and a hand-picked contact or a hand-made
+ * list needs it too: consent is the contact's, not the campaign's. On top of
+ * it, an address that works and no unsubscribe (her word, which a later yes
+ * from a form does not quietly undo here) and no bounce (it would only bounce
+ * again and hurt the sender reputation).
  * WhatsApp: a marketing template needs the contact's own marketing consent,
  * and never goes to one who opted out, to a number without WhatsApp, or to
  * one the database would refuse.
@@ -190,6 +196,7 @@ function contactPoint(
     return toCampaignPhone(candidate.phone);
   }
   if (
+    !candidate.newsletter ||
     candidate.bouncedAt !== null ||
     !candidate.email.includes("@") ||
     candidate.unsubscribedAt !== null

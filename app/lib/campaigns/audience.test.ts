@@ -157,6 +157,59 @@ describe("resolveAudience and the STOP list", () => {
   });
 });
 
+describe("resolveAudience for an email campaign: subscribers only", () => {
+  const row = (n: number, over: Partial<typeof CONTACT> = {}) => ({
+    ...CONTACT,
+    id: `c-${n}`,
+    email: `person${n}@example.test`,
+    phone: null as unknown as string,
+    ...over,
+  });
+  const people = () => [
+    row(1),
+    row(2, { newsletter_subscribed: false }),
+    // Never answered: the column is null, not false.
+    row(3, { newsletter_subscribed: null as unknown as boolean }),
+    row(4, {
+      newsletter_subscribed: false,
+      newsletter_unsubscribed_at: "2026-10-01T00:00:00Z" as unknown as null,
+    }),
+    row(5, { email_bounced_at: "2026-10-01T00:00:00Z" as unknown as null }),
+  ];
+
+  test("the stored contacts: only the subscribed one with a working address and no unsubscribe", async () => {
+    bigContacts = people();
+    const out = await resolveAudience(EVERYONE, NOW, "email");
+    expect(out.map((r) => r.id)).toEqual(["c-1"]);
+  });
+
+  test("picked by hand, or as a hand-made list, the others are still left out", async () => {
+    bigContacts = people();
+    const all = people().map((p) => p.id);
+    const picked = await resolveAudience(
+      { ...EVERYONE, manualIds: all },
+      NOW,
+      "email",
+    );
+    const list = await resolveAudience(
+      { ...EVERYONE, manualIds: all, manualOnly: true },
+      NOW,
+      "email",
+    );
+    expect(picked.map((r) => r.id)).toEqual(["c-1"]);
+    expect(list.map((r) => r.id)).toEqual(["c-1"]);
+  });
+
+  test("the same people on WhatsApp are judged on their WhatsApp consent, not the newsletter", async () => {
+    bigContacts = people().map((p, i) => ({
+      ...p,
+      phone: `600 11 22 3${i}`,
+    }));
+    const out = await resolveAudience(EVERYONE, NOW, "whatsapp");
+    expect(out.map((r) => r.id)).toEqual(["c-1", "c-2", "c-3", "c-4", "c-5"]);
+  });
+});
+
 describe("resolveAudience for an appointment notice", () => {
   const NOTICES_ONLY = {
     ...CONTACT,
