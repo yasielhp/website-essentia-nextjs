@@ -105,6 +105,9 @@ export function CampaignForm({
   // One read of the account's templates serves the step that picks one and
   // the review that shows it.
   const [templatesKey, setTemplatesKey] = useState(0);
+  // What the starting-point step picked (a template's name, the blank page, a
+  // previous campaign), for its folded summary. Not part of the campaign.
+  const [startName, setStartName] = useState<string | null>(null);
   const templates = useWhatsAppTemplates(whatsapp, templatesKey);
 
   const errorText = (code: string) =>
@@ -506,7 +509,8 @@ export function CampaignForm({
           (folded(STEP_OF.template) ? (
             <CompletedRow
               label={t("template.title")}
-              value={t("template.chosen")}
+              // What was picked, by name, when this session picked it.
+              value={startName ?? t("template.chosen")}
               onEdit={() => reopen(STEP_OF.template)}
             />
           ) : (
@@ -514,6 +518,7 @@ export function CampaignForm({
               state={state}
               dispatch={dispatch}
               onDone={() => complete(STEP_OF.template)}
+              onPick={setStartName}
             />
           ))}
 

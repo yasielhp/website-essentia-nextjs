@@ -63,21 +63,6 @@ export function kindsForChannel(
 }
 
 /**
- * The grid the kind cards sit in, by how many there are. Four split two by
- * two instead of leaving one card alone on a third column; five keep the last
- * one from standing alone on a row of two (it takes the whole row) and sit
- * three and two on a wide screen; six are the usual three by two. One column
- * on a phone, whatever the count.
- */
-export function kindGridClass(count: number): string {
-  if (count === 4) return "grid-cols-1 sm:grid-cols-2";
-  if (count === 5) {
-    return "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 sm:[&>*:last-child]:col-span-2 xl:[&>*:last-child]:col-span-1";
-  }
-  return "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3";
-}
-
-/**
  * The contact fields the form offers for `{{n}}`. The post fields exist in the
  * type because the automation can supply them, but the RSS kind is off on
  * WhatsApp, so nothing could fill them.

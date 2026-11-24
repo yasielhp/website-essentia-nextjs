@@ -11,8 +11,8 @@ import {
   IconSettings,
   IconWorld,
 } from "@/components/ui/icons";
-import { kindSwitchAllowed } from "@/lib/campaigns/appointment-form";
-import { kindGridClass, kindsForChannel } from "@/lib/campaigns/whatsapp-form";
+import { OptionSelect, type SelectOption } from "@/components/ui/option-select";
+import { kindChoices } from "@/lib/campaigns/kind-choices";
 import { radioTarget } from "@/lib/radio-nav";
 import type { CampaignChannel, CampaignKind } from "@/types/campaign";
 import { AVAILABLE_KINDS, type FormAction, type FormState } from "./form-state";
@@ -30,12 +30,14 @@ const KINDS: { kind: CampaignKind; icon: React.ReactNode }[] = [
 ];
 
 /**
- * The first card: what kind of send this is. Choosing is advancing, as
- * picking a service is in the booking form.
+ * The first card: the channel, and what kind of send this is, as a select with
+ * each kind's picture, name and description. Choosing a kind is advancing, as
+ * picking a service is in the booking form; the arrow keys only walk the list
+ * (they do not choose), so passing over a kind does not change the campaign.
  *
- * Only the standard campaign exists today. The other kinds are shown greyed
- * out rather than hidden so the admin knows they are coming and does not go
- * looking for them somewhere else.
+ * The kinds this channel cannot be are not in the list at all. One that does
+ * not exist yet is shown greyed, as coming soon, and so is one a saved
+ * campaign cannot become.
  */
 export function TypeStep({
   state,
@@ -52,12 +54,30 @@ export function TypeStep({
   // something in one.
   const channelLocked = state.id !== null;
   // Only the kinds this channel can be; the others are not shown at all.
-  const visible = kindsForChannel(AVAILABLE_KINDS, state.channel);
-  const shown = KINDS.filter(({ kind }) => visible.includes(kind));
-  // And a saved campaign cannot become an appointment notice, or stop being one.
-  const kindLocked = (kind: CampaignKind) =>
-    state.id !== null && !kindSwitchAllowed(state.savedKind, kind);
-  const anyKindLocked = shown.some(({ kind }) => kindLocked(kind));
+  const choices = kindChoices({
+    order: KINDS.map(({ kind }) => kind),
+    implemented: AVAILABLE_KINDS,
+    channel: state.channel,
+    saved: state.id !== null,
+    savedKind: state.savedKind,
+  });
+  const anyKindLocked = choices.some((c) => c.implemented && !c.available);
+  const options: SelectOption<CampaignKind>[] = choices.map((choice) => {
+    const kind = choice.kind;
+    return {
+      value: kind,
+      label: t(kind),
+      desc:
+        state.channel === "whatsapp" && kind === "standard"
+          ? t("standardDescWhatsApp")
+          : state.channel === "whatsapp" && kind === "autoresponder"
+            ? t("autoresponderDescWhatsApp")
+            : t(`${kind}Desc`),
+      icon: KINDS.find((k) => k.kind === kind)?.icon,
+      badge: choice.implemented ? undefined : t("comingSoon"),
+      disabled: !choice.available,
+    };
+  });
   const radios = useRef<(HTMLButtonElement | null)[]>([]);
 
   /** Arrows move the choice and the focus together, as a radio group does. */
@@ -113,70 +133,28 @@ export function TypeStep({
         {channelLocked ? t("channelLocked") : ""}
       </p>
 
-      <h2 className="text-petroleum-500 mb-4 text-sm font-semibold">
+      <h2
+        id="campaign-kind-label"
+        className="text-petroleum-500 mb-3 text-sm font-semibold"
+      >
         {t("title")}
       </h2>
       {anyKindLocked && (
         <p className="text-petroleum-400 mb-3 text-xs">{t("kindLocked")}</p>
       )}
-      <div className={`grid gap-3 ${kindGridClass(shown.length)}`}>
-        {shown.map(({ kind, icon }) => {
-          const implemented = AVAILABLE_KINDS.includes(kind);
-          const available = implemented && !kindLocked(kind);
-          const active = state.kind === kind;
-          return (
-            <button
-              key={kind}
-              type="button"
-              disabled={!available || state.submitting}
-              aria-pressed={active}
-              onClick={() => {
-                dispatch({ type: "SET_KIND", kind });
-                onDone();
-              }}
-              className={[
-                "flex items-start gap-4 rounded-2xl border p-5 text-left transition-colors",
-                active
-                  ? "border-petroleum-700 bg-petroleum-50/50"
-                  : "border-sand-200 bg-white",
-                available
-                  ? "hover:border-petroleum-400 cursor-pointer"
-                  : "cursor-not-allowed opacity-55",
-              ].join(" ")}
-            >
-              <span
-                className={[
-                  "flex size-12 shrink-0 items-center justify-center rounded-xl [&_svg]:size-6",
-                  active
-                    ? "bg-petroleum-700 text-white"
-                    : "bg-sand-100 text-petroleum-500",
-                ].join(" ")}
-              >
-                {icon}
-              </span>
-              <span className="flex min-w-0 flex-col gap-1">
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="text-petroleum-700 text-sm font-semibold">
-                    {t(kind)}
-                  </span>
-                  {!implemented && (
-                    <span className="bg-sand-100 text-petroleum-400 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap">
-                      {t("comingSoon")}
-                    </span>
-                  )}
-                </span>
-                <span className="text-petroleum-400 text-xs leading-relaxed">
-                  {state.channel === "whatsapp" && kind === "standard"
-                    ? t("standardDescWhatsApp")
-                    : state.channel === "whatsapp" && kind === "autoresponder"
-                      ? t("autoresponderDescWhatsApp")
-                      : t(`${kind}Desc`)}
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <OptionSelect
+        id="campaign-kind"
+        ariaLabel={t("title")}
+        value={state.kind}
+        options={options}
+        disabled={state.submitting}
+        // Only an activated option chooses: the arrows walk the list.
+        commitOnArrows={false}
+        onChange={(kind) => {
+          dispatch({ type: "SET_KIND", kind });
+          onDone();
+        }}
+      />
       {/* Who each channel writes to, under the types it applies to. */}
       <p className="text-petroleum-400 mt-4 text-xs">
         {state.channel === "whatsapp"
