@@ -75,12 +75,6 @@ function ServiceHero({
         }}
       />
       <div ref={heroRef} className="relative mx-auto max-w-3xl">
-        {/* Optional: only treatments with a protocol name carry these */}
-        {t.has(`${service.id}.eyebrow`) && (
-          <p className="text-sand-500 mb-4 text-xs tracking-[0.25em] uppercase">
-            {t(`${service.id}.eyebrow`)}
-          </p>
-        )}
         <h1 className="font-display text-sand-50 text-5xl leading-tight tracking-tight text-balance md:text-7xl">
           {t(`${service.id}.title`)}
         </h1>

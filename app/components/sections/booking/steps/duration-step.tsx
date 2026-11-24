@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { insforge } from "@/lib/insforge";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
+import { sameTreatment } from "@/lib/treatments/match";
 import { StaffSelect } from "@/components/ui/staff-select";
 import {
   TierPicker,
@@ -124,8 +125,10 @@ export function DurationStep({
           priceOnline: t.price_eur ?? t.price_center_eur,
         });
       } else if (preselectedLabel) {
-        const match = rows.find(
-          (t) => t.label?.toLowerCase() === preselectedLabel.toLowerCase(),
+        // The same join as everywhere else, so a treatment whose name
+        // changed is still preselected whichever name the database has.
+        const match = rows.find((t) =>
+          sameTreatment(t.label, preselectedLabel),
         );
         if (match) {
           onSelectRef.current({

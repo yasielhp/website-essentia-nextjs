@@ -15,6 +15,21 @@ describe("bonusRouteForTier", () => {
     );
   });
 
+  it("still finds it once the session type carries the treatment's new name", () => {
+    // The bonuses are sold for this treatment only: the day its label is
+    // changed in the database must not be the day they stop being for sale.
+    for (const label of [
+      "Drenaje Linfático Integrativo — Método Essentia",
+      "Drenaje Linfático Integrativo - Método Essentia",
+      "Drenaje Linfático Integrativo",
+    ]) {
+      expect(bonusRouteForTier(label)).toEqual({
+        family: "manual-therapies",
+        slug: "drenaje-linfatico",
+      });
+    }
+  });
+
   it("has no route for a session type without a payment page", () => {
     expect(bonusRouteForTier("Aurum")).toBeNull();
     expect(bonusRouteForTier("Calm Drip")).toBeNull();

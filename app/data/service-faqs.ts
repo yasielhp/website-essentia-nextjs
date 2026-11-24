@@ -89,7 +89,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "What manual treatments does Essentia offer?",
       answer:
-        "Our treatments are built around what different bodies need: advanced lymphatic drainage, deep tension relief, sports recovery, deep relaxation, prenatal massage, post-sun rituals, treatments for two, and premium body wellness experiences.",
+        "Our treatments are built around what different bodies need: integrative lymphatic drainage, deep tension relief, sports recovery, deep relaxation, prenatal massage, post-sun rituals, treatments for two, and premium body wellness experiences.",
     },
     {
       question: "Do I need to book in advance?",
@@ -104,7 +104,7 @@ export const serviceFaqs: Record<string, FaqItem[]> = {
     {
       question: "Do you offer massage packages?",
       answer:
-        "Yes. Packages are currently available for Advanced Lymphatic Drainage · Método Essentia only, since it is a treatment that works best over several sessions, following processes of inflammation, fluid retention, heaviness and change in the body. All the detail on packages, sessions and conditions is on the Lymphatic Drainage page.",
+        "Yes. Packages are currently available for Integrative Lymphatic Drainage — Essentia Method only, since it is a treatment that works best over several sessions, following processes of inflammation, fluid retention, heaviness and change in the body. All the detail on packages, sessions and conditions is on the Lymphatic Drainage page.",
     },
     {
       question: "How do I know which treatment to choose?",

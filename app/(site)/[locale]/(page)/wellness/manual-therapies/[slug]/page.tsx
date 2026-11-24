@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { manualTherapyTreatments } from "@/data/services-data";
 import { ServiceDetailView } from "@components/sections/wellness/treatment/service-detail-view";
-import { breadcrumbSchema } from "@/lib/seo";
+import { breadcrumbSchema, treatmentMetaTitle } from "@/lib/seo";
+import { withoutTierLabels } from "@/lib/treatments/match";
 import { JsonLd } from "@/components/json-ld";
 
 type Props = { params: Promise<{ slug: string; locale: string }> };
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: {
-      absolute: `${title} | ${t("manualTherapyMetaSuffix")}`,
+      absolute: treatmentMetaTitle(title, t("manualTherapyMetaSuffix")),
     },
     description,
     alternates: {
@@ -56,8 +57,12 @@ export default async function ManualTherapyDetailPage({ params }: Props) {
   const { slug, locale } = await params;
   setRequestLocale(locale);
 
-  const service = manualTherapyTreatments.find((s) => s.id === slug);
-  if (!service) notFound();
+  const found = manualTherapyTreatments.find((s) => s.id === slug);
+  if (!found) notFound();
+  // The view is a client component, so what it is handed is written into the
+  // page: without the labels its session type has carried, which are for the
+  // server to find it by and not for the page to show.
+  const service = withoutTierLabels(found);
 
   const t = await getTranslations("wellness.pages");
 

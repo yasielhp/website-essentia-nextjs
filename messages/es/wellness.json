@@ -77,7 +77,7 @@
         "description": "Masaje terapéutico de tejido profundo, diseñado para aliviar contracturas, reducir rigidez muscular y devolver movilidad al cuerpo cuando la tensión ya no cede solo con descanso."
       },
       "drenaje-linfatico": {
-        "title": "Drenaje Linfático Avanzado",
+        "title": "Drenaje Linfático Integrativo — Método Essentia",
         "description": "El Método Essentia combina precisión, ritmo y mirada terapéutica para acompañar procesos de inflamación, retención y pesadez corporal, favoreciendo una mayor sensación de ligereza y equilibrio."
       },
       "essentia-active": {
@@ -159,10 +159,9 @@
         }
       },
       "drenaje-linfatico": {
-        "eyebrow": "Método Essentia",
-        "title": "Drenaje Linfático Avanzado",
+        "title": "Drenaje Linfático Integrativo — Método Essentia",
         "description": "Un protocolo avanzado que combina drenaje linfático manual, valoración personalizada y fotobiomodulación terapéutica integrada para acompañar procesos de inflamación, retención, recuperación y equilibrio corporal.",
-        "body": "El Drenaje Linfático Avanzado · Método Essentia nace de años de estudio, práctica y evolución en distintas técnicas de drenaje linfático manual. Parte de los principios clásicos del drenaje, pero los adapta a una visión más actual, profunda y personalizada del cuerpo.\n\nA través de movimientos rítmicos, precisos y envolventes, el método acompaña el funcionamiento natural del sistema linfático y trabaja sobre procesos de inflamación, retención, pesadez, recuperación y equilibrio corporal.\n\nComo parte de esta evolución, el tratamiento integra una fase final de fotobiomodulación terapéutica con luz roja e infrarroja, aplicada sobre la zona trabajada para acompañar el tejido, favorecer la sensación de recuperación y profundizar la experiencia corporal.\n\nEn Essentia creemos que la estética empieza en la salud. Por eso este tratamiento va más allá de la apariencia, acompaña el cuerpo desde una mirada terapéutica, observando el tejido, la inflamación, la respiración y la respuesta corporal para adaptar cada sesión a lo que la persona realmente necesita.",
+        "body": "El Drenaje Linfático Integrativo — Método Essentia nace de años de estudio, práctica y evolución en distintas técnicas de drenaje linfático manual. Parte de los principios clásicos del drenaje, pero los adapta a una visión más actual, profunda y personalizada del cuerpo.\n\nA través de movimientos rítmicos, precisos y envolventes, el método acompaña el funcionamiento natural del sistema linfático y trabaja sobre procesos de inflamación, retención, pesadez, recuperación y equilibrio corporal.\n\nComo parte de esta evolución, el tratamiento integra una fase final de fotobiomodulación terapéutica con luz roja e infrarroja, aplicada sobre la zona trabajada para acompañar el tejido, favorecer la sensación de recuperación y profundizar la experiencia corporal.\n\nEn Essentia creemos que la estética empieza en la salud. Por eso este tratamiento va más allá de la apariencia, acompaña el cuerpo desde una mirada terapéutica, observando el tejido, la inflamación, la respiración y la respuesta corporal para adaptar cada sesión a lo que la persona realmente necesita.",
         "highlights": {
           "0": {
             "title": "Inflamación y retención",
@@ -408,8 +407,8 @@
       },
       "essentia-iv-signature": {
         "title": "Essentia IV Signature",
-        "description": "Drenaje Linfático Avanzado · Método Essentia combinado con una fórmula específica desarrollada junto a VitalDrip con NAD+, magnesio, vitamina C y L-carnitina.",
-        "body": "El protocolo propio de la casa: una sesión de Drenaje Linfático Avanzado · Método Essentia seguida de una fórmula intravenosa desarrollada junto a VitalDrip.\n\nPrimero el trabajo manual, que moviliza líquidos y acompaña el sistema linfático. Después la vía intravenosa, con NAD+, magnesio, vitamina C y L-carnitina, para sostener desde dentro lo que el drenaje ha puesto en marcha.\n\nEs la sesión más larga del catálogo y también la más completa. Como el resto, se decide tras la valoración: si no es el momento adecuado, te propondremos otra.",
+        "description": "Drenaje Linfático Integrativo — Método Essentia combinado con una fórmula específica desarrollada junto a VitalDrip con NAD+, magnesio, vitamina C y L-carnitina.",
+        "body": "El protocolo propio de la casa: una sesión de Drenaje Linfático Integrativo — Método Essentia seguida de una fórmula intravenosa desarrollada junto a VitalDrip.\n\nPrimero el trabajo manual, que moviliza líquidos y acompaña el sistema linfático. Después la vía intravenosa, con NAD+, magnesio, vitamina C y L-carnitina, para sostener desde dentro lo que el drenaje ha puesto en marcha.\n\nEs la sesión más larga del catálogo y también la más completa. Como el resto, se decide tras la valoración: si no es el momento adecuado, te propondremos otra.",
         "highlights": {
           "0": {
             "title": "Dos técnicas, una sesión",

@@ -9,7 +9,19 @@ export type BookableService = {
 
 export type ManualTherapyTreatment = {
   id: string;
+  /**
+   * Its name, which is also how its session type in the database is found: the
+   * tier's label is this title (see `lib/treatments/match.ts`).
+   */
   title: string;
+  /**
+   * Other labels its session type may carry in the database: the name it had
+   * before a rename, or a shorter form of the new one. The site and the
+   * database are not changed on the same day, and the treatment has to find
+   * its session type (its price, its booking link, its bonuses) on both sides
+   * of that.
+   */
+  tierLabels?: string[];
   description: string;
   body: string;
   highlights: { title: string; description: string }[];
@@ -448,10 +460,14 @@ export const manualTherapyTreatments: ManualTherapyTreatment[] = [
   },
   {
     id: "drenaje-linfatico",
-    title: "Drenaje Linfático Avanzado",
+    title: "Drenaje Linfático Integrativo — Método Essentia",
+    // "Avanzado" is what it was called until November 2026, and what its
+    // session type is still labelled in the database until the centre renames
+    // it there.
+    tierLabels: ["Drenaje Linfático Avanzado", "Drenaje Linfático Integrativo"],
     description:
       "The Método Essentia brings together precision, rhythm and a therapist's eye to follow processes of inflammation, fluid retention and heaviness, building a greater sense of lightness and balance.",
-    body: "Advanced Lymphatic Drainage · Método Essentia comes out of years of study, practice and evolution across different manual lymphatic drainage techniques. It starts from the classic principles of drainage and adapts them to a more current, deeper and more personal view of the body.\n\nThrough rhythmic, precise and enveloping movements, the method works with the natural functioning of the lymphatic system, following processes of inflammation, fluid retention, heaviness, recovery and balance in the body.\n\nAs part of that evolution, the treatment closes with a phase of therapeutic photobiomodulation using red and infrared light, applied over the area worked to support the tissue, encourage the feeling of recovery and deepen the experience.\n\nAt Essentia we believe aesthetics begin with health. This treatment goes past appearance: it looks after the body from a therapeutic standpoint, reading the tissue, the inflammation, the breathing and how the body responds, so each session fits what that person actually needs.",
+    body: "Integrative Lymphatic Drainage — Essentia Method comes out of years of study, practice and evolution across different manual lymphatic drainage techniques. It starts from the classic principles of drainage and adapts them to a more current, deeper and more personal view of the body.\n\nThrough rhythmic, precise and enveloping movements, the method works with the natural functioning of the lymphatic system, following processes of inflammation, fluid retention, heaviness, recovery and balance in the body.\n\nAs part of that evolution, the treatment closes with a phase of therapeutic photobiomodulation using red and infrared light, applied over the area worked to support the tissue, encourage the feeling of recovery and deepen the experience.\n\nAt Essentia we believe aesthetics begin with health. This treatment goes past appearance: it looks after the body from a therapeutic standpoint, reading the tissue, the inflammation, the breathing and how the body responds, so each session fits what that person actually needs.",
     highlights: [
       {
         title: "Inflammation and retention",

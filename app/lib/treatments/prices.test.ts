@@ -119,6 +119,17 @@ describe("priceOf: the session type with the treatment's name AND the card's len
     expect(priceOf(PRICES, "  drenaje linfático avanzado ", 50)).toBe(100);
   });
 
+  test("a renamed treatment finds its price under the label the database still has, and under the new one", () => {
+    const renamed = "Drenaje Linfático Integrativo — Método Essentia";
+    // Before the label is changed in the database...
+    expect(priceOf(PRICES, renamed, 50)).toBe(100);
+    // ...and after.
+    expect(priceOf([tier(renamed, 50, 100)], renamed, 50)).toBe(100);
+    expect(
+      priceOf([tier("Drenaje Linfático Integrativo", 50, 100)], renamed, 50),
+    ).toBe(100);
+  });
+
   test("a treatment sold in two lengths gets the price of the length on the card", () => {
     expect(priceOf(PRICES, "Soma", 60)).toBe(140);
     expect(priceOf(PRICES, "Soma", 90)).toBe(190);

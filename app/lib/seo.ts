@@ -63,3 +63,17 @@ export function medicalTherapySchema({
     availableAtOrFrom: { "@id": `${base}/#localbusiness` },
   };
 }
+
+/** The longest a page title may be before a search result cuts it. */
+export const META_TITLE_MAX = 65;
+
+/**
+ * The title of a treatment's page: its name and the family it belongs to
+ * (`Espira | Terapias Manuales · Essentia`). A name long enough to push that
+ * past what a search result shows is the title on its own, rather than a title
+ * cut off in the middle of the family.
+ */
+export function treatmentMetaTitle(name: string, suffix: string): string {
+  const full = `${name} | ${suffix}`;
+  return full.length <= META_TITLE_MAX ? full : name;
+}
