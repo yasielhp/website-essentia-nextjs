@@ -3,9 +3,11 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@components/ui/button";
+import { cardPrice, pricesOfTreatment } from "@/lib/treatments/prices";
 import type { TreatmentData } from "./data";
+import { useTreatmentPrices } from "./use-treatment-prices";
 import {
   facialTreatments,
   ivProtocols,
@@ -93,8 +95,13 @@ function TreatmentHero({ data }: { data: TreatmentData }) {
 
 function ManualTherapiesSection() {
   const t = useTranslations("wellness.treatments");
+  const locale = useLocale() === "es" ? "es" : "en";
 
   const manualServices = manualTherapyTreatments;
+  // Each card's price is its session type's, the one the booking form shows
+  // and charges, not a figure kept in code: the centre changes its prices
+  // itself. A treatment whose session type is not on sale shows none.
+  const prices = useTreatmentPrices("manual-therapies");
 
   return (
     <section id="treatments" className="bg-sand-50 px-5 py-20 md:py-28">
@@ -125,8 +132,15 @@ function ManualTherapiesSection() {
                   <h3 className="font-display text-petroleum-700 text-xl md:text-2xl">
                     {t(`manualTherapiesCards.${service.id}.title`)}
                   </h3>
+                  {/* Duration and price on one line, as the facial cards
+                      write theirs: "30 min · 70 €". */}
                   <span className="text-petroleum-400 mt-1 block text-xs tracking-wider uppercase">
-                    {service.durations.join(" · ")}
+                    {[
+                      ...service.durations,
+                      ...pricesOfTreatment(prices, service.title).map((price) =>
+                        cardPrice(price, locale),
+                      ),
+                    ].join(" · ")}
                   </span>
                 </div>
 
