@@ -21,7 +21,13 @@ const BOOKING = {
   id: "b-1",
   service_id: "manual-therapies",
   status: "pending",
+  payment_status: "pending",
+  amount_paid_eur: 0,
+  stripe_session_id: null as string | null,
 };
+let booking: typeof BOOKING = { ...BOOKING };
+/** When true, the conditional write matches nothing: paid in between. */
+let writeRefused = false;
 const TIER = {
   service_id: "manual-therapies",
   price_eur: 130,
@@ -43,9 +49,9 @@ function chain(table: string): unknown {
   const result = () => {
     if (patch) {
       if (table === "bookings") bookingUpdates.push(patch);
-      return { data: null, error: null };
+      return { data: writeRefused ? [] : [{ id: "b-1" }], error: null };
     }
-    if (table === "bookings") return { data: BOOKING, error: null };
+    if (table === "bookings") return { data: booking, error: null };
     if (table === "service_tiers") return { data: TIER, error: null };
     if (table === "app_settings") {
       return settingsRefused
@@ -109,6 +115,8 @@ beforeEach(() => {
   storedSettings = { depositPercent: 50, fullPaymentDiscountPercent: 0 };
   bookingUpdates = [];
   settingsRefused = false;
+  booking = { ...BOOKING };
+  writeRefused = false;
 });
 
 async function checkout(body: Record<string, unknown>) {
@@ -118,13 +126,16 @@ async function checkout(body: Record<string, unknown>) {
       body: JSON.stringify({ bookingId: "b-1", tierId: "t-1", ...body }),
     }),
   );
-  const json = (await res.json()) as { Ds_MerchantParameters?: string };
+  const json = (await res.json()) as {
+    Ds_MerchantParameters?: string;
+    orderId?: string;
+  };
   const sent = json.Ds_MerchantParameters
     ? (JSON.parse(
         Buffer.from(json.Ds_MerchantParameters, "base64").toString("utf8"),
       ) as Record<string, string>)
     : null;
-  return { status: res.status, sent };
+  return { status: res.status, sent, orderId: json.orderId ?? null };
 }
 
 describe("POST /api/checkout/booking-session", () => {
@@ -178,5 +189,61 @@ describe("POST /api/checkout/booking-session", () => {
       payment_mode: "full",
       price_eur: 117,
     });
+  });
+});
+
+describe("never charged twice", () => {
+  for (const [label, state] of [
+    ["paid", { payment_status: "paid", amount_paid_eur: 130 }],
+    [
+      "part paid before deposits ended",
+      { payment_status: "deposit_paid", amount_paid_eur: 65 },
+    ],
+    ["refunded", { payment_status: "refunded", amount_paid_eur: 130 }],
+    [
+      "holding money under any state",
+      { payment_status: "pending", amount_paid_eur: 10 },
+    ],
+  ] as const) {
+    test(`a booking ${label} opens no checkout and keeps its order`, async () => {
+      booking = { ...booking, ...state, stripe_session_id: "790098209516" };
+      const { status, sent } = await checkout({});
+      expect(status).toBe(409);
+      expect(sent).toBeNull();
+      expect(bookingUpdates).toEqual([]);
+    });
+  }
+
+  test("a checkout opened a minute ago keeps its order, so Redsys refuses a second charge", async () => {
+    const order = String((Date.now() % 1e12) - 60_000).padStart(12, "0");
+    booking = { ...booking, stripe_session_id: order };
+    const { status, sent, orderId } = await checkout({});
+    expect(status).toBe(200);
+    expect(orderId).toBe(order);
+    expect(sent?.DS_MERCHANT_ORDER).toBe(order);
+    expect(bookingUpdates[0]?.stripe_session_id).toBe(order);
+  });
+
+  test("a checkout opened an hour ago, or one whose payment was refused, gets a new order", async () => {
+    const old = String((Date.now() % 1e12) - 3_600_000).padStart(12, "0");
+    booking = { ...booking, stripe_session_id: old };
+    expect((await checkout({})).orderId).not.toBe(old);
+
+    const fresh = String((Date.now() % 1e12) - 60_000).padStart(12, "0");
+    booking = {
+      ...booking,
+      payment_status: "failed",
+      stripe_session_id: fresh,
+    };
+    bookingUpdates = [];
+    const { status, orderId } = await checkout({});
+    expect(status).toBe(200);
+    expect(orderId).not.toBe(fresh);
+  });
+
+  test("paid between the read and the write: refused, and the client is not sent to the bank", async () => {
+    writeRefused = true;
+    const { status } = await checkout({});
+    expect(status).toBe(409);
   });
 });

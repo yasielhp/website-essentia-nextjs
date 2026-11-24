@@ -17,8 +17,9 @@ import { notifyClientOnWhatsApp } from "@/lib/whatsapp/notify-client";
  * Records money received through Redsys and notifies the client.
  *
  * `amountCents` is `Ds_Amount` from the notification: what the bank really
- * charged, which is a deposit and not `price_eur` since bookings can be paid in
- * part. A booking is `paid` only once the money covers its price.
+ * charged. Since 2026-11-24 that is the whole price (there is no deposit for a
+ * new booking); a booking made with a deposit before then may still receive
+ * part of its price here. A booking is `paid` only once the money covers it.
  *
  * This deliberately lives in `services/` and NOT in `actions/`: it used to be a
  * `"use server"` export, which made it a public HTTP endpoint that anyone could
