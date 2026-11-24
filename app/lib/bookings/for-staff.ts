@@ -17,6 +17,7 @@ import {
   settleBonusOnCancel,
   type BonusCancelOutcome,
 } from "@/lib/bonuses/settle";
+import { isSlotTaken } from "./slot-taken";
 
 /**
  * Taking and cancelling a booking on behalf of the centre, with no browser in
@@ -273,7 +274,17 @@ export async function createBookingForStaff(
         created_by_role: actor.role,
       },
     ]);
-  if (error) return { ok: false, error: "The booking could not be saved." };
+  if (error) {
+    // Free a moment ago, taken now: the database refuses a second booking on
+    // the professional's hour (`bookings_no_overlap`).
+    if (isSlotTaken(error)) {
+      return {
+        ok: false,
+        error: `${input.time} on ${input.date} has just been taken by another booking of that professional. Check get_availability again and pick another hour.`,
+      };
+    }
+    return { ok: false, error: "The booking could not be saved." };
+  }
 
   await recordBookingEvent({
     bookingId,

@@ -15,6 +15,7 @@ import { notifyClientOnWhatsApp } from "@/lib/whatsapp/notify-client";
 import { judgeArrival } from "@/lib/payments/duplicate-payment";
 import { recordDuplicatePayment } from "@/lib/bookings/refunds";
 import type { PaymentEntry } from "@/lib/bookings/refund-rules";
+import { isSlotTaken } from "@/lib/bookings/slot-taken";
 
 /**
  * Records money received through Redsys and notifies the client.
@@ -103,18 +104,33 @@ export async function handleBookingPaid(
   // while it is still unpaid (state and amount as read), and the order that
   // paid it is written with it (`stripe_session_id`), so whoever loses can
   // tell which order won.
-  const { data: applied } = await adminClient.database
-    .from("bookings")
-    .update({
-      payment_status: paymentStatus,
-      amount_paid_eur: paidEur,
-      status: "confirmed",
-      ...(orderId ? { stripe_session_id: orderId } : {}),
-    })
-    .eq("id", bookingId)
-    .eq("amount_paid_eur", Number(booking.amount_paid_eur ?? 0))
-    .in("payment_status", ["pending", "failed"])
-    .select("id");
+  const apply = (confirm: boolean) =>
+    adminClient.database
+      .from("bookings")
+      .update({
+        payment_status: paymentStatus,
+        amount_paid_eur: paidEur,
+        ...(confirm ? { status: "confirmed" } : {}),
+        ...(orderId ? { stripe_session_id: orderId } : {}),
+      })
+      .eq("id", bookingId)
+      .eq("amount_paid_eur", Number(booking.amount_paid_eur ?? 0))
+      .in("payment_status", ["pending", "failed"])
+      .select("id");
+  let { data: applied, error: applyError } = await apply(true);
+  // The money always lands. A booking that did not hold its hour (a draft, or
+  // one the cron released) cannot be confirmed onto an hour another booking
+  // of the same professional now holds: the database refuses the overlap
+  // (`bookings_no_overlap`). Without this the refusal would read as "not
+  // applied" and the payment would go unrecorded. So the money is recorded on
+  // the booking as it stands, unconfirmed, the history says why, the office
+  // is told, and the client is not sent a confirmation for an hour she does
+  // not have: the team finds her another hour or returns the money.
+  const slotLost = isSlotTaken(applyError);
+  if (slotLost) ({ data: applied, error: applyError } = await apply(false));
+  if (applyError) {
+    console.error("[handleBookingPaid] payment write failed:", applyError);
+  }
   if (((applied ?? []) as unknown[]).length === 0) {
     // Another notification paid it between our read and our write. Judged
     // again on the booking as it now is: paid under ANOTHER order, this one is
@@ -167,12 +183,28 @@ export async function handleBookingPaid(
       (owedEur > 0
         ? `Depósito recibido · ${formatPrice(received, "es")} · pendiente ${formatPrice(owedEur, "es")}`
         : `Pago recibido · ${formatPrice(received, "es")}`) +
-      (revived
-        ? " · la reserva había caducado: comprobar que la hora sigue libre"
-        : ""),
+      (slotLost
+        ? " · la hora ya la tiene otra reserva de esta profesional: la reserva queda sin confirmar; buscarle otra hora o devolver el pago"
+        : revived
+          ? " · la reserva había caducado: comprobar que la hora sigue libre"
+          : ""),
     providerId: orderId,
-    payload: { orderId, amountEur: received, owedEur, currency: "EUR" },
+    payload: {
+      orderId,
+      amountEur: received,
+      owedEur,
+      currency: "EUR",
+      ...(slotLost ? { slotTaken: true } : {}),
+    },
   });
+
+  // Paid, but for an hour another booking holds: the office is told (the
+  // staff notice), nothing goes on the calendars and the client is not told
+  // "confirmed". The money is recorded above; what happens next is the team's.
+  if (slotLost) {
+    if (firstPayment) await notifyStaffOfPaidBooking(bookingId);
+    return;
+  }
 
   // The booking has just become one somebody has to be there for, so it goes
   // on the calendars now rather than at the next quarter past the hour.
