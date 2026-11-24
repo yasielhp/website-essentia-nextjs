@@ -222,6 +222,47 @@ export function chunkKey(campaignId: string, rowIds: string[]): string {
 export const missingVersionError = (locale: CampaignLocale): string =>
   `${SKIPPED_PREFIX}missing_${locale}`;
 
+/** What the email sender reads again of a contact before it mails her. */
+export type EmailConsentRow = {
+  id: string;
+  newsletter_subscribed: boolean | null;
+  newsletter_unsubscribed_at: string | null;
+  email_bounced_at: string | null;
+};
+
+/**
+ * Why a contact must not be mailed a campaign right now, or null: the
+ * exclusions of the audience (`audience-filter.ts`), read again when the row
+ * is about to go out. A send can resume hours after its audience was frozen,
+ * and an unsubscribe in between must be honoured, as WhatsApp reads its
+ * consent again before every batch. Her own unsubscribe says more than a
+ * missing yes, and both more than a bounce.
+ */
+export function emailConsentVerdict(
+  contact: EmailConsentRow | null | undefined,
+): "no_contact" | "opted_out" | "no_consent" | "bounced" | null {
+  if (!contact) return "no_contact";
+  if (contact.newsletter_unsubscribed_at) return "opted_out";
+  if (contact.newsletter_subscribed !== true) return "no_consent";
+  if (contact.email_bounced_at) return "bounced";
+  return null;
+}
+
+async function loadEmailConsent(
+  db: Db,
+  contactIds: string[],
+): Promise<Map<string, EmailConsentRow>> {
+  if (contactIds.length === 0) return new Map();
+  const { data, error } = await db
+    .from("contacts")
+    .select(
+      "id, newsletter_subscribed, newsletter_unsubscribed_at, email_bounced_at",
+    )
+    .in("id", contactIds);
+  if (error) throw new Error(error.message);
+  return new Map(((data ?? []) as EmailConsentRow[]).map((c) => [c.id, c]));
+}
+
 /** Whether a language's email has what an email needs: a subject and a body. */
 function versionWritten(
   block: CampaignContent[CampaignLocale] | undefined,
@@ -409,7 +450,47 @@ export async function sendQueued(
   }
 
   for (let start = 0; start < rows.length; start += CHUNK) {
-    const chunk = rows.slice(start, start + CHUNK);
+    // The subscription, the unsubscribe and the bounce are read again for
+    // the chunk: a row is not mailed on what was true when it was queued. A
+    // read that fails stops the send with the rest still queued; a contact
+    // the read did not return (a delete racing it) is left queued for the
+    // next run, as on WhatsApp; one that may not be mailed fails as skipped,
+    // routine, so it is not the campaign's last error.
+    let consent: Map<string, EmailConsentRow>;
+    const window = rows.slice(start, start + CHUNK);
+    try {
+      consent = await loadEmailConsent(
+        db,
+        window.flatMap((row) => (row.contact_id ? [row.contact_id] : [])),
+      );
+    } catch (err) {
+      lastError = `db: ${err instanceof Error ? err.message : "consent read threw"}`;
+      break;
+    }
+    const chunk: typeof window = [];
+    const skips: Promise<boolean>[] = [];
+    for (const row of window) {
+      if (row.contact_id !== null && !consent.has(row.contact_id)) continue;
+      const verdict = emailConsentVerdict(
+        row.contact_id ? consent.get(row.contact_id) : null,
+      );
+      if (verdict === null) {
+        chunk.push(row);
+        continue;
+      }
+      failed += 1;
+      taken += 1;
+      skips.push(
+        stamp(
+          db,
+          row.id,
+          { status: "failed", error: `${SKIPPED_PREFIX}${verdict}` },
+          sleep,
+        ),
+      );
+    }
+    await Promise.all(skips);
+    if (chunk.length === 0) continue;
     const emails = await Promise.all(
       chunk.map(async (row) => {
         const contact = one(row.contacts);

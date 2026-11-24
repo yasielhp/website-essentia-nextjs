@@ -139,6 +139,7 @@ export const REPORT_NOTE_KEYS = [
   "skippedLate",
   "skippedNoContact",
   "skippedNoEmail",
+  "skippedBounced",
   "skippedSuppressed",
   "skippedMissingVersion",
   "skippedOther",
@@ -151,6 +152,7 @@ const SKIP_KEYS: Record<string, string> = {
   late: "skippedLate",
   no_contact: "skippedNoContact",
   no_email: "skippedNoEmail",
+  bounced: "skippedBounced",
   suppressed: "skippedSuppressed",
 };
 

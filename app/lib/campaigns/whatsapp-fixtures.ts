@@ -136,6 +136,10 @@ export type StoredContact = {
   whatsapp_marketing_opted_in_at: string | null;
   /** Consent to notices about her own appointment. Absent in older fixtures. */
   whatsapp_opted_in_at?: string | null;
+  /** What the email sender reads again; absent means not subscribed. */
+  newsletter_subscribed?: boolean | null;
+  newsletter_unsubscribed_at?: string | null;
+  email_bounced_at?: string | null;
 };
 
 /** A contact that agreed to appointment notices, and to nothing else. */
@@ -147,12 +151,15 @@ export const noticesOnly = (id: string): StoredContact => ({
   whatsapp_opted_in_at: "2026-10-01T00:00:00Z",
 });
 
-/** A contact that may be sent a marketing message. */
+/** A contact that may be sent a marketing message, on either channel. */
 export const consenting = (id: string): StoredContact => ({
   id,
   whatsapp_opted_out_at: null,
   whatsapp_unreachable_at: null,
   whatsapp_marketing_opted_in_at: "2026-10-01T00:00:00Z",
+  newsletter_subscribed: true,
+  newsletter_unsubscribed_at: null,
+  email_bounced_at: null,
 });
 
 export type MemoryDbOptions = {

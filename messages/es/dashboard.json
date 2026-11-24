@@ -1984,6 +1984,7 @@
         "skippedLate": "Omitido: el aviso ya no llegaba a tiempo o la cita cambió",
         "skippedNoContact": "Omitido: el contacto ya no existe",
         "skippedNoEmail": "Omitido: no tiene email",
+        "skippedBounced": "Omitido: su email rebotó",
         "skippedSuppressed": "Omitido: ese número escribió STOP",
         "skippedOther": "Omitido: {reason}",
         "skippedMissingVersion": "Omitido: la versión en {language, select, es {español} other {inglés}} no tiene asunto o cuerpo"

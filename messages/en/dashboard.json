@@ -1984,6 +1984,7 @@
         "skippedLate": "Skipped: the notice was no longer on time or the booking changed",
         "skippedNoContact": "Skipped: the contact no longer exists",
         "skippedNoEmail": "Skipped: no email address",
+        "skippedBounced": "Skipped: her email bounced",
         "skippedSuppressed": "Skipped: that number wrote STOP",
         "skippedOther": "Skipped: {reason}",
         "skippedMissingVersion": "Skipped: the {language, select, es {Spanish} other {English}} version has no subject or no body"

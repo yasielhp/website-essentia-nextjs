@@ -1075,3 +1075,111 @@ describe("an A/B test is dealt within each language", () => {
     ]);
   });
 });
+
+describe("sendQueued on email reads the subscription again before it mails", () => {
+  const contact = (
+    id: string,
+    over: {
+      newsletter_subscribed?: boolean | null;
+      newsletter_unsubscribed_at?: string | null;
+      email_bounced_at?: string | null;
+    } = {},
+  ) => ({
+    id,
+    whatsapp_opted_out_at: null,
+    whatsapp_unreachable_at: null,
+    whatsapp_marketing_opted_in_at: null,
+    newsletter_subscribed: true,
+    newsletter_unsubscribed_at: null,
+    email_bounced_at: null,
+    ...over,
+  });
+
+  test("who unsubscribed, never subscribed or bounced since the audience was frozen is not mailed, and is skipped saying why", async () => {
+    const rows = [1, 2, 3, 4].map(mailRow);
+    const mem = memoryDb(rows, {
+      contacts: [
+        contact("contact-1"),
+        contact("contact-2", {
+          newsletter_subscribed: false,
+          newsletter_unsubscribed_at: "2026-11-17T10:00:00Z",
+        }),
+        contact("contact-3", { newsletter_subscribed: null }),
+        contact("contact-4", { email_bounced_at: "2026-11-17T10:00:00Z" }),
+      ],
+    });
+    const result = await sendQueued(emailCampaign(), rows, { db: mem.db });
+    expect(mailed()).toEqual(["c1@example.test"]);
+    expect(result).toEqual({ sent: 1, failed: 3, lastError: null });
+    expect(mem.error("row-2")).toBe("[skipped] opted_out");
+    expect(mem.error("row-3")).toBe("[skipped] no_consent");
+    expect(mem.error("row-4")).toBe("[skipped] bounced");
+    // Never claimed: they were never going to be mailed.
+    expect(mem.rows.get("row-2")?.claimed_at).toBeNull();
+  });
+
+  test("a row whose contact was deleted is skipped too: nobody's consent is left", async () => {
+    const rows = [
+      row(1, { email: "c1@example.test", phone: null, contact_id: null }),
+    ];
+    const mem = memoryDb(rows, { contacts: [] });
+    await sendQueued(emailCampaign(), rows, { db: mem.db });
+    expect(batches).toEqual([]);
+    expect(mem.error("row-1")).toBe("[skipped] no_contact");
+  });
+
+  test("a contact the read did not return is left queued for the next run, not mailed", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows, { contacts: [contact("contact-1")] });
+    const result = await sendQueued(emailCampaign(), rows, { db: mem.db });
+    expect(mailed()).toEqual(["c1@example.test"]);
+    expect(result).toMatchObject({ sent: 1, failed: 0, remaining: 1 });
+    expect(mem.status("row-2")).toBe("queued");
+  });
+
+  test("a read that fails mails nobody and leaves the queue as it was", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows, { contactsError: "timeout" });
+    const result = await sendQueued(emailCampaign(), rows, { db: mem.db });
+    expect(batches).toEqual([]);
+    expect(result).toEqual({
+      sent: 0,
+      failed: 0,
+      lastError: "db: timeout",
+      remaining: 2,
+    });
+    expect(mem.status("row-1")).toBe("queued");
+  });
+
+  test("a retry does not requeue them: their no stands", async () => {
+    const rows = [mailRow(1), mailRow(2)];
+    const mem = memoryDb(rows, {
+      campaign: emailCampaign({ status: "draft" }),
+      contacts: [
+        contact("contact-1"),
+        contact("contact-2", { newsletter_subscribed: false }),
+      ],
+    });
+    await dispatchCampaign(
+      "camp-1",
+      {},
+      {
+        db: mem.db,
+        resolveAudience: async () => [
+          {
+            id: "contact-1",
+            email: "c1@example.test",
+            firstName: "Ana",
+            language: "es",
+          } as Recipient,
+        ],
+      },
+    );
+    expect(mem.campaign.status).toBe("sent");
+    expect(await retryFailed("camp-1", {}, { db: mem.db })).toEqual({
+      ok: false,
+      error: "nothing_to_retry",
+    });
+    expect(mailed()).toEqual(["c1@example.test"]);
+  });
+});
