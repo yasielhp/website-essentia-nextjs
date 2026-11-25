@@ -235,4 +235,4 @@ See `env.example` for the full list. Critical ones:
 - `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` — send WhatsApp messages; without them everything runs dry (nothing is sent, nothing breaks)
 - `WHATSAPP_BUSINESS_ACCOUNT_ID` — list and create templates (`/{WABA_ID}/message_templates`)
 - `WHATSAPP_APP_SECRET` + `WHATSAPP_VERIFY_TOKEN` — sign and verify Meta's callbacks at `/api/webhooks/whatsapp`; without the secret the route rejects everything
-- `WHATSAPP_TEMPLATE_NAME` (default `essentia_booking_update`) — the staff notice's template
+- `WHATSAPP_TEMPLATE_NAME` (default `essentia_booking_update`) — the staff notice's template. Each person of the team gets it in her account's language (`profiles.preferred_language`), English only while the local copy says the English version is APPROVED, Spanish otherwise (`staffNoticeLanguage` in `app/lib/whatsapp/messages.ts`); the admin's copy is the professional's message in the admin's own language

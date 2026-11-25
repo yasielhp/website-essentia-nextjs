@@ -32,13 +32,13 @@ const MAX_TEMPLATE_PAGES = 50;
 const DEFAULT_URL_EXAMPLE = "ejemplo";
 
 /**
- * The only language registered with Meta.
+ * The staff notice's default language: the version of the template that has
+ * always been approved.
  *
  * A send names the language it wants and Meta rejects it outright if the
- * template carries no such version, so this is not a preference: it is the one
- * value that works. It stays a constant rather than an argument so no caller
- * can pass a language nobody has registered. Adding English means approving the
- * English body first, then widening this.
+ * template carries no such version, so another language is sent only when the
+ * local copy says that version is APPROVED (`staffNoticeLanguage` in
+ * `messages.ts`); everything else goes in this one.
  */
 export const WHATSAPP_TEMPLATE_LANGUAGE = "es";
 
@@ -298,19 +298,21 @@ export async function sendTemplateMessage(
 }
 
 /**
- * The staff notification, on the one template registered for it. Same
- * signature and behaviour as before the client learned to send any template.
+ * The staff notification, on the one template registered for it, in Spanish
+ * unless the caller names another version it knows to be approved.
  */
 export async function sendTemplate(opts: {
   to: string;
   params: string[];
   /** Appended to the template's dynamic URL button. */
   buttonUrlParam: string;
+  /** Meta's code of an APPROVED version (`staffNoticeLanguage`). */
+  language?: string;
 }): Promise<WhatsAppSendResult> {
   return sendTemplateMessage({
     to: opts.to,
     name: whatsAppTemplateName(),
-    language: WHATSAPP_TEMPLATE_LANGUAGE,
+    language: opts.language || WHATSAPP_TEMPLATE_LANGUAGE,
     bodyParams: opts.params,
     buttonUrlParams: [{ index: 0, text: opts.buttonUrlParam }],
   });
