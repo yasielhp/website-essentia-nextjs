@@ -5,7 +5,11 @@ import {
   toDeskOption,
   type DeskContactRow,
 } from "./desk-consents";
-import { clientFromContact } from "../../(dashboard)/dashboard/bookings/new/form-state";
+import {
+  clientFromContact,
+  formInitial,
+  formReducer,
+} from "../../(dashboard)/dashboard/bookings/new/form-state";
 
 /**
  * The desk's client search and how it reads a contact's two consents. The
@@ -82,6 +86,7 @@ describe("the client step starts from a contact on file", () => {
     const option = toDeskOption(row())!;
     expect(clientFromContact(option)).toEqual({
       contact: option,
+      newClient: false,
       firstName: "Ana",
       lastName: "García",
       email: "ana@example.com",
@@ -101,6 +106,38 @@ describe("the client step starts from a contact on file", () => {
       marketing: false,
       gender: "",
     });
+  });
+});
+
+describe("the client step's three moments", () => {
+  test("it opens on the search alone: no client, no new client, notices on", () => {
+    expect(formInitial).toMatchObject({
+      contact: null,
+      newClient: false,
+      appointmentNotices: true,
+      marketing: false,
+    });
+  });
+  test("New client shows the fields; Change goes back to the search, empty", () => {
+    const typed = formReducer(
+      formReducer(formInitial, { type: "NEW_CLIENT" }),
+      { type: "SET_FIELD", field: "firstName", value: "Ana" },
+    );
+    expect(typed).toMatchObject({ newClient: true, firstName: "Ana" });
+    expect(formReducer(typed, { type: "CLEAR_CONTACT" })).toMatchObject({
+      newClient: false,
+      contact: null,
+      firstName: "",
+      appointmentNotices: true,
+    });
+  });
+  test("picking a client on file leaves the new-client fields", () => {
+    const option = toDeskOption(row())!;
+    const picked = formReducer(
+      formReducer(formInitial, { type: "NEW_CLIENT" }),
+      { type: "SELECT_CONTACT", value: option },
+    );
+    expect(picked).toMatchObject({ contact: option, newClient: false });
   });
 });
 

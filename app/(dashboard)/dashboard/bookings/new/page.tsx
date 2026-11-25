@@ -170,6 +170,7 @@ function NewBookingPageInner() {
 
     const invalid = validateNewBooking(draft, {
       serviceRequired: tValidation("serviceRequired"),
+      clientRequired: t("errors.clientRequired"),
       firstNameRequired: tValidation("firstNameRequired"),
       emailRequired: tValidation("emailRequired"),
       emailInvalid: tValidation("emailInvalid"),
@@ -315,6 +316,7 @@ function NewBookingPageInner() {
               language={language}
               notes={notes}
               contact={contact}
+              newClient={form.newClient}
               marketing={marketing}
               appointmentNotices={appointmentNotices}
               role={role}

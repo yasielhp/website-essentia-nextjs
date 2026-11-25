@@ -312,7 +312,8 @@
       "errors": {
         "createFailed": "No se pudo crear la reserva.",
         "reservationRequired": "El número de reserva es obligatorio.",
-        "slotTaken": "Este profesional ya tiene otra reserva a esa hora. Elige otra hora u otro profesional."
+        "slotTaken": "Este profesional ya tiene otra reserva a esa hora. Elige otra hora u otro profesional.",
+        "clientRequired": "Elige un cliente o crea uno nuevo."
       },
       "staff": {
         "placeholder": "Sin asignar"
@@ -339,12 +340,12 @@
         "typeMore": "Escribe al menos 2 letras para buscar",
         "existing": "Cliente existente",
         "change": "Cambiar",
-        "emailLocked": "Es el email de su ficha. Para otro cliente, pulsa Cambiar.",
         "appointmentsHint": "WhatsApp · confirmación y recordatorio de la cita",
         "marketingHint": "Email y WhatsApp · solo si el cliente lo ha pedido",
         "consentOnFile": "Ya lo tiene activado en su ficha.",
         "consentStopped": "Pidió la baja. Solo se reactiva desde su ficha.",
-        "consentPartner": "Se cambia desde la ficha del cliente."
+        "consentPartner": "Se cambia desde la ficha del cliente.",
+        "backToSearch": "Buscar un cliente existente"
       }
     },
     "edit": {

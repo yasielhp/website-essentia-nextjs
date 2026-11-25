@@ -40,10 +40,11 @@ function lockReason(
  * Last of the steps, and shown only once there is an hour to attach the name
  * to — asking for it earlier is asking somebody to type a name into nothing.
  *
- * It opens on a search: a client already on file is picked (her details fill
- * the fields, her address stays fixed, her bonuses are offered) or "New
- * client" leaves the fields to be typed. Under them, the two switches of the
- * contact's card: "Appointment notices", on by default, and "News and offers".
+ * It opens on a search and nothing else. A client already on file is shown
+ * as one card (her details are taken from her file, her bonuses offered),
+ * with no fields; "New client" shows the fields to type hers. Either way,
+ * then, the booking's notes and the two switches of the contact's card:
+ * "Appointment notices", on by default, and "News and offers".
  */
 export function ClientStep({
   firstName,
@@ -54,6 +55,7 @@ export function ClientStep({
   language,
   notes,
   contact,
+  newClient,
   marketing,
   appointmentNotices,
   role,
@@ -68,6 +70,7 @@ export function ClientStep({
   language: string;
   notes: string;
   contact: DeskContactOption | null;
+  newClient: boolean;
   marketing: boolean;
   appointmentNotices: boolean;
   role: string | null;
@@ -115,19 +118,24 @@ export function ClientStep({
               {tClient("change")}
             </button>
           </div>
-        ) : (
+        ) : newClient ? null : (
           <ContactPicker
             disabled={submitting}
             onPick={(picked) =>
               dispatchForm({ type: "SELECT_CONTACT", value: picked })
             }
-            // Already a new client: what was typed below stays, only the
-            // cursor moves to it.
-            onNew={() => document.getElementById("firstName")?.focus()}
+            onNew={() => {
+              dispatchForm({ type: "NEW_CLIENT" });
+              requestAnimationFrame(() =>
+                document.getElementById("firstName")?.focus(),
+              );
+            }}
           />
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* A client on file with no first name: the one field the booking
+            still needs from her. */}
+        {contact && !contact.firstName.trim() && (
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="firstName"
@@ -151,168 +159,217 @@ export function ClientStep({
               className={INPUT_CLASS}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="lastName"
-              className="text-petroleum-500 text-xs font-medium"
-            >
-              {t("fields.lastName")}
-            </label>
-            <input
-              id="lastName"
-              type="text"
-              value={lastName}
-              onChange={(e) =>
-                dispatchForm({
-                  type: "SET_FIELD",
-                  field: "lastName",
-                  value: e.target.value,
-                })
-              }
-              placeholder={t("fields.lastNamePlaceholder")}
-              disabled={submitting}
-              className={INPUT_CLASS}
-            />
-          </div>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="email"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {t("fields.email")} <span className="text-red-400">*</span>
-          </label>
-          <EmailInput
-            id="email"
-            value={email}
-            onChange={(value) =>
-              dispatchForm({
-                type: "SET_FIELD",
-                field: "email",
-                value: value,
-              })
-            }
-            placeholder={t("fields.emailPlaceholder")}
-            disabled={submitting || contact !== null}
-            className={INPUT_CLASS}
-          />
-          {contact && (
-            <p className="text-petroleum-400 text-xs">
-              {tClient("emailLocked")}
+        )}
+
+        {newClient && (
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-petroleum-700 text-sm font-medium">
+              {tClient("newClient")}
             </p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="phone"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {t("fields.phone")}
-          </label>
-          <input
-            id="phone"
-            type="tel"
-            value={phone}
-            onChange={(e) =>
-              dispatchForm({
-                type: "SET_FIELD",
-                field: "phone",
-                value: e.target.value,
-              })
-            }
-            placeholder={t("fields.phonePlaceholder")}
-            disabled={submitting}
-            className={INPUT_CLASS}
-          />
-        </div>
+            <button
+              type="button"
+              onClick={() => dispatchForm({ type: "CLEAR_CONTACT" })}
+              disabled={submitting}
+              className="text-petroleum-700 shrink-0 text-sm font-medium underline underline-offset-4"
+            >
+              {tClient("backToSearch")}
+            </button>
+          </div>
+        )}
 
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="client-gender"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {t("fields.gender")}
-          </label>
-          <OptionSelect
-            id="client-gender"
-            value={gender}
-            options={genderOptions}
-            onChange={(next) =>
-              dispatchForm({
-                type: "SET_FIELD",
-                field: "gender",
-                value: next,
-              })
-            }
-            disabled={submitting}
-            ariaLabel={t("fields.gender")}
-          />
-        </div>
+        {newClient && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="firstName"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  {t("fields.firstName")}{" "}
+                  <span className="text-red-400">*</span>
+                </label>
+                <input
+                  id="firstName"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) =>
+                    dispatchForm({
+                      type: "SET_FIELD",
+                      field: "firstName",
+                      value: e.target.value,
+                    })
+                  }
+                  placeholder={t("fields.firstNamePlaceholder")}
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="lastName"
+                  className="text-petroleum-500 text-xs font-medium"
+                >
+                  {t("fields.lastName")}
+                </label>
+                <input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) =>
+                    dispatchForm({
+                      type: "SET_FIELD",
+                      field: "lastName",
+                      value: e.target.value,
+                    })
+                  }
+                  placeholder={t("fields.lastNamePlaceholder")}
+                  disabled={submitting}
+                  className={INPUT_CLASS}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="email"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                {t("fields.email")} <span className="text-red-400">*</span>
+              </label>
+              <EmailInput
+                id="email"
+                value={email}
+                onChange={(value) =>
+                  dispatchForm({
+                    type: "SET_FIELD",
+                    field: "email",
+                    value: value,
+                  })
+                }
+                placeholder={t("fields.emailPlaceholder")}
+                disabled={submitting}
+                className={INPUT_CLASS}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="phone"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                {t("fields.phone")}
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) =>
+                  dispatchForm({
+                    type: "SET_FIELD",
+                    field: "phone",
+                    value: e.target.value,
+                  })
+                }
+                placeholder={t("fields.phonePlaceholder")}
+                disabled={submitting}
+                className={INPUT_CLASS}
+              />
+            </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="client-language"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {t("fields.language")}
-          </label>
-          <OptionSelect
-            id="client-language"
-            value={language}
-            options={LANGUAGE_OPTIONS}
-            onChange={(next) =>
-              dispatchForm({
-                type: "SET_FIELD",
-                field: "language",
-                value: next,
-              })
-            }
-            disabled={submitting}
-            ariaLabel={t("fields.language")}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="notes"
-            className="text-petroleum-500 text-xs font-medium"
-          >
-            {t("fields.notes")}
-          </label>
-          <textarea
-            id="notes"
-            value={notes}
-            onChange={(e) =>
-              dispatchForm({
-                type: "SET_NOTES",
-                value: e.target.value,
-              })
-            }
-            placeholder={t("fields.notesPlaceholder")}
-            rows={3}
-            disabled={submitting}
-            className={INPUT_CLASS + " resize-none"}
-          />
-        </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="client-gender"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                {t("fields.gender")}
+              </label>
+              <OptionSelect
+                id="client-gender"
+                value={gender}
+                options={genderOptions}
+                onChange={(next) =>
+                  dispatchForm({
+                    type: "SET_FIELD",
+                    field: "gender",
+                    value: next,
+                  })
+                }
+                disabled={submitting}
+                ariaLabel={t("fields.gender")}
+              />
+            </div>
 
-        <ToggleRow
-          checked={
-            appointmentsLock
-              ? contact?.appointmentNotices === "on"
-              : appointmentNotices
-          }
-          disabled={submitting || appointmentsLock !== null}
-          label={tConsent("appointments.label")}
-          hint={tClient(appointmentsLock ?? "appointmentsHint")}
-          onToggle={() => dispatchForm({ type: "TOGGLE_APPOINTMENT_NOTICES" })}
-        />
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="client-language"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                {t("fields.language")}
+              </label>
+              <OptionSelect
+                id="client-language"
+                value={language}
+                options={LANGUAGE_OPTIONS}
+                onChange={(next) =>
+                  dispatchForm({
+                    type: "SET_FIELD",
+                    field: "language",
+                    value: next,
+                  })
+                }
+                disabled={submitting}
+                ariaLabel={t("fields.language")}
+              />
+            </div>
+          </>
+        )}
 
-        <ToggleRow
-          checked={marketingLock ? contact?.marketing === "on" : marketing}
-          disabled={submitting || marketingLock !== null}
-          label={tConsent("marketing.label")}
-          hint={tClient(marketingLock ?? "marketingHint")}
-          onToggle={() => dispatchForm({ type: "TOGGLE_MARKETING" })}
-        />
+        {(contact || newClient) && (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="notes"
+                className="text-petroleum-500 text-xs font-medium"
+              >
+                {t("fields.notes")}
+              </label>
+              <textarea
+                id="notes"
+                value={notes}
+                onChange={(e) =>
+                  dispatchForm({
+                    type: "SET_NOTES",
+                    value: e.target.value,
+                  })
+                }
+                placeholder={t("fields.notesPlaceholder")}
+                rows={3}
+                disabled={submitting}
+                className={INPUT_CLASS + " resize-none"}
+              />
+            </div>
+
+            <ToggleRow
+              checked={
+                appointmentsLock
+                  ? contact?.appointmentNotices === "on"
+                  : appointmentNotices
+              }
+              disabled={submitting || appointmentsLock !== null}
+              label={tConsent("appointments.label")}
+              hint={tClient(appointmentsLock ?? "appointmentsHint")}
+              onToggle={() =>
+                dispatchForm({ type: "TOGGLE_APPOINTMENT_NOTICES" })
+              }
+            />
+
+            <ToggleRow
+              checked={marketingLock ? contact?.marketing === "on" : marketing}
+              disabled={submitting || marketingLock !== null}
+              label={tConsent("marketing.label")}
+              hint={tClient(marketingLock ?? "marketingHint")}
+              onToggle={() => dispatchForm({ type: "TOGGLE_MARKETING" })}
+            />
+          </>
+        )}
       </div>
     </div>
   );

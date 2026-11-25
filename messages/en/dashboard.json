@@ -312,7 +312,8 @@
       "errors": {
         "createFailed": "Failed to create booking.",
         "reservationRequired": "Reservation number is required.",
-        "slotTaken": "This professional already has another booking at that time. Choose another time or professional."
+        "slotTaken": "This professional already has another booking at that time. Choose another time or professional.",
+        "clientRequired": "Choose a client or create a new one."
       },
       "staff": {
         "placeholder": "Unassigned"
@@ -339,12 +340,12 @@
         "typeMore": "Type at least 2 letters to search",
         "existing": "Existing client",
         "change": "Change",
-        "emailLocked": "This is the email on their file. For another client, press Change.",
         "appointmentsHint": "WhatsApp · booking confirmation and reminder",
         "marketingHint": "Email and WhatsApp · only if the client asked for it",
         "consentOnFile": "Already on in their file.",
         "consentStopped": "They opted out. Only their file can turn it back on.",
-        "consentPartner": "Changed from the client's file."
+        "consentPartner": "Changed from the client's file.",
+        "backToSearch": "Search for an existing client"
       }
     },
     "edit": {

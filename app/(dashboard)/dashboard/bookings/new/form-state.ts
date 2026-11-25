@@ -139,6 +139,11 @@ export type FormState = {
    * the contact by it).
    */
   contact: DeskContactOption | null;
+  /**
+   * "New client" was chosen in the client step: her fields are shown to be
+   * typed. With neither this nor `contact`, the step shows only the search.
+   */
+  newClient: boolean;
   /** "News and offers" (email and WhatsApp). Off means "not asked", not "no". */
   marketing: boolean;
   /** "Appointment notices" on WhatsApp: on unless the desk turns it off. */
@@ -170,6 +175,7 @@ export type FormAction =
   | { type: "TOGGLE_MARKETING" }
   | { type: "TOGGLE_APPOINTMENT_NOTICES" }
   | { type: "SELECT_CONTACT"; value: DeskContactOption }
+  | { type: "NEW_CLIENT" }
   | { type: "CLEAR_CONTACT" }
   | { type: "SET_PAYMENT"; value: PaymentValue }
   | { type: "TOGGLE_BONUS" }
@@ -205,6 +211,7 @@ export const formInitial: FormState = {
   phone: "",
   staffId: "",
   contact: null,
+  newClient: false,
   marketing: false,
   appointmentNotices: true,
   payment: EMPTY_PAYMENT,
@@ -261,10 +268,13 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, appointmentNotices: !state.appointmentNotices };
     case "SELECT_CONTACT":
       return { ...state, ...clientFromContact(action.value) };
+    case "NEW_CLIENT":
+      return { ...state, contact: null, newClient: true };
     case "CLEAR_CONTACT":
       return {
         ...state,
         contact: null,
+        newClient: false,
         firstName: "",
         lastName: "",
         email: "",
@@ -281,7 +291,9 @@ export function formReducer(state: FormState, action: FormAction): FormState {
     case "SET_PAYMENT":
       return { ...state, payment: action.value };
     case "PREFILL_CLIENT":
-      return { ...state, ...action.value };
+      // A contact the search could not offer (no address): her details are
+      // shown to be completed, as a new client's.
+      return { ...state, ...action.value, contact: null, newClient: true };
     default:
       return state;
   }
@@ -299,6 +311,7 @@ export function clientFromContact(
 ): Pick<
   FormState,
   | "contact"
+  | "newClient"
   | "firstName"
   | "lastName"
   | "email"
@@ -311,6 +324,7 @@ export function clientFromContact(
   const gender = GENDER_VALUES.find((value) => value === contact.gender);
   return {
     contact,
+    newClient: false,
     firstName: contact.firstName,
     lastName: contact.lastName,
     email: contact.email,

@@ -38,6 +38,7 @@ export type NewBookingDraft = FormState & {
 /** Every refusal this form can give, already in the reader's language. */
 export type ValidationMessages = {
   serviceRequired: string;
+  clientRequired: string;
   firstNameRequired: string;
   emailRequired: string;
   emailInvalid: string;
@@ -50,6 +51,8 @@ export function validateNewBooking(
   messages: ValidationMessages,
 ): string | null {
   if (!draft.serviceId) return messages.serviceRequired;
+  // Nobody picked yet: the step shows only the search.
+  if (!draft.contact && !draft.newClient) return messages.clientRequired;
   if (!draft.firstName.trim()) return messages.firstNameRequired;
   if (!draft.email.trim()) return messages.emailRequired;
   /**
