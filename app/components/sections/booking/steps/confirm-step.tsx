@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { CreditCard } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { BookableService } from "@/data/services-data";
 import {
@@ -146,9 +145,10 @@ export function ConfirmStep({
           {tServices(`services.${service.id}.title`)}
         </p>
 
-        {/* The treatment, not the service it belongs to */}
+        {/* The treatment, not the service it belongs to. The picture only
+            from md up: on a phone it squeezes the text into a narrow column. */}
         <div className="flex items-start gap-4">
-          <div className="relative size-16 shrink-0 overflow-hidden rounded-xl">
+          <div className="relative hidden size-16 shrink-0 overflow-hidden rounded-xl md:block">
             <Image
               src={image}
               alt={heading}
@@ -241,36 +241,13 @@ export function ConfirmStep({
         </div>
       </div>
 
-      {/* How she pays: one way, the whole price now. */}
+      {/* How she pays: one way, the whole price now, already shown above as
+          "Pagas ahora". What is left to say is the rule. */}
       <div className="flex flex-col gap-3 rounded-2xl bg-white p-6">
         <p className="text-petroleum-700 text-sm font-medium">
           {t("paymentHeading")}
         </p>
-        <div className="border-sand-200 flex items-start gap-3 rounded-2xl border p-4">
-          <CreditCard
-            size={16}
-            className="text-petroleum-400 mt-0.5 shrink-0"
-            aria-hidden
-          />
-          <span>
-            <span className="text-petroleum-700 block text-sm font-medium">
-              {settings.fullPaymentDiscountPercent > 0
-                ? t("payFullDiscount", {
-                    percent: settings.fullPaymentDiscountPercent,
-                  })
-                : t("payFull")}
-            </span>
-            {full && (
-              <span className="text-petroleum-500 mt-0.5 block text-sm leading-relaxed">
-                {t("payFullNote", {
-                  now: formatPrice(full.chargeEur, locale as SupportedLocale),
-                })}
-              </span>
-            )}
-          </span>
-        </div>
-
-        <p className="text-petroleum-400 text-xs leading-relaxed">
+        <p className="text-petroleum-500 text-sm leading-relaxed">
           {t("cancellationNote")}
         </p>
       </div>

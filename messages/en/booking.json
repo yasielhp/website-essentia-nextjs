@@ -160,9 +160,6 @@
     "slotTaken": "That slot has just been taken. Please choose another time.",
     "confirmFailed": "We could not confirm the booking and nothing was charged. Please try again.",
     "tooManyAttempts": "There are too many attempts or bookings awaiting payment with these details. Please wait a few minutes and try again, or contact us.",
-    "payFull": "Full payment when you book",
-    "payFullDiscount": "Full payment when you book (−{percent}%)",
-    "payFullNote": "You pay {now} today and nothing later.",
     "payNowLabel": "You pay now"
   },
   "paymentOverlay": {

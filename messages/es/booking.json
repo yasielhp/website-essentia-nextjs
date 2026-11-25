@@ -160,9 +160,6 @@
     "slotTaken": "Ese hueco se acaba de ocupar, elige otra hora.",
     "confirmFailed": "No hemos podido confirmar la reserva y no se ha cobrado nada. Inténtalo de nuevo.",
     "tooManyAttempts": "Hay demasiados intentos o reservas pendientes de pago con estos datos. Espera unos minutos y vuelve a intentarlo, o escríbenos.",
-    "payFull": "Pago completo al reservar",
-    "payFullDiscount": "Pago completo al reservar (−{percent}%)",
-    "payFullNote": "Pagas {now} hoy y no tienes nada pendiente.",
     "payNowLabel": "Pagas ahora"
   },
   "paymentOverlay": {
