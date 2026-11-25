@@ -327,6 +327,24 @@
       "bonus": {
         "use": "Use the {sessions, plural, one {# session} other {# sessions}} voucher ({n} left)",
         "hint": "The booking is paid with the voucher and adds no income."
+      },
+      "client": {
+        "pickerLabel": "Client",
+        "pickerPlaceholder": "Search by name, email or phone",
+        "newClient": "New client",
+        "newClientDesc": "Type their details below",
+        "searching": "Searching…",
+        "noResults": "No client matches",
+        "searchFailed": "The search failed. Try again.",
+        "typeMore": "Type at least 2 letters to search",
+        "existing": "Existing client",
+        "change": "Change",
+        "emailLocked": "This is the email on their file. For another client, press Change.",
+        "appointmentsHint": "WhatsApp · booking confirmation and reminder",
+        "marketingHint": "Email and WhatsApp · only if the client asked for it",
+        "consentOnFile": "Already on in their file.",
+        "consentStopped": "They opted out. Only their file can turn it back on.",
+        "consentPartner": "Changed from the client's file."
       }
     },
     "edit": {

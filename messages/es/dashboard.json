@@ -327,6 +327,24 @@
       "bonus": {
         "use": "Usar el bono de {sessions, plural, one {# sesión} other {# sesiones}} (quedan {n})",
         "hint": "La reserva nace pagada con el bono y no suma ingresos."
+      },
+      "client": {
+        "pickerLabel": "Cliente",
+        "pickerPlaceholder": "Busca por nombre, email o teléfono",
+        "newClient": "Nuevo cliente",
+        "newClientDesc": "Escribe sus datos abajo",
+        "searching": "Buscando…",
+        "noResults": "Ningún cliente coincide",
+        "searchFailed": "No se pudo buscar. Inténtalo de nuevo.",
+        "typeMore": "Escribe al menos 2 letras para buscar",
+        "existing": "Cliente existente",
+        "change": "Cambiar",
+        "emailLocked": "Es el email de su ficha. Para otro cliente, pulsa Cambiar.",
+        "appointmentsHint": "WhatsApp · confirmación y recordatorio de la cita",
+        "marketingHint": "Email y WhatsApp · solo si el cliente lo ha pedido",
+        "consentOnFile": "Ya lo tiene activado en su ficha.",
+        "consentStopped": "Pidió la baja. Solo se reactiva desde su ficha.",
+        "consentPartner": "Se cambia desde la ficha del cliente."
       }
     },
     "edit": {

@@ -15,11 +15,12 @@ import { fakeDb, type Row } from "@/lib/whatsapp/fake-contacts-db";
  * replaced. The roles let in are the real `DASHBOARD_ROLES`.
  *
  * What is under test: only the team gets a contact written; admin and staff
- * write it through `upsert_contact` exactly as the screen used to send it
- * (the newsletter as its switch says, `null` when off, and no WhatsApp
- * consent of any kind); a partner links an existing contact or creates a new
- * one, and never changes an existing contact's name, phone, language or
- * subscriptions; and the input is a strict object.
+ * write it through `upsert_contact` (the name, phone, language, gender, and
+ * "news and offers" as its switch says, `null` when off, never the notice
+ * consent through it); "appointment notices" stamp `whatsapp_opted_in_at` on
+ * a contact that has none; a STOP or an unsubscribe is never lifted from the
+ * desk; a partner links an existing contact or creates a new one, and never
+ * changes an existing contact; and the input is a strict object.
  *
  * Modules are put back afterwards: `mock.module` is process-wide.
  */
@@ -100,7 +101,8 @@ const input = (over: Record<string, unknown> = {}) => ({
   phone: null,
   language: "es",
   gender: null,
-  newsletter: true,
+  marketing: true,
+  appointmentNotices: null,
   ...over,
 });
 
@@ -115,6 +117,7 @@ const onFile = (over: Row = {}): Row => ({
   newsletter_subscribed: false,
   newsletter_unsubscribed_at: null,
   whatsapp_marketing_opted_in_at: null,
+  whatsapp_opted_in_at: null,
   whatsapp_opted_out_at: null,
   updated_at: "2026-01-01T00:00:00.000Z",
   ...over,
@@ -143,9 +146,9 @@ describe("the roles are the real ones", () => {
   );
 });
 
-describe("admin and staff: the contact as the screen always wrote it", () => {
+describe("admin and staff: the contact as the screen writes it", () => {
   test.each(["admin", "staff"])(
-    "%s: `upsert_contact` with the service key, the newsletter as its switch says, and no WhatsApp consent",
+    "%s: `upsert_contact` with the service key, news and offers on both channels as its switch says, never the notice consent through it",
     async (who) => {
       role = who;
       expect(await linkDeskContact("token", input())).toEqual({
@@ -164,34 +167,86 @@ describe("admin and staff: the contact as the screen always wrote it", () => {
             p_gender: null,
             p_newsletter: true,
             p_whatsapp: null,
-            p_whatsapp_marketing: null,
+            p_whatsapp_marketing: true,
           },
         },
       ]);
     },
   );
 
-  test("the newsletter switch off is null: it touches nothing", async () => {
+  test("the switches off are null: they touch nothing", async () => {
     await linkDeskContact(
       "token",
-      input({ newsletter: null, phone: "600000000", gender: "male" }),
+      input({ marketing: null, phone: "600000000", gender: "male" }),
     );
     expect(rpcs[0]?.args).toMatchObject({
       p_newsletter: null,
+      p_whatsapp_marketing: null,
       p_phone: "600000000",
       p_gender: "male",
+    });
+  });
+
+  test("appointment notices on: stamped on a contact that has none", async () => {
+    rows = [onFile({ id: "contact-1" })];
+    await linkDeskContact("token", input({ appointmentNotices: true }));
+    expect(typeof rows[0]?.whatsapp_opted_in_at).toBe("string");
+  });
+
+  test("appointment notices off, or already given: nothing changes", async () => {
+    rows = [onFile({ id: "contact-1" })];
+    await linkDeskContact("token", input({ appointmentNotices: null }));
+    expect(rows[0]?.whatsapp_opted_in_at).toBeNull();
+    rows = [
+      onFile({ id: "contact-1", whatsapp_opted_in_at: "2026-01-02T00:00:00Z" }),
+    ];
+    await linkDeskContact("token", input({ appointmentNotices: true }));
+    expect(rows[0]?.whatsapp_opted_in_at).toBe("2026-01-02T00:00:00Z");
+  });
+
+  test("a STOP on file is never lifted: no consent of either kind", async () => {
+    rows = [
+      onFile({
+        id: "contact-1",
+        whatsapp_opted_out_at: "2026-02-01T00:00:00Z",
+      }),
+    ];
+    await linkDeskContact(
+      "token",
+      input({ marketing: true, appointmentNotices: true }),
+    );
+    expect(rpcs[0]?.args).toMatchObject({
+      p_newsletter: null,
+      p_whatsapp: null,
+      p_whatsapp_marketing: null,
+    });
+    expect(rows[0]?.whatsapp_opted_in_at).toBeNull();
+    expect(rows[0]?.whatsapp_opted_out_at).toBe("2026-02-01T00:00:00Z");
+  });
+
+  test("an email unsubscribe on file withdraws news and offers on both channels", async () => {
+    rows = [onFile({ newsletter_unsubscribed_at: "2026-02-01T00:00:00Z" })];
+    await linkDeskContact("token", input({ marketing: true }));
+    expect(rpcs[0]?.args).toMatchObject({
+      p_newsletter: null,
+      p_whatsapp_marketing: null,
     });
   });
 });
 
 describe("a partner: links or creates, never changes an existing contact", () => {
-  test("an existing contact is linked as it is: name, phone, language and subscriptions stay", async () => {
+  test("an existing contact is linked as it is: name, phone, language, subscriptions and notices stay", async () => {
     role = "partner";
     rows = [onFile()];
     expect(
       await linkDeskContact(
         "token",
-        input({ firstName: "Otra", phone: "699000111", language: "es" }),
+        input({
+          firstName: "Otra",
+          phone: "699000111",
+          language: "es",
+          appointmentNotices: true,
+        }),
       ),
     ).toEqual({ ok: true, contactId: "c-ana" });
     expect(rpcs).toEqual([]);
@@ -202,16 +257,19 @@ describe("a partner: links or creates, never changes an existing contact", () =>
   test("an unsubscribe on file stays too, whatever the switch says", async () => {
     role = "partner";
     rows = [onFile({ newsletter_unsubscribed_at: "2026-02-01T00:00:00.000Z" })];
-    await linkDeskContact("token", input({ newsletter: true }));
+    await linkDeskContact("token", input({ marketing: true }));
     expect(rows[0]).toEqual(
       onFile({ newsletter_unsubscribed_at: "2026-02-01T00:00:00.000Z" }),
     );
   });
 
-  test("a new address is created as the screen sent it, the newsletter as its switch says", async () => {
+  test("a new address is created as the screen sent it, with the consents its switches give", async () => {
     role = "partner";
     expect(
-      await linkDeskContact("token", input({ phone: "600000000" })),
+      await linkDeskContact(
+        "token",
+        input({ phone: "600000000", appointmentNotices: true }),
+      ),
     ).toEqual({ ok: true, contactId: "c1" });
     expect(rpcs).toEqual([]);
     expect(inserts).toEqual([
@@ -221,17 +279,20 @@ describe("a partner: links or creates, never changes an existing contact", () =>
         phone: "600000000",
         preferred_language: "es",
         newsletter_subscribed: true,
-        whatsapp_marketing_opted_in_at: null,
       }),
     ]);
+    expect(typeof rows[0]?.whatsapp_marketing_opted_in_at).toBe("string");
+    expect(typeof rows[0]?.whatsapp_opted_in_at).toBe("string");
   });
 });
 
 describe("what is refused", () => {
   test.each([
-    ["a WhatsApp consent", { whatsapp: true }],
-    ["marketing on WhatsApp", { whatsappMarketing: true }],
-    ["the newsletter as false", { newsletter: false }],
+    ["a WhatsApp consent by its column's name", { whatsapp: true }],
+    ["marketing on WhatsApp alone", { whatsappMarketing: true }],
+    ["the old newsletter switch", { newsletter: true }],
+    ["news and offers as false", { marketing: false }],
+    ["appointment notices as false", { appointmentNotices: false }],
     ["an address that is not one", { email: "ana" }],
     ["a language the site does not have", { language: "fr" }],
   ])("%s is refused, and nothing is written", async (_what, over) => {

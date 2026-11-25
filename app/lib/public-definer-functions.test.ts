@@ -334,7 +334,8 @@ describe("the doors that call them instead of the browser", () => {
       contactPublicWay: contact.includes('"public",'),
       deskOverwritesOnlyForTheTeam:
         deskCore.includes('new Set(["admin", "staff"])') &&
-        deskCore.includes('OVERWRITES.has(actor.role) ? "overwrite" : "link"'),
+        deskCore.includes("const overwrites = OVERWRITES.has(actor.role);") &&
+        deskCore.includes('overwrites ? "overwrite" : "link"'),
       registrationStrict: (registration.match(/z\.strictObject\(/g) ?? [])
         .length,
       // Her own account unless the team names another.

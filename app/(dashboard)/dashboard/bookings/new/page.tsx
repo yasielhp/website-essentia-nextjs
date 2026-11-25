@@ -72,7 +72,9 @@ function NewBookingPageInner() {
     email,
     phone,
     staffId,
-    newsletter,
+    contact,
+    marketing,
+    appointmentNotices,
     payment,
     bonusOptOut,
   } = form;
@@ -84,6 +86,7 @@ function NewBookingPageInner() {
   const { tierStaff, contactBonuses, redeemBonus } = useNewBookingData({
     serviceId,
     tierId,
+    selectedContactId: contact?.id ?? null,
     dispatchAsync,
     dispatchForm,
   });
@@ -311,7 +314,10 @@ function NewBookingPageInner() {
               gender={gender}
               language={language}
               notes={notes}
-              newsletter={newsletter}
+              contact={contact}
+              marketing={marketing}
+              appointmentNotices={appointmentNotices}
+              role={role}
               submitting={submitting}
               dispatchForm={dispatchForm}
             />

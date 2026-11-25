@@ -11,6 +11,7 @@ import type { ContactBonus } from "@/types/bonus";
 import { usableBonus } from "@/lib/bonuses/balance";
 import { localDateStr } from "@/utils/format";
 import { GENDER_UNSPECIFIED } from "@/constants/gender";
+import { toDeskOption } from "@/lib/bookings/desk-consents";
 import { fetchTierStaff, type TierStaff } from "@/actions/tier-staff";
 import type { AsyncAction, FormAction, Tier } from "./form-state";
 
@@ -25,9 +26,12 @@ import type { AsyncAction, FormAction, Tier } from "./form-state";
 export function useNewBookingData({
   serviceId,
   tierId,
+  selectedContactId,
   dispatchAsync,
   dispatchForm,
 }: {
+  /** The client on file picked in the client step, whose bonuses are offered. */
+  selectedContactId: string | null;
   /** The service currently chosen, whose session types are loaded. */
   serviceId: string;
   /** The session type currently chosen, whose staff are loaded. */
@@ -37,7 +41,12 @@ export function useNewBookingData({
 }) {
   const searchParams = useSearchParams();
   const [tierStaff, setTierStaff] = useState<TierStaff[]>([]);
-  const [contactBonuses, setContactBonuses] = useState<ContactBonus[]>([]);
+  // Kept with the contact they belong to: another client picked shows none of
+  // these while hers load.
+  const [bonusesOf, setBonusesOf] = useState<{
+    contactId: string;
+    rows: ContactBonus[];
+  } | null>(null);
   // The session type a redeemed bonus is for, waiting for its service's types
   // to load so it can be chosen among them.
   const pendingTierId = useRef<string | null>(null);
@@ -70,6 +79,16 @@ export function useNewBookingData({
     void fetchContactDetail(getAccessToken(), contactParam).then((result) => {
       if (cancelled || !result.found) return;
       const { contact } = result;
+      // On file with an address: picked as the client step picks one, with
+      // her two consents as they stand.
+      const option = toDeskOption({
+        ...contact,
+        gender: contact.gender ?? null,
+      });
+      if (option) {
+        dispatchForm({ type: "SELECT_CONTACT", value: option });
+        return;
+      }
       dispatchForm({
         type: "PREFILL_CLIENT",
         value: {
@@ -87,17 +106,26 @@ export function useNewBookingData({
     };
   }, [contactParam, dispatchForm]);
 
-  // And the bonuses that contact holds, so a session can be drawn from one.
+  // And the bonuses that contact holds, so a session can be drawn from one:
+  // the one the link names, else the client picked in the client step.
+  const bonusContactId = contactParam ?? selectedContactId;
+  const contactBonuses = useMemo(
+    () =>
+      bonusContactId && bonusesOf?.contactId === bonusContactId
+        ? bonusesOf.rows
+        : [],
+    [bonusContactId, bonusesOf],
+  );
   useEffect(() => {
-    if (!contactParam) return;
+    if (!bonusContactId) return;
     let cancelled = false;
-    void fetchContactBonuses(getAccessToken(), contactParam).then((rows) => {
-      if (!cancelled) setContactBonuses(rows);
+    void fetchContactBonuses(getAccessToken(), bonusContactId).then((rows) => {
+      if (!cancelled) setBonusesOf({ contactId: bonusContactId, rows });
     });
     return () => {
       cancelled = true;
     };
-  }, [contactParam]);
+  }, [bonusContactId]);
 
   // `?bonus=` is only believed if the bonus is this contact's, has not expired
   // and still has a session to give; anything else is ignored, so a stale or

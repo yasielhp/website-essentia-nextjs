@@ -5,7 +5,12 @@ import type {
 } from "../_shared/location-options";
 import { EMPTY_ADDRESS } from "../_shared/location-options";
 import { EMPTY_PAYMENT, type PaymentValue } from "../_shared/payment-fields";
-import { GENDER_UNSPECIFIED, type GenderValue } from "@/constants/gender";
+import {
+  GENDER_UNSPECIFIED,
+  GENDER_VALUES,
+  type GenderValue,
+} from "@/constants/gender";
+import type { DeskContactOption } from "@/lib/bookings/desk-consents";
 
 /**
  * A booking being written, and everything the screen is waiting on.
@@ -128,8 +133,16 @@ export type FormState = {
   email: string;
   phone: string;
   staffId: string;
-  /** Consent the client gave at the desk. Off means "not asked", not "no". */
-  newsletter: boolean;
+  /**
+   * The client already on file the booking is for, picked in the client step;
+   * null for a new client. Its address is then fixed (the booking is linked to
+   * the contact by it).
+   */
+  contact: DeskContactOption | null;
+  /** "News and offers" (email and WhatsApp). Off means "not asked", not "no". */
+  marketing: boolean;
+  /** "Appointment notices" on WhatsApp: on unless the desk turns it off. */
+  appointmentNotices: boolean;
   /** Money already taken, for a booking made by phone or at the desk. */
   payment: PaymentValue;
   /** The desk turned off the bonus session offered for this booking. */
@@ -154,7 +167,10 @@ export type FormAction =
       value: string;
     }
   | { type: "SET_STAFF"; value: string }
-  | { type: "TOGGLE_NEWSLETTER" }
+  | { type: "TOGGLE_MARKETING" }
+  | { type: "TOGGLE_APPOINTMENT_NOTICES" }
+  | { type: "SELECT_CONTACT"; value: DeskContactOption }
+  | { type: "CLEAR_CONTACT" }
   | { type: "SET_PAYMENT"; value: PaymentValue }
   | { type: "TOGGLE_BONUS" }
   | {
@@ -188,7 +204,9 @@ export const formInitial: FormState = {
   email: "",
   phone: "",
   staffId: "",
-  newsletter: false,
+  contact: null,
+  marketing: false,
+  appointmentNotices: true,
   payment: EMPTY_PAYMENT,
   bonusOptOut: false,
 };
@@ -237,8 +255,25 @@ export function formReducer(state: FormState, action: FormAction): FormState {
       return { ...state, [action.field]: action.value };
     case "RESET_TIERS":
       return { ...state, tierId: "" };
-    case "TOGGLE_NEWSLETTER":
-      return { ...state, newsletter: !state.newsletter };
+    case "TOGGLE_MARKETING":
+      return { ...state, marketing: !state.marketing };
+    case "TOGGLE_APPOINTMENT_NOTICES":
+      return { ...state, appointmentNotices: !state.appointmentNotices };
+    case "SELECT_CONTACT":
+      return { ...state, ...clientFromContact(action.value) };
+    case "CLEAR_CONTACT":
+      return {
+        ...state,
+        contact: null,
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        gender: GENDER_UNSPECIFIED,
+        language: "es",
+        marketing: false,
+        appointmentNotices: true,
+      };
     case "SET_STAFF":
       return { ...state, staffId: action.value };
     case "TOGGLE_BONUS":
@@ -250,4 +285,39 @@ export function formReducer(state: FormState, action: FormAction): FormState {
     default:
       return state;
   }
+}
+
+/**
+ * A client on file as the client step starts from her: her details, and the
+ * two switches as she stands. A consent she gave shows on (and stays, the
+ * screen does not take it back); a STOP or an unsubscribe shows off, and the
+ * desk cannot turn it on (her card can, asking first). With neither, the
+ * appointment notices start on, as for a new client.
+ */
+export function clientFromContact(
+  contact: DeskContactOption,
+): Pick<
+  FormState,
+  | "contact"
+  | "firstName"
+  | "lastName"
+  | "email"
+  | "phone"
+  | "gender"
+  | "language"
+  | "marketing"
+  | "appointmentNotices"
+> {
+  const gender = GENDER_VALUES.find((value) => value === contact.gender);
+  return {
+    contact,
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    email: contact.email,
+    phone: contact.phone,
+    gender: gender ?? GENDER_UNSPECIFIED,
+    language: contact.language,
+    marketing: contact.marketing === "on",
+    appointmentNotices: contact.appointmentNotices !== "stopped",
+  };
 }

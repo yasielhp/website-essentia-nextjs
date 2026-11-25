@@ -118,8 +118,10 @@ async function linkContact(draft: NewBookingDraft): Promise<string | null> {
     phone: draft.phone.trim() || null,
     language: draft.language === "en" ? "en" : "es",
     gender: toStoredGender(draft.gender),
-    // `null`, not `false`: an untouched switch must not undo an earlier yes.
-    newsletter: draft.newsletter ? true : null,
+    // `null`, not `false`: a switch left off must not undo an earlier yes.
+    // The server gives neither over a STOP or an unsubscribe.
+    marketing: draft.marketing ? true : null,
+    appointmentNotices: draft.appointmentNotices ? true : null,
   }).catch(() => ({ ok: false as const, error: "failed" as const }));
 
   if (!result.ok) {

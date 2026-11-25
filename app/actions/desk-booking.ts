@@ -9,6 +9,10 @@ import {
   linkDeskContactCore,
   type DeskContactResult,
 } from "@/lib/bookings/desk-contact";
+import {
+  searchDeskContactsCore,
+  type DeskSearchResult,
+} from "@/lib/bookings/desk-contact-search";
 
 /**
  * Takes a booking at the desk (the dashboard's "New booking").
@@ -51,4 +55,23 @@ export async function linkDeskContact(
     throw err;
   }
   return linkDeskContactCore(actor, input);
+}
+
+/**
+ * The clients the desk's "New booking" offers when one is looked up by name,
+ * email or phone: admin and staff any contact, a partner the clients of her
+ * own bookings (`app/lib/bookings/desk-contact-search.ts`).
+ */
+export async function searchDeskContacts(
+  accessToken: string | null,
+  query: unknown,
+): Promise<DeskSearchResult | { ok: false; error: "session" }> {
+  let actor;
+  try {
+    actor = await requireRole(accessToken);
+  } catch (err) {
+    if (err instanceof AuthError) return { ok: false, error: "session" };
+    throw err;
+  }
+  return searchDeskContactsCore(actor, query);
 }
