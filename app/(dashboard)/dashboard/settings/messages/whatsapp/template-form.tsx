@@ -26,9 +26,10 @@ import {
   type WhatsAppTemplateRow,
 } from "@/lib/whatsapp/types";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
+import { useUnsavedGuard } from "@/hooks/use-unsaved-guard";
+import { MessagePageHeader, UnsavedBar } from "../email/page-parts";
 import { useActionToast } from "./action-error";
 import { closeDecision } from "./close-decision";
-import { Modal } from "./modal";
 import { TemplatePreview } from "@/components/dashboard/template-preview";
 
 /** `es` and `en` are the choices; a rewritten template may carry another. */
@@ -317,7 +318,11 @@ function DiscardBar({
 }
 
 /**
- * Writes a WhatsApp template and sends it to Meta for review.
+ * Writes a WhatsApp template and sends it to Meta for review, on a page of its
+ * own (`/dashboard/settings/whatsapp-templates/new`): the fields on the left,
+ * the phone preview on the right (under them on a phone), the buttons at the
+ * end. Cancel asks before throwing away what was written, and so does a link
+ * that leaves the page (`useUnsavedGuard`).
  *
  * `seed` is the rejected template being rewritten: its text comes along and the
  * name is replaced, because Meta will not take the same name and language twice.
@@ -348,7 +353,8 @@ export function TemplateForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [asking, setAsking] = useState(false);
   const dirty = isDirty(state, initial);
-  /** Escape, the X and Cancel all come here: a template written is not lost unasked. */
+  const guard = useUnsavedGuard(dirty && !state.submitting);
+  /** Cancel comes here: a template written is not lost unasked. */
   function requestClose() {
     const decision = closeDecision({ dirty, submitting: state.submitting });
     if (decision === "close") onClose();
@@ -412,21 +418,21 @@ export function TemplateForm({
   }
 
   return (
-    <Modal
-      title={t(seed ? "form.rewriteTitle" : "form.title")}
-      onClose={requestClose}
-      wide
-      dirty={dirty}
-      busy={state.submitting}
-    >
+    <div className="flex flex-col gap-6">
+      <MessagePageHeader title={t(seed ? "form.rewriteTitle" : "form.title")} />
+
+      {guard.pending && (
+        <UnsavedBar onStay={guard.stay} onLeave={guard.leave} />
+      )}
+
       <form
         ref={formRef}
         onSubmit={handleSubmit}
         noValidate
-        className="flex min-h-0 flex-1 flex-col"
+        className="flex flex-col gap-6"
       >
-        <div className="grid gap-6 overflow-y-auto px-6 py-5 lg:grid-cols-[1fr_340px]">
-          <div className="flex flex-col gap-4">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="flex flex-col gap-4 rounded-2xl bg-white p-6">
             <p
               className={`rounded-xl px-4 py-3 text-xs ${
                 configured
@@ -458,7 +464,6 @@ export function TemplateForm({
                 }
                 disabled={state.submitting}
                 aria-invalid={Boolean(state.errors.name) || state.nameTaken}
-                data-autofocus
                 autoComplete="off"
                 spellCheck={false}
                 className={INPUT_CLASS}
@@ -790,7 +795,7 @@ export function TemplateForm({
             </fieldset>
           </div>
 
-          <aside className="lg:sticky lg:top-0 lg:self-start">
+          <aside className="lg:sticky lg:top-6">
             <p className="text-petroleum-500 mb-2 text-xs font-medium">
               {t("detail.preview")}
             </p>
@@ -808,7 +813,7 @@ export function TemplateForm({
           </aside>
         </div>
 
-        <div className="border-sand-100 flex shrink-0 justify-end gap-3 border-t px-6 py-4">
+        <div className="flex justify-end gap-3">
           {asking ? (
             <DiscardBar onKeep={() => setAsking(false)} onDiscard={onClose} />
           ) : (
@@ -832,6 +837,6 @@ export function TemplateForm({
           )}
         </div>
       </form>
-    </Modal>
+    </div>
   );
 }

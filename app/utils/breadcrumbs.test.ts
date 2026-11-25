@@ -88,3 +88,17 @@ describe("the other sections are as they were", () => {
     ]);
   });
 });
+
+describe("the page of a new WhatsApp template", () => {
+  test("reads Settings (back to the templates card) › New WhatsApp template", () => {
+    expect(
+      getBreadcrumbs("/dashboard/settings/whatsapp-templates/new"),
+    ).toEqual([
+      {
+        key: "sections.settings",
+        href: "/dashboard/settings#settings-whatsapp-templates",
+      },
+      { key: "leaves.newWhatsAppTemplate" },
+    ]);
+  });
+});

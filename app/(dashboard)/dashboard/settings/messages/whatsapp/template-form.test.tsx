@@ -1,10 +1,26 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import es from "../../../../../../messages/es/dashboard.json";
 import en from "../../../../../../messages/en/dashboard.json";
-import { TemplateForm } from "./template-form";
 import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
+
+// The form is a page now and asks before a link leaves it (`useUnsavedGuard`),
+// which needs the app router. Bun's module mocks are process-wide: what the
+// router really exports is kept, only the hooks that need a mounted app are
+// replaced, and the real module is put back in `afterAll`.
+const realNavigation = await import("next/navigation");
+mock.module("next/navigation", () => ({
+  ...realNavigation,
+  useRouter: () => ({ push: () => {}, replace: () => {}, back: () => {} }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({}),
+}));
+afterAll(() => {
+  mock.module("next/navigation", () => realNavigation);
+});
+const { TemplateForm } = await import("./template-form");
 
 const wrap = (locale: "es" | "en", seed: WhatsAppTemplateRow | null = null) =>
   renderToStaticMarkup(

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { IconPlus } from "@/components/ui/icons";
@@ -10,6 +11,7 @@ import {
   syncWhatsAppTemplates,
 } from "@/actions/whatsapp-templates";
 import { getAccessToken } from "@/lib/client-session";
+import { newWhatsAppTemplateHref } from "@/lib/messages/message-route";
 import { useDashboardLocale } from "@/hooks/use-dashboard-locale";
 import { useNow } from "@/hooks/use-now";
 import { shouldAutoSync } from "@/lib/whatsapp/auto-sync";
@@ -18,7 +20,6 @@ import type { WhatsAppTemplateRow } from "@/lib/whatsapp/types";
 import { useActionToast } from "./action-error";
 import { SyncStamp } from "./sync-stamp";
 import { TemplateDetail } from "./template-detail";
-import { TemplateForm } from "./template-form";
 import { TemplateTable } from "./template-table";
 
 type ListState = {
@@ -57,7 +58,8 @@ function listReducer(state: ListState, action: ListAction): ListState {
 let lastAutoSyncAt: number | null = null;
 
 /**
- * The WhatsApp templates card: the list and the create form.
+ * The WhatsApp templates card: the list, and the way to the page where a new
+ * template is written (`newWhatsAppTemplateHref`).
  *
  * Nobody syncs by hand. The list is shown at once from the dashboard's copy
  * and, when that copy is not fresh, Meta is asked in the background and the
@@ -75,6 +77,7 @@ export function TemplatesPanel({
   actionsSlot?: HTMLElement | null;
 } = {}) {
   const t = useTranslations("dashboard.messages.whatsapp");
+  const router = useRouter();
   const locale = useDashboardLocale();
   const showError = useActionToast();
   // Redrawn every minute, so "3 min ago" stays true.
@@ -89,10 +92,6 @@ export function TemplatesPanel({
   const [reloadKey, setReloadKey] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
-  /** `undefined` closed; `null` a blank form; a row, a rewrite of that one. */
-  const [form, setForm] = useState<WhatsAppTemplateRow | null | undefined>(
-    undefined,
-  );
   const [detail, setDetail] = useState<WhatsAppTemplateRow | null>(null);
 
   useEffect(() => {
@@ -124,7 +123,6 @@ export function TemplatesPanel({
 
   const reload = () => setReloadKey((key) => key + 1);
   const lastSync = useMemo(() => latestSync(templates), [templates]);
-  const takenNames = useMemo(() => templates.map((x) => x.name), [templates]);
 
   /** Asks Meta, quietly: the list is redrawn if it answers, a notice if not. */
   async function syncNow() {
@@ -168,7 +166,7 @@ export function TemplatesPanel({
   // axis, wherever the column is drawn.
   const actions = (
     <div className="flex flex-col items-center gap-1 whitespace-nowrap">
-      <Button className="gap-2" onClick={() => setForm(null)}>
+      <Button className="gap-2" href={newWhatsAppTemplateHref()}>
         <IconPlus />
         {t("new")}
       </Button>
@@ -244,23 +242,9 @@ export function TemplatesPanel({
           configured={configured}
           lastSync={lastSync}
           onClose={() => setDetail(null)}
-          onUseAnotherName={(template) => {
-            setDetail(null);
-            setForm(template);
-          }}
-        />
-      )}
-
-      {form !== undefined && (
-        <TemplateForm
-          seed={form}
-          configured={configured}
-          takenNames={takenNames}
-          onClose={() => setForm(undefined)}
-          onCreated={() => {
-            setForm(undefined);
-            reload();
-          }}
+          onUseAnotherName={(template) =>
+            router.push(newWhatsAppTemplateHref(template.id))
+          }
         />
       )}
     </div>

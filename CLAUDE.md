@@ -41,7 +41,7 @@ app/
   (dashboard)/dashboard/      # Staff-only dashboard: bookings, contacts, members, staff…
     campaigns/                 # Campaigns, email and WhatsApp (admin only)
     settings/                  # Settings (admin only): cards for sessions, vouchers, subscriptions, payments, automatic messages (#settings-messages) and WhatsApp templates (#settings-whatsapp-templates), see messages-cards.tsx; they load only when near the screen
-      messages/                # The code of those two cards and the page of each message: /dashboard/settings/messages/{email|whatsapp}/<key>/<locale> (email/, whatsapp/). Messages is NOT in the sidebar. The old /dashboard/messages addresses redirect (308, app/lib/redirects.ts)
+      messages/                # The code of those two cards and the page of each message: /dashboard/settings/messages/{email|whatsapp}/<key>/<locale> (email/, whatsapp/). Messages is NOT in the sidebar. The old /dashboard/messages addresses redirect (308, app/lib/redirects.ts). A new WhatsApp template is written on its own page, /dashboard/settings/whatsapp-templates/new (`?from=<id>` rewrites a rejected one; `newWhatsAppTemplateHref`), not in a window over the card
   (account)/account/          # Authenticated user account pages
   actions/                    # Server Actions (booking-notifications, payments, newsletter, campaigns, message-templates, whatsapp-templates…)
   api/

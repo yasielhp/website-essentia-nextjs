@@ -35,6 +35,7 @@
     },
     "leaves": {
       "new": "New",
+      "newWhatsAppTemplate": "New WhatsApp template",
       "partner": "Partner Booking",
       "edit": "Edit",
       "registrations": "Registrations",

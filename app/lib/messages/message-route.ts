@@ -56,6 +56,19 @@ export function whatsappTemplatesHref(): string {
   return `${SETTINGS_PATH}#${WHATSAPP_TEMPLATES_ANCHOR}`;
 }
 
+/** The page where a new WhatsApp template is written and sent to Meta. */
+export const NEW_WHATSAPP_TEMPLATE_PATH = `${SETTINGS_PATH}/whatsapp-templates/new`;
+
+/**
+ * The page of a new WhatsApp template; with `fromId`, the rewrite of that one
+ * (a rejected template, whose text comes along under a new name).
+ */
+export function newWhatsAppTemplateHref(fromId?: string): string {
+  return fromId
+    ? `${NEW_WHATSAPP_TEMPLATE_PATH}?from=${encodeURIComponent(fromId)}`
+    : NEW_WHATSAPP_TEMPLATE_PATH;
+}
+
 /** The page where one message is edited (the email) or set up (the WhatsApp notice). */
 export function messageEditHref(
   channel: MessageChannel,

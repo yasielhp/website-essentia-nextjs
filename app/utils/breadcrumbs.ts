@@ -1,6 +1,7 @@
 import {
   messageListHref,
   parseMessageRoute,
+  whatsappTemplatesHref,
 } from "@/lib/messages/message-route";
 
 const UUID_RE = /^[0-9a-f-]{36}$/i;
@@ -96,6 +97,20 @@ export function getBreadcrumbs(pathname: string): Breadcrumb[] {
         },
       ];
     }
+  }
+
+  // A new WhatsApp template is written on a page of its own, under Settings:
+  // Settings (back to the templates card) › New WhatsApp template.
+  if (
+    section === "settings" &&
+    rest[0] === "whatsapp-templates" &&
+    rest[1] === "new" &&
+    rest.length === 2
+  ) {
+    return [
+      { key: "sections.settings", href: whatsappTemplatesHref() },
+      { key: "leaves.newWhatsAppTemplate" },
+    ];
   }
 
   // A sub-list under a section — campaigns/segments — is its own crumb, so
