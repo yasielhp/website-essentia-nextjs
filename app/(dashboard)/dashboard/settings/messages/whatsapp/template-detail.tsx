@@ -45,6 +45,10 @@ export function TemplateDetail({
   // The same labels as the columns of the list the template was opened from.
   const facts: { label: string; value: React.ReactNode }[] = [
     {
+      label: t("table.name"),
+      value: <span className="font-medium break-all">{template.name}</span>,
+    },
+    {
       label: t("table.status"),
       value: <TemplateStatusBadge status={template.status} />,
     },
@@ -58,11 +62,7 @@ export function TemplateDetail({
   ];
 
   return (
-    <Modal
-      title={t("detail.title", { name: template.name })}
-      onClose={onClose}
-      wide
-    >
+    <Modal title={t("detail.title")} onClose={onClose} wide>
       <div className="grid gap-6 overflow-y-auto px-6 py-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-start">
         <div className="flex flex-col gap-4">
           <dl className="divide-sand-100 flex flex-col divide-y">

@@ -2314,7 +2314,7 @@
       "neverSynced": "nunca",
       "paramCount": "{count, plural, =0 {Sin datos variables} one {# dato variable} other {# datos variables}}",
       "detail": {
-        "title": "Plantilla {name}",
+        "title": "Plantilla",
         "preview": "Vista previa",
         "rejectedHelp": "Meta no admite repetir el nombre de una plantilla rechazada. Crea una copia con otro nombre y corrige el texto antes de enviarla."
       },

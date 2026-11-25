@@ -2314,7 +2314,7 @@
       "neverSynced": "never",
       "paramCount": "{count, plural, =0 {No variable values} one {# variable value} other {# variable values}}",
       "detail": {
-        "title": "Template {name}",
+        "title": "Template",
         "preview": "Preview",
         "rejectedHelp": "Meta does not let a rejected template reuse its name. Create a copy under another name and fix the text before submitting it."
       },
