@@ -167,9 +167,11 @@ export function ConfirmStep({
           </div>
         </div>
 
-        {/* Booking details */}
-        <div className="border-sand-100 grid gap-3 border-t pt-4 md:grid-cols-2">
-          {[
+        {/* Booking details, in three groups: when, who, where and with whom.
+            On a phone the label sits over its value; from md up, one row each,
+            the label on the left and the value on the right. */}
+        {[
+          [
             {
               label: t("date"),
               value: date
@@ -182,23 +184,41 @@ export function ConfirmStep({
                 : t("toBeConfirmed"),
             },
             { label: t("time"), value: time ?? t("toBeConfirmed") },
+          ],
+          [
             {
               label: t("name"),
               value: `${details.firstName} ${details.lastName}`,
             },
             { label: t("email"), value: details.email },
             { label: t("phone"), value: details.phone },
+          ],
+          [
             { label: t("location"), value: t("atTheCenter") },
             ...(staffName
               ? [{ label: tt("staffLabel"), value: staffName }]
               : []),
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-petroleum-400 text-xs">{label}</p>
-              <p className="text-petroleum-700 text-sm">{value}</p>
-            </div>
-          ))}
-        </div>
+          ],
+        ].map((group) => (
+          <dl
+            key={group[0].label}
+            className="border-sand-100 flex flex-col gap-3 border-t pt-4"
+          >
+            {group.map(({ label, value }) => (
+              <div
+                key={label}
+                className="md:flex md:items-baseline md:justify-between md:gap-6"
+              >
+                <dt className="text-petroleum-400 text-xs md:text-sm">
+                  {label}
+                </dt>
+                <dd className="text-petroleum-700 min-w-0 text-sm break-words md:text-right">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ))}
 
         {/* What it costs */}
         <div className="border-sand-100 flex flex-col gap-2 border-t pt-4">
