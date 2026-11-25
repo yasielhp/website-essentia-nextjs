@@ -1,4 +1,5 @@
--- NOT APPLIED. For the owner to decide, and to apply only AFTER the code that
+-- APPLIED to the live database on 2026-11-25, after the deploy and the reloaded tabs, and verified.
+-- (Was: NOT APPLIED.) For the owner to decide, and to apply only AFTER the code that
 -- understands the refusal is deployed (see "ORDER" below).
 --
 -- Nothing stopped two bookings from taking the same hour of the same

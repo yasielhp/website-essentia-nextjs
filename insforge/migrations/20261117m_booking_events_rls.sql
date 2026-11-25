@@ -1,4 +1,5 @@
--- NOT APPLIED. For the owner to decide, then apply when deploying.
+-- APPLIED to the live database on 2026-11-25, after the deploy and the reloaded tabs, and verified.
+-- (Was: NOT APPLIED.) For the owner to decide, then apply when deploying.
 --
 -- booking_events was created without RLS ("read only through the service
 -- key"), but with RLS off the anon key can read it too. Its `summary` carries

@@ -393,8 +393,10 @@ describe("the migration that takes them from the browser's roles", () => {
     .filter((line) => !line.startsWith("--") && !/^(BEGIN|COMMIT);$/.test(line))
     .join("\n");
 
-  test("it says it is not applied, and what is sent does not open with a comment", () => {
-    expect(text.startsWith("-- NOT APPLIED.")).toBe(true);
+  test("it says when it was applied, and what is sent does not open with a comment", () => {
+    expect(
+      text.startsWith("-- APPLIED to the live database on 2026-11-25"),
+    ).toBe(true);
     expect(sent.trimStart().startsWith("--")).toBe(false);
     expect(/^BEGIN;$/m.test(text) && /^COMMIT;$/m.test(text)).toBe(true);
   });

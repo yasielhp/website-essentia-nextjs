@@ -1,4 +1,5 @@
--- NOT APPLIED. Apply only AFTER this branch is deployed and the open tabs of
+-- APPLIED to the live database on 2026-11-25, after the deploy and the reloaded tabs, and verified.
+-- (Was: NOT APPLIED.) Apply only AFTER this branch is deployed and the open tabs of
 -- the booking form and the dashboard are reloaded (see "ORDER" below).
 --
 -- Seven SECURITY DEFINER functions in `public` run as their owner

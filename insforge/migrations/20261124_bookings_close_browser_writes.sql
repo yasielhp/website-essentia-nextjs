@@ -1,4 +1,5 @@
--- NOT APPLIED. For the owner to decide, and to apply only AFTER the code that
+-- APPLIED to the live database on 2026-11-25, after the deploy and the reloaded tabs, and verified.
+-- (Was: NOT APPLIED.) For the owner to decide, and to apply only AFTER the code that
 -- writes bookings through the server is deployed (see "ORDER" below).
 --
 -- `bookings` (205 rows on 2026-11-24) has row level security on, but the

@@ -762,8 +762,10 @@ describe("the migration that closes the tables", () => {
     .join("\n")
     .trim();
 
-  test("it says it is not applied, and what is sent does not open with a comment", () => {
-    expect(file.startsWith("-- NOT APPLIED")).toBe(true);
+  test("it says when it was applied, and what is sent does not open with a comment", () => {
+    expect(
+      file.startsWith("-- APPLIED to the live database on 2026-11-25"),
+    ).toBe(true);
     expect(sql.startsWith("--")).toBe(false);
     expect(sql.startsWith("ALTER TABLE")).toBe(true);
   });

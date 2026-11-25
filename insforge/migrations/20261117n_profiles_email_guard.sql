@@ -1,4 +1,5 @@
--- NOT APPLIED. For the owner to decide, then apply when deploying.
+-- APPLIED to the live database on 2026-11-25, after the deploy and the reloaded tabs, and verified.
+-- (Was: NOT APPLIED.) For the owner to decide, then apply when deploying.
 --
 -- A signed-in user can rewrite the email of her OWN profile from the browser.
 -- Read from the live catalogues on 2026-11-17:

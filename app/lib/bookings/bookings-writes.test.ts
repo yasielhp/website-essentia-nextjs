@@ -301,8 +301,10 @@ describe("the migration that closes the table to the browser", () => {
     "20261124_bookings_close_browser_writes.sql",
   );
 
-  test("it says it is not applied, and what is sent does not open with a comment", () => {
-    expect(text.startsWith("-- NOT APPLIED.")).toBe(true);
+  test("it says when it was applied, and what is sent does not open with a comment", () => {
+    expect(
+      text.startsWith("-- APPLIED to the live database on 2026-11-25"),
+    ).toBe(true);
     expect(sent.trimStart().startsWith("--")).toBe(false);
     expect(/^BEGIN;$/m.test(text) && /^COMMIT;$/m.test(text)).toBe(true);
   });
@@ -363,8 +365,10 @@ describe("the migration that closes the table to the browser", () => {
 describe("the migration that refuses two bookings on one hour", () => {
   const { text, sent } = migration("20261124_bookings_no_overlap.sql");
 
-  test("it says it is not applied, and what is sent does not open with a comment", () => {
-    expect(text.startsWith("-- NOT APPLIED.")).toBe(true);
+  test("it says when it was applied, and what is sent does not open with a comment", () => {
+    expect(
+      text.startsWith("-- APPLIED to the live database on 2026-11-25"),
+    ).toBe(true);
     expect(sent.trimStart().startsWith("--")).toBe(false);
   });
 
